@@ -1,24 +1,29 @@
 {
-    "extends": "@flexn/typescript-config/tsconfig.app.json",
-    "compilerOptions": {
-        "outDir": "./lib",
-        "rootDir": ".",
-        "noImplicitAny": false,
-        // "resolveJsonModule": false
-        "plugins": [
-            {
-                "name": "next"
-            }
-        ],
-        "strictNullChecks": true
-    },
-    "include": [
-        "next-env.d.ts",
-        "**/*.ts",
-        "**/*.tsx",
-        "platformBuilds/template_web/.next/types/**/*.ts",
-        ".next/types/**/*.ts",
-        "platformBuilds/template_web/output/types/**/*.ts"
+  "extends": "@flexn/typescript-config/tsconfig.app.json",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": ".",
+    "noImplicitAny": false,
+    // "resolveJsonModule": false
+    "plugins": [
+      {
+        "name": "next"
+      }
     ],
-    "exclude": ["**/rn_modules"]
+    "strictNullChecks": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "platformBuilds/template_web/.next/types/**/*.ts",
+    ".next/types/**/*.ts",
+    "platformBuilds/template_web/output/types/**/*.ts",
+    "platformBuilds\\app_web\\output/types/**/*.ts",
+    "src/screens/auth/LoginScreen.js",
+    "src/components/WattMeasurmentComponent"
+  ],
+  "exclude": [
+    "**/rn_modules"
+  ]
 }
