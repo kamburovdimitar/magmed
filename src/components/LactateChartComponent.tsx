@@ -229,6 +229,40 @@ export default function LactateChartComponent({
                                 />
                             )
                         }
+                        {
+                            result?.IASPoint && (
+
+                                <ReferenceDot
+
+                                    x={
+                                        result
+                                            .IASPoint
+                                            .load
+                                    }
+
+                                    y={
+                                        result
+                                            .IASPoint
+                                            .lactate
+                                    }
+
+                                    r={8}
+
+                                    fill="green"
+
+                                    stroke="black"
+
+                                    label={
+                                        showThresholdLabels
+                                            ? {
+                                                value: 'IAS',
+                                                position: 'top'
+                                            }
+                                            : undefined
+                                    }
+                                />
+                            )
+                        }
 
                         {/* 🔹 IANS point */}
                         {
@@ -254,10 +288,14 @@ export default function LactateChartComponent({
 
                                     stroke="black"
 
-                                    label={{
-                                        value: 'IANS',
-                                        position: 'top'
-                                    }}
+                                    label={
+                                        showThresholdLabels
+                                            ? {
+                                                value: 'IANS',
+                                                position: 'top'
+                                            }
+                                            : undefined
+                                    }
                                 />
                             )
                         }

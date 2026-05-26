@@ -1028,8 +1028,18 @@ export default function Page11({ goTo }: any) {
 
 
                         <LactateChartComponent
+
                             data={data}
+
                             result={resultPreview}
+
+                            showTrainingZones={showTrainingZones}
+
+                            showThresholdLines={showThresholdLines}
+
+                            showThresholdLabels={showThresholdLabels}
+
+                            showHeartRateCurve={showHeartRateCurve}
                         />
 
                         {
@@ -1037,6 +1047,7 @@ export default function Page11({ goTo }: any) {
 
                                 <TrainingZonesOverlayComponent
                                     result={resultPreview}
+                                    data={data}
                                 />
                             )
                         }
