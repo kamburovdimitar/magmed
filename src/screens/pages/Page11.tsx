@@ -16,6 +16,9 @@ import LactateChartComponent from '../../components/LactateChartComponent'
 import TrainingZonesOverlayComponent from '../../components/TrainingZonesOverlayComponent'
 import ErgometrySummaryComponent from '../../components/ErgometrySummaryComponent'
 import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponent'
+import { ErgometryModel } from "../../constants/ergometryModels"
+import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
+
 
 
 
@@ -54,8 +57,7 @@ export default function Page11({ goTo }: any) {
         useState<MDPatient | null>(null);
 
     // 🔥 Result Preview
-    const [resultPreview, setResultPreview] =
-        useState<any>(null);
+    const [resultPreview, setResultPreview] = useState<any>(null);
 
     useEffect(() => {
 
@@ -68,25 +70,11 @@ export default function Page11({ goTo }: any) {
 
     // 🔹 Rechenverfahren = метод на изчисление
     // 👉 кой алгоритъм ще използваме
-    const [model, setModel] = useState<'dickhuth' | 'freiburg' | 'linear' | 'keul' | 'ltp' | 'keullegacy'>('dickhuth');
+    const [model, setModel] = useState<ErgometryModel>(ERGOMETRY_MODELS.DICKHUTH);
 
-
-
-    // 🔹 Datenerfassung = въвеждане на данни (таблицата)
-    const initialData: RowType[] = []
-
-    for (let i = 0; i < 10; i++) {
-        initialData.push({
-            stage: i,
-            time: '00:00',
-            load: 0,
-            hf: '',
-            lactate: ''
-        })
-    }
 
     // 🔹 Това е таблицата, която user-а попълва
-    const [data, setData] = useState<RowType[]>(initialData)
+    const [data, setData] = useState<RowType[]>(createInitialRows())
 
     // 🔹 Тип на теста (bike / run)
     const [type, setType] = useState<'bike' | 'run'>('bike')
@@ -461,9 +449,9 @@ export default function Page11({ goTo }: any) {
             }
         );
     }
-    function save() {
 
-        // 🔹 Конвертираме UI данните → към модел (string → number)
+    function buildRows() {
+
         const rows: MDErgometryRow[] = [];
 
         for (let i = 0; i < data?.length; i++) {
@@ -477,13 +465,21 @@ export default function Page11({ goTo }: any) {
             });
         }
 
+        return rows;
+    }
+
+    function save() {
+
+        // 🔹 Конвертираме UI данните → към модел (string → number)
+        const rows = buildRows();
+
         // 🔹 Създаваме ергометрия (модел)
         const ergometry = new MDErgometry({
             type,
             startLoad: Number(type === 'bike' ? startLoad : runStartLoad),
             increment: Number(type === 'bike' ? powerIncrement : runPowerIncrement),
             timeStep: Number(type === 'bike' ? powerTimeStep : runPowerTimeStep),
-            model,
+            model: model,
             data: rows
         });
 
@@ -498,31 +494,31 @@ export default function Page11({ goTo }: any) {
 
         let result: any;
 
-        if (model === 'dickhuth') {
+        if (model === ERGOMETRY_MODELS.DICKHUTH) {
             result = ErgometryModelsUtil.calculateDickhuth(rows);
         }
 
-        if (model === 'freiburg') {
+        if (model === ERGOMETRY_MODELS.FREIBURG) {
             result = ErgometryModelsUtil.calculateFreiburg(rows);
         }
 
-        if (model === 'linear') {
+        if (model === ERGOMETRY_MODELS.LINEAR) {
             result = ErgometryModelsUtil.calculateLinear(rows);
         }
 
-        if (model === 'keullegacy') {
+        if (model === ERGOMETRY_MODELS.LTP) {
+            result = ErgometryModelsUtil.calculateLTP(rows);
+        }
+
+        if (model === ERGOMETRY_MODELS.KEUL_LEGACY) {
             result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
         }
 
-        if (model === 'keul') {
-            console.log("rows")
-            console.log(rows)
+        if (model === ERGOMETRY_MODELS.KEUL) {
             result = ErgometryModelsUtil.calculateKeul(rows);
         }
 
-        if (model === 'ltp') {
-            result = ErgometryModelsUtil.calculateLTP(rows);
-        }
+
 
         // 🔹 example values
         const hfMax = 190;
@@ -555,8 +551,10 @@ export default function Page11({ goTo }: any) {
         const interpretation = ErgometryModelsUtil.generateInterpretation(result);
 
 
+
         if (result) {
             result.interpretation = interpretation;
+            result.model = model;
         }
 
 
@@ -579,137 +577,83 @@ export default function Page11({ goTo }: any) {
         console.log(result)
     }
 
-    function applyHistoryReport(
-        report: any
-    ) {
+    function applyHistoryReport(report: any) {
+        const ergometry = report.ergometry;
 
-        const ergometry =
-            report.ergometry;
+        setType(ergometry.type);
+        setModel(ergometry.model);
 
-        // 🔹 type
-        setType(
-            ergometry.type
-        );
-
-        // 🔹 model
-        setModel(
-            ergometry.model
-        );
-
-        // 🔹 protocol
         if (ergometry.type === 'bike') {
+            setStartLoad(String(ergometry.startLoad));
+            setPowerIncrement(String(ergometry.increment));
+            setPowerTimeStep(String(ergometry.timeStep));
 
-            setStartLoad(
-                String(
-                    ergometry.startLoad
-                )
-            );
-
-            setPowerIncrement(
-                String(
-                    ergometry.increment
-                )
-            );
-
-            setPowerTimeStep(
-                String(
-                    ergometry.timeStep
-                )
-            );
-
-            // clear run
             setRunStartLoad('');
-
             setRunPowerIncrement('');
-
             setRunPowerTimeStep('');
-        }
-        else {
+        } else {
+            setRunStartLoad(String(ergometry.startLoad));
+            setRunPowerIncrement(String(ergometry.increment));
+            setRunPowerTimeStep(String(ergometry.timeStep));
 
-            setRunStartLoad(
-                String(
-                    ergometry.startLoad
-                )
-            );
-
-            setRunPowerIncrement(
-                String(
-                    ergometry.increment
-                )
-            );
-
-            setRunPowerTimeStep(
-                String(
-                    ergometry.timeStep
-                )
-            );
-
-            // clear bike
             setStartLoad('');
-
             setPowerIncrement('');
-
             setPowerTimeStep('');
         }
 
-        // 🔹 rows → UI rows
-        const uiRows: RowType[] = [];
+        setData(
+            ergometry.data.map((row: any) => ({
+                stage: row.stage,
+                time: row.time,
+                load: row.load,
+                hf: String(row.hf),
+                lactate: String(row.lactate)
+            }))
+        );
 
-        for (let i = 0; i < ergometry.data.length; i++) {
+        setResultPreview(report.result);
 
-            uiRows.push({
+        const updatedPatient = new MDPatient(dataPatient);
+        updatedPatient.measurements.ergometry = ergometry;
 
-                stage:
-                    ergometry.data[i].stage,
+        setPreviewPatient(updatedPatient);
+    }
 
-                time:
-                    ergometry.data[i].time,
+    function createInitialRows(): RowType[] {
 
-                load:
-                    ergometry.data[i].load,
+        const rows: RowType[] = [];
 
-                hf:
-                    String(
-                        ergometry.data[i].hf
-                    ),
+        for (let i = 0; i < 10; i++) {
 
-                lactate:
-                    String(
-                        ergometry.data[i]
-                            .lactate
-                    )
+            rows.push({
+                stage: i,
+                time: '00:00',
+                load: 0,
+                hf: '',
+                lactate: ''
             });
         }
 
-        // 🔹 apply UI data
-        setData(uiRows);
-
-        // 🔹 apply result snapshot
-        setResultPreview(
-            report.results
-        );
-
-        // 🔹 apply patient preview
-        const updatedPatient =
-            new MDPatient(dataPatient);
-
-        updatedPatient.measurements
-            .ergometry = ergometry;
-
-        setPreviewPatient(
-            updatedPatient
-        );
+        return rows;
     }
-    function clearData() {
-        setStartLoad(String(""));
-        setPowerIncrement(String(""));
-        setPowerTimeStep(String(""));
 
-        // clear run
+    function clearData() {
+
+        setStartLoad('');
+        setPowerIncrement('');
+        setPowerTimeStep('');
+
         setRunStartLoad('');
         setRunPowerIncrement('');
         setRunPowerTimeStep('');
-        setData(null)
+
+        setData(createInitialRows());
+
+        setPreviewPatient(null);
+
+        setResultPreview(null);
+
+        setReportMode(false);
     }
 
     function generateFakeData() {
@@ -768,9 +712,10 @@ export default function Page11({ goTo }: any) {
 
         setData(uiRows);
 
-        const result = ErgometryModelsUtil.calculateDickhuth(uiRows)
+        //const result = ErgometryModelsUtil.calculateDickhuth(uiRows)
 
-        console.log(result)
+
+
     }
 
 
@@ -781,23 +726,7 @@ export default function Page11({ goTo }: any) {
         }
 
         // 🔹 rows
-        const rows: MDErgometryRow[] = [];
-
-        for (let i = 0; i < data?.length; i++) {
-
-            rows.push({
-
-                stage: data[i].stage,
-
-                time: data[i].time,
-
-                load: data[i].load,
-
-                hf: Number(data[i].hf),
-
-                lactate: Number(data[i].lactate)
-            });
-        }
+        const rows = buildRows();
 
         // 🔹 fresh ergometry snapshot
         const ergometry =
@@ -861,11 +790,7 @@ export default function Page11({ goTo }: any) {
         // 🔹 update state
         setDataPatient(updatedPatient);
 
-        console.log(
-            updatedPatient
-                .measurements
-                .ergometryReports
-        );
+
     }
 
 

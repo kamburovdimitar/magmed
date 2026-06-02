@@ -225,17 +225,6 @@ export default function LactateChartComponent({
                                     return null;
                                 }
 
-                                // console.log('E1.to:', zones.E1.to);
-                                // console.log('E2.from:', zones.E2.from);
-                                // console.log('zones object:', zones);
-                                // console.log('maxLoad:', maxLoad);
-
-                                // console.log('last point', chartData[chartData.length - 1]);
-                                // console.log('chartData', chartData);
-
-                                console.log(typeof zones.E2.from);
-                                console.log(zones.E2.from);
-
                                 const chartMaxLoad = chartData[chartData.length - 1]?.load || 0;
                                 return (
 

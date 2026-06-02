@@ -35,7 +35,10 @@ export default function AuswertungComponent({
 
         return (
 
+
+
             <View key={index} style={styles.row}>
+
 
                 <Text style={styles.cell}>
                     {item.lactate || '-'}

@@ -1,3 +1,4 @@
+import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
 // utils/ergometryUtil.js
 
 // 👉 примерна таблица (можеш да я разшириш)
@@ -114,24 +115,15 @@ function generateFakeTest({
 
 // 🔥 FULL ERGOMETRY GENERATOR
 function generateFakeErgometry() {
-
     // 🔹 type
-    const type =
-        Math.random() > 0.5
-            ? 'bike'
-            : 'run';
+    const type = Math.random() > 0.5 ? 'bike' : 'run';
 
     // 🔹 models
-    const models = [
-        'dickhuth',
-        'freiburg',
-        'linear',
-        'keul'
-    ];
+    const models = Object.values(ERGOMETRY_MODELS);
 
     const model =
         models[
-        Math.floor(Math.random() * models.length)
+            Math.floor(Math.random() * models.length)
         ];
 
     // 🔹 defaults
@@ -141,14 +133,12 @@ function generateFakeErgometry() {
 
     // 🔹 run defaults
     if (type === 'run') {
-
         startLoad = 8;
         increment = 2;
     }
 
     // 🔹 data
     const data = generateFakeTest({
-
         stages: 10,
         startLoad,
         increment,
@@ -156,7 +146,6 @@ function generateFakeErgometry() {
     });
 
     return {
-
         type,
         model,
         startLoad,
@@ -165,7 +154,6 @@ function generateFakeErgometry() {
         data
     };
 }
-
 
 
 

@@ -23,7 +23,7 @@ export class MDErgometry {
 
     data: MDErgometryRow[] = []
 
-    model: 'dickhuth' | 'freiburg' | 'linear' | 'keul' = 'dickhuth'
+    model: string = ""
 
     results: MDErgometryResult[] = []
 

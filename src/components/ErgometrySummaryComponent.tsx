@@ -18,7 +18,7 @@ export default function ErgometrySummaryComponent({
         <View style={styles.container}>
 
             <Text style={styles.title}>
-                THRESHOLD SUMMARY
+                THRESHOLD SUMMARY ({(result?.model || 'DICKHUTH').toUpperCase()})
             </Text>
 
             {/* 🔹 IAS */}

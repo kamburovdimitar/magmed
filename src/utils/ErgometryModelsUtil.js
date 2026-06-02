@@ -36,7 +36,7 @@
  */
 function calculateDickhuth(data) {
 
-    let lmin = 999;
+    let lmin = Number.MAX_VALUE;
 
     let lminRow = null;
 
@@ -105,78 +105,50 @@ function calculateDickhuth(data) {
  * }
  */
 function calculateFreiburg(data) {
-
-    let lmin = 999;
-
+    let lmin = Number.MAX_VALUE;
     let lminRow = null;
 
     for (let i = 0; i < data.length; i++) {
-
         const lactate = Number(data[i].lactate);
 
         if (lactate < lmin) {
-
             lmin = lactate;
-
             lminRow = data[i];
         }
     }
 
     const IANS = lmin + 2.0;
-
     const IANSPoint = interpolateThreshold(data, IANS);
 
     let IASPoint = null;
-
     let IAS = null;
 
-    if (IANSPoint) {
+   if (IANSPoint) {
 
-        const targetLoad = IANSPoint.load * 0.75;
+    const targetHF = IANSPoint.hf * 0.75;
 
-        IASPoint = {
+    IASPoint = interpolateByHF(data, targetHF);
 
-            lactate: null,
-
-            load: Number(targetLoad.toFixed(1)),
-
-            hf: Number((IANSPoint.hf * 0.75).toFixed(0)),
-
-            stage: 'derived'
-        };
-
-        IAS = Number((IANS * 0.75).toFixed(2));
+    if (IASPoint) IAS = IASPoint.lactate;
     }
 
     return {
-
         lmin,
-
         IAS,
-
         IANS,
-
         lminRow,
-
         IASPoint,
-
         IANSPoint
     };
 }
 
 function calculateChartMaxLoad(data) {
-
     let max = 0;
 
     for (let i = 0; i < data.length; i++) {
+        const load = Number(data[i].load);
 
-        const load =
-            Number(data[i].load);
-
-        if (
-            !isNaN(load) &&
-            load > max
-        ) {
+        if (!isNaN(load) && load > max) {
             max = load;
         }
     }
@@ -218,83 +190,49 @@ function calculateChartMaxLoad(data) {
  * }
  */
 function calculateLinear(data) {
-
     if (data.length < 3) {
-
         return null;
     }
 
     let IASPoint = null;
     let IANSPoint = null;
-
     let IASIndex = -1;
 
-    const baseline =
-        Number(data[0].lactate);
+    const baseline = Number(data[0].lactate);
 
     // 🔹 IAS
     for (let i = 1; i < data.length; i++) {
-
-        const current =
-            Number(data[i].lactate);
+        const current = Number(data[i].lactate);
 
         if (current > baseline + 0.4) {
-
             IASPoint = {
-
                 lactate: current,
-
                 load: data[i].load,
-
                 hf: Number(data[i].hf),
-
                 stage: data[i].stage
             };
 
             IASIndex = i;
-
             break;
         }
     }
 
     // 🔹 IANS ONLY AFTER IAS
     if (IASIndex !== -1) {
+        for (let i = IASIndex; i < data.length - 1; i++) {
+            const prev = Number(data[i - 1].lactate);
+            const current = Number(data[i].lactate);
+            const next = Number(data[i + 1].lactate);
 
-        for (
-            let i = IASIndex;
-            i < data.length - 1;
-            i++
-        ) {
-
-            const prev =
-                Number(data[i - 1].lactate);
-
-            const current =
-                Number(data[i].lactate);
-
-            const next =
-                Number(data[i + 1].lactate);
-
-            const slope1 =
-                current - prev;
-
-            const slope2 =
-                next - current;
+            const slope1 = current - prev;
+            const slope2 = next - current;
 
             // 🔹 strong rise
-            if (
-                slope2 >
-                slope1 * 1.5
-            ) {
-
+            if (slope2 > slope1 * 1.5) {
                 IANSPoint = {
-
                     lactate: current,
-
                     load: data[i].load,
-
                     hf: Number(data[i].hf),
-
                     stage: data[i].stage
                 };
 
@@ -304,18 +242,12 @@ function calculateLinear(data) {
     }
 
     return {
-
-        IAS:
-            IASPoint?.lactate || null,
-
-        IANS:
-            IANSPoint?.lactate || null,
-
+        IAS: IASPoint?.lactate || null,
+        IANS: IANSPoint?.lactate || null,
         IASPoint,
         IANSPoint
     };
 }
-
 /**
  * 🔹 Keul method
  *
@@ -346,43 +278,30 @@ function calculateLinear(data) {
  * }
  */
 function calculateMaxSlopeMethodKeulLegacy(data) {
-
     if (!data || data.length < 2) {
-
         return null;
     }
 
     /**
      * 🔹 interpolate point by load
-     */   
-
+     */
     let maxSlope = 0;
-
     let IANSPoint = null;
 
     /**
      * 🔹 find maximum slope
      */
     for (let i = 0; i < data.length - 1; i++) {
-
         const p1 = data[i];
-
         const p2 = data[i + 1];
 
-        const lactate1 =
-            Number(p1.lactate);
+        const lactate1 = Number(p1.lactate);
+        const lactate2 = Number(p2.lactate);
 
-        const lactate2 =
-            Number(p2.lactate);
+        const load1 = Number(p1.load);
+        const load2 = Number(p2.load);
 
-        const load1 =
-            Number(p1.load);
-
-        const load2 =
-            Number(p2.load);
-
-        const loadDiff =
-            load2 - load1;
+        const loadDiff = load2 - load1;
 
         if (
             isNaN(lactate1) ||
@@ -394,22 +313,15 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
             continue;
         }
 
-        const slope =
-            (lactate2 - lactate1) /
-            loadDiff;
+        const slope = (lactate2 - lactate1) / loadDiff;
 
         if (slope > maxSlope) {
-
             maxSlope = slope;
 
             IANSPoint = {
-
                 lactate: lactate2,
-
                 load: load2,
-
                 hf: Number(p2.hf),
-
                 stage: p2.stage
             };
         }
@@ -422,19 +334,9 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
     let IASPoint = null;
 
     if (IANSPoint) {
+        const derivedLoad = Number((IANSPoint.load * 0.75).toFixed(1));
 
-        const derivedLoad =
-            Number(
-                (
-                    IANSPoint.load * 0.75
-                ).toFixed(1)
-            );
-
-        IASPoint =
-            interpolateByLoad(
-                data,
-                derivedLoad
-            );
+        IASPoint = interpolateByLoad(data, derivedLoad);
     }
 
     /**
@@ -443,35 +345,19 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
     if (
         IASPoint &&
         IANSPoint &&
-        IASPoint.lactate >=
-        IANSPoint.lactate
+        IASPoint.lactate >= IANSPoint.lactate
     ) {
-
-        console.warn(
-            'Invalid Keul thresholds'
-        );
+        console.warn('Invalid Keul thresholds');
     }
 
     return {
-
         lmin: null,
-
-        IAS:
-            IASPoint?.lactate || null,
-
-        IANS:
-            IANSPoint?.lactate || null,
-
+        IAS: IASPoint?.lactate || null,
+        IANS: IANSPoint?.lactate || null,
         lminRow: null,
-
         IASPoint,
-
         IANSPoint,
-
-        maxSlope:
-            Number(
-                maxSlope.toFixed(4)
-            )
+        maxSlope: Number(maxSlope.toFixed(4))
     };
 }
 
@@ -776,50 +662,29 @@ function interpolateThreshold(data, target) {
 }
 
 function interpolateByHF(data, targetHF) {
-
     if (!data || data.length < 2) {
         return null;
     }
 
     for (let i = 0; i < data.length - 1; i++) {
-
         const p1 = data[i];
         const p2 = data[i + 1];
 
         const hf1 = Number(p1.hf);
         const hf2 = Number(p2.hf);
 
-        if (
-            isNaN(hf1) ||
-            isNaN(hf2)
-        ) {
+        if (isNaN(hf1) || isNaN(hf2)) {
             continue;
         }
 
-        if (
-            targetHF >= hf1 &&
-            targetHF <= hf2
-        ) {
-
-            const ratio =
-                (targetHF - hf1) /
-                (hf2 - hf1);
+        if (targetHF >= hf1 && targetHF <= hf2) {
+            const ratio = (targetHF - hf1) / (hf2 - hf1);
 
             return {
-
-                load:
-                    p1.load +
-                    ((p2.load - p1.load) * ratio),
-
-                lactate:
-                    p1.lactate +
-                    ((p2.lactate - p1.lactate) * ratio),
-
-                hf:
-                    targetHF,
-
-                stage:
-                    p1.stage
+                load: p1.load + ((p2.load - p1.load) * ratio),
+                lactate: p1.lactate + ((p2.lactate - p1.lactate) * ratio),
+                hf: targetHF,
+                stage: p1.stage
             };
         }
     }
