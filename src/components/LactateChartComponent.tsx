@@ -14,7 +14,8 @@ import {
     Tooltip,
     ResponsiveContainer,
     ReferenceDot,
-    ReferenceLine
+    ReferenceLine,
+    ReferenceArea
 } from 'recharts';
 import { ErgometryModelsUtil } from '../utils/ErgometryModelsUtil';
 
@@ -122,11 +123,12 @@ export default function LactateChartComponent({
                             strokeDasharray="3 3"
                         />
 
+
                         {/* 🔹 X */}
                         <XAxis
                             type="number"
                             dataKey="load"
-                            domain={[0, maxLoad]}
+                            domain={['dataMin', 'dataMax']}
                             label={{
                                 value: 'Load',
                                 position: 'insideBottom',
@@ -135,8 +137,25 @@ export default function LactateChartComponent({
                         />
 
                         {/* 🔹 Y */}
+                        {/* 🔹 HF axis */}
                         <YAxis
+
+                            yAxisId="hf"
+
                             type="number"
+
+                            domain={[60, 220]}
+                        />
+
+                        {/* 🔹 Lactate axis */}
+                        <YAxis
+
+                            yAxisId="lactate"
+
+                            orientation="right"
+
+                            type="number"
+
                             domain={[0, maxLactate]}
                         />
 
@@ -149,6 +168,7 @@ export default function LactateChartComponent({
 
                                 <ReferenceLine
 
+                                    yAxisId="lactate"
                                     y={result.IAS}
 
                                     stroke="green"
@@ -176,6 +196,7 @@ export default function LactateChartComponent({
 
                                 <ReferenceLine
 
+                                    yAxisId="lactate"
                                     y={result.IANS}
 
                                     stroke="red"
@@ -195,11 +216,53 @@ export default function LactateChartComponent({
                                 />
                             )
                         }
+                        {
+                            showTrainingZones && (() => {
+
+                                const zones = ErgometryModelsUtil.calculateTrainingZones(result);
+
+                                if (!zones) {
+                                    return null;
+                                }
+
+                                // console.log('E1.to:', zones.E1.to);
+                                // console.log('E2.from:', zones.E2.from);
+                                // console.log('zones object:', zones);
+                                // console.log('maxLoad:', maxLoad);
+
+                                // console.log('last point', chartData[chartData.length - 1]);
+                                // console.log('chartData', chartData);
+
+                                console.log(typeof zones.E2.from);
+                                console.log(zones.E2.from);
+
+                                const chartMaxLoad = chartData[chartData.length - 1]?.load || 0;
+                                return (
+
+                                    <>
+
+
+                                        <ReferenceArea yAxisId="lactate" x1={chartData[0]?.load || 0} x2={zones.REG.to} y1={0} y2={maxLactate} fill={zones.REG.color} fillOpacity={0.15} />
+
+                                        <ReferenceArea yAxisId="lactate" x1={zones.GA1.from} x2={zones.GA1.to} y1={0} y2={maxLactate} fill={zones.GA1.color} fillOpacity={0.15} />
+
+                                        <ReferenceArea yAxisId="lactate" x1={zones.GA2.from} x2={zones.GA2.to} y1={0} y2={maxLactate} fill={zones.GA2.color} fillOpacity={0.15} />
+
+                                        <ReferenceArea yAxisId="lactate" x1={zones.E1.from} x2={zones.E1.to} y1={0} y2={maxLactate} fill={zones.E1.color} fillOpacity={0.15} />
+
+                                        <ReferenceArea yAxisId="lactate" x1={zones.E2.from} x2={chartMaxLoad} y1={0} y2={maxLactate} fill="#ff0000" fillOpacity={0.4} />
+
+                                    </>
+                                );
+                            })()
+                        }
 
                         {/* 🔹 lactate curve */}
                         <Line
 
                             type="monotone"
+                            yAxisId="lactate"
+
 
                             dataKey="lactate"
 
@@ -217,6 +280,8 @@ export default function LactateChartComponent({
 
                                 <Line
 
+                                    yAxisId="hf"
+
                                     type="monotone"
 
                                     dataKey="hf"
@@ -229,10 +294,91 @@ export default function LactateChartComponent({
                                 />
                             )
                         }
+                        {/* 🔹 LTP segment 1 */}
+                        {
+                            result?.line1Points && (
+
+                                <Line
+
+                                    data={result.line1Points}
+
+                                    dataKey="predicted"
+
+                                    yAxisId="lactate"
+
+                                    type="linear"
+
+                                    stroke="#00cc66"
+
+                                    strokeWidth={3}
+
+                                    strokeDasharray="10 5"
+
+                                    dot={false}
+
+                                    isAnimationActive={false}
+                                />
+                            )
+                        }
+
+                        {/* 🔹 LTP segment 2 */}
+                        {
+                            result?.line2Points && (
+
+                                <Line
+
+                                    data={result.line2Points}
+
+                                    dataKey="predicted"
+
+                                    yAxisId="lactate"
+
+                                    type="linear"
+
+                                    stroke="#ff6600"
+
+                                    strokeWidth={3}
+
+                                    strokeDasharray="10 5"
+
+                                    dot={false}
+
+                                    isAnimationActive={false}
+                                />
+                            )
+                        }
+
+                        {/* 🔹 LTP segment 3 */}
+                        {
+                            result?.line3Points && (
+
+                                <Line
+
+                                    data={result.line3Points}
+
+                                    dataKey="predicted"
+
+                                    yAxisId="lactate"
+
+                                    type="linear"
+
+                                    stroke="#990000"
+
+                                    strokeWidth={3}
+
+                                    strokeDasharray="10 5"
+
+                                    dot={false}
+
+                                    isAnimationActive={false}
+                                />
+                            )
+                        }
                         {
                             result?.IASPoint && (
 
                                 <ReferenceDot
+                                    yAxisId="lactate"
 
                                     x={
                                         result
@@ -269,6 +415,7 @@ export default function LactateChartComponent({
                             result?.IANSPoint && (
 
                                 <ReferenceDot
+                                    yAxisId="lactate"
 
                                     x={
                                         result

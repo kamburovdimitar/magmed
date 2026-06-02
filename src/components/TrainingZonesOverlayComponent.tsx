@@ -1,10 +1,21 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import { ErgometryModelsUtil } from '../utils/ErgometryModelsUtil';
 
 export default function TrainingZonesOverlayComponent({
     result,
     data
 }: any) {
+
+    const zones =
+        ErgometryModelsUtil
+            .calculateTrainingZones(
+                result
+            );
+
+    if (!zones) {
+        return null;
+    }
 
     if (
         !result ||
@@ -15,8 +26,9 @@ export default function TrainingZonesOverlayComponent({
         return null;
     }
 
-    let minLoad = data[0].load;
-    let maxLoad = data[0].load;
+    let minLoad = Number(data[0].load);
+
+    let maxLoad = Number(data[0].load);
 
     for (let i = 0; i < data.length; i++) {
 
@@ -30,18 +42,12 @@ export default function TrainingZonesOverlayComponent({
             maxLoad = data[i].load;
         }
     }
-    const iansLoad =
-        result.IANSPoint.load;
-
-    const regEnd = iansLoad * 0.75;
-
-    const ga1End = iansLoad * 0.85;
-
-    const ga2End = iansLoad * 0.95;
-
-    const e1End = iansLoad * 1.05;
 
     function percent(start: number, end: number): `${number}%` {
+
+        if (end < start) {
+            return '0%';
+        }
 
         const total = maxLoad - minLoad;
 
@@ -67,8 +73,8 @@ export default function TrainingZonesOverlayComponent({
                     style={[
                         styles.zone,
                         {
-                            width: percent(minLoad, regEnd),
-                            backgroundColor: '#fff176'
+                            width: percent(minLoad, zones.REG.to),
+                            backgroundColor: zones.REG.color
                         }
                     ]}
                 >
@@ -86,7 +92,10 @@ export default function TrainingZonesOverlayComponent({
                     style={[
                         styles.zone,
                         {
-                            width: percent(regEnd, ga1End),
+                            width: percent(
+                                zones.GA1.from,
+                                zones.GA1.to
+                            ),
                             backgroundColor: '#81c784'
                         }
                     ]}
@@ -106,8 +115,8 @@ export default function TrainingZonesOverlayComponent({
                         styles.zone,
                         {
                             width: percent(
-                                ga1End,
-                                ga2End
+                                zones.GA2.from,
+                                zones.GA2.to
                             ),
                             backgroundColor: '#64b5f6'
                         }
@@ -128,8 +137,8 @@ export default function TrainingZonesOverlayComponent({
                         styles.zone,
                         {
                             width: percent(
-                                ga2End,
-                                e1End
+                                zones.E1.from,
+                                zones.E1.to
                             ),
                             backgroundColor: '#ef9a9a'
                         }
@@ -150,7 +159,7 @@ export default function TrainingZonesOverlayComponent({
                         styles.zone,
                         {
                             width: percent(
-                                e1End,
+                                zones.E2.from,
                                 maxLoad
                             ),
                             backgroundColor: '#e57373'

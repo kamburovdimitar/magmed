@@ -7,7 +7,10 @@ export default function RechenverfahrenComponent({ value, setValue }: any) {
         { key: 'dickhuth', label: 'Dickhuth' },
         { key: 'freiburg', label: 'Freiburger (L_min + 2.0 mmol/l)' },
         { key: 'linear', label: 'Stückweise lineare Regression' },
-        { key: 'keul', label: 'Keul' }
+        { key: 'ltp', label: 'Stückweise lineare Regression (LTP)' },
+        { key: 'keul', label: 'Keul' },
+        { key: 'keullegacy', label: 'Keul Legacy' },
+
     ]
 
     return (

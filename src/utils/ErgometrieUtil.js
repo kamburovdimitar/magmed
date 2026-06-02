@@ -166,11 +166,16 @@ function generateFakeErgometry() {
     };
 }
 
+
+
+
+
 export const ErgometryUtil = {
 
     getSollLeistungNorm,
     getSollLeistungWeight,
 
     generateFakeTest,
-    generateFakeErgometry
+    generateFakeErgometry,
+    
 };

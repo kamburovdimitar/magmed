@@ -18,6 +18,7 @@ import ErgometrySummaryComponent from '../../components/ErgometrySummaryComponen
 import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponent'
 
 
+
 // 🔹 Това е UI тип (таблицата за въвеждане)
 // ⚠️ Тук стойностите са string (за input полета)
 type RowType = {
@@ -67,7 +68,7 @@ export default function Page11({ goTo }: any) {
 
     // 🔹 Rechenverfahren = метод на изчисление
     // 👉 кой алгоритъм ще използваме
-    const [model, setModel] = useState<'dickhuth' | 'freiburg' | 'linear' | 'keul'>('dickhuth');
+    const [model, setModel] = useState<'dickhuth' | 'freiburg' | 'linear' | 'keul' | 'ltp' | 'keullegacy'>('dickhuth');
 
 
 
@@ -495,7 +496,7 @@ export default function Page11({ goTo }: any) {
         // 🔹 Preview в десния панел
         setPreviewPatient(updatedPatient);
 
-        let result = null;
+        let result: any;
 
         if (model === 'dickhuth') {
             result = ErgometryModelsUtil.calculateDickhuth(rows);
@@ -509,8 +510,18 @@ export default function Page11({ goTo }: any) {
             result = ErgometryModelsUtil.calculateLinear(rows);
         }
 
+        if (model === 'keullegacy') {
+            result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
+        }
+
         if (model === 'keul') {
+            console.log("rows")
+            console.log(rows)
             result = ErgometryModelsUtil.calculateKeul(rows);
+        }
+
+        if (model === 'ltp') {
+            result = ErgometryModelsUtil.calculateLTP(rows);
         }
 
         // 🔹 example values

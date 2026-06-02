@@ -345,7 +345,7 @@ function calculateLinear(data) {
  *   maxSlope
  * }
  */
-function calculateKeul(data) {
+function calculateMaxSlopeMethodKeulLegacy(data) {
 
     if (!data || data.length < 2) {
 
@@ -354,82 +354,7 @@ function calculateKeul(data) {
 
     /**
      * 🔹 interpolate point by load
-     */
-    function interpolateByLoad(
-        data,
-        targetLoad
-    ) {
-
-        for (let i = 0; i < data.length - 1; i++) {
-
-            const p1 = data[i];
-
-            const p2 = data[i + 1];
-
-            const load1 =
-                Number(p1.load);
-
-            const load2 =
-                Number(p2.load);
-
-            // 🔹 target between loads
-            if (
-                targetLoad >= load1 &&
-                targetLoad <= load2
-            ) {
-
-                const ratio =
-                    (targetLoad - load1) /
-                    (load2 - load1);
-
-                const lactate1 =
-                    Number(p1.lactate);
-
-                const lactate2 =
-                    Number(p2.lactate);
-
-                const hf1 =
-                    Number(p1.hf);
-
-                const hf2 =
-                    Number(p2.hf);
-
-                return {
-
-                    lactate: Number(
-                        (
-                            lactate1 +
-                            ratio *
-                            (
-                                lactate2 -
-                                lactate1
-                            )
-                        ).toFixed(1)
-                    ),
-
-                    load: Number(
-                        targetLoad.toFixed(1)
-                    ),
-
-                    hf: Number(
-                        (
-                            hf1 +
-                            ratio *
-                            (
-                                hf2 -
-                                hf1
-                            )
-                        ).toFixed(0)
-                    ),
-
-                    stage:
-                        `${p1.stage}-${p2.stage}`
-                };
-            }
-        }
-
-        return null;
-    }
+     */   
 
     let maxSlope = 0;
 
@@ -550,6 +475,146 @@ function calculateKeul(data) {
     };
 }
 
+function calculateKeul(data) {
+
+    if (!data || data.length < 3) {
+        return null;
+    }
+
+    const points = [];
+
+    for (let i = 0; i < data.length; i++) {
+
+        const load = Number(data[i].load);
+        const lactate = Number(data[i].lactate);
+
+        if (isNaN(load) || isNaN(lactate) || lactate <= 0) {
+            continue;
+        }
+
+        points.push({
+            load,
+            lactate,
+            hf: Number(data[i].hf),
+            stage: data[i].stage
+        });
+    }
+
+    if (points.length < 3) {
+        return null;
+    }
+
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+
+    const n = points.length;
+
+    for (let i = 0; i < points.length; i++) {
+
+        const x = points[i].load;
+        const y = Math.log(points[i].lactate);
+
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumXX += x * x;
+    }
+
+    const denominator = (n * sumXX) - (sumX * sumX);
+
+    if (denominator === 0) {
+        return null;
+    }
+
+    const b = ((n * sumXY) - (sumX * sumY)) / denominator;
+
+    const lnA = (sumY - (b * sumX)) / n;
+
+    const a = Math.exp(lnA);
+
+    if (a <= 0 || b <= 0) {
+        return null;
+    }
+
+    const targetSlope = 0.055;
+
+    let iansLoad =
+        Math.log(
+            targetSlope / (a * b)
+        ) / b;
+
+    const maxLoad =
+        Number(
+            data[data.length - 1].load
+        );
+
+    if (iansLoad > maxLoad) {
+        iansLoad = maxLoad;
+    }
+
+    if (
+        isNaN(iansLoad) ||
+        !isFinite(iansLoad)
+    ) {
+        return null;
+    }
+
+    const IANSPoint =
+        interpolateByLoad(
+            data,
+            iansLoad
+        );
+
+    if (!IANSPoint) {
+        return null;
+    }
+
+    const targetHF =
+        IANSPoint.hf * 0.75;
+
+    const IASPoint =
+        interpolateByHF(
+            data,
+            targetHF
+        );
+
+    return {
+
+        model: 'keul',
+
+        IAS:
+            IASPoint?.lactate || null,
+
+        IANS:
+            IANSPoint?.lactate || null,
+
+        IASPoint,
+
+        IANSPoint,
+
+        a:
+            Number(
+                a.toFixed(6)
+            ),
+
+        b:
+            Number(
+                b.toFixed(6)
+            ),
+
+        iansLoad:
+            Number(
+                iansLoad.toFixed(1)
+            ),
+
+        exponentialFit: {
+            a,
+            b
+        }
+    };
+}
 /**
  * 🔹 HF %
  *
@@ -710,6 +775,58 @@ function interpolateThreshold(data, target) {
     return null;
 }
 
+function interpolateByHF(data, targetHF) {
+
+    if (!data || data.length < 2) {
+        return null;
+    }
+
+    for (let i = 0; i < data.length - 1; i++) {
+
+        const p1 = data[i];
+        const p2 = data[i + 1];
+
+        const hf1 = Number(p1.hf);
+        const hf2 = Number(p2.hf);
+
+        if (
+            isNaN(hf1) ||
+            isNaN(hf2)
+        ) {
+            continue;
+        }
+
+        if (
+            targetHF >= hf1 &&
+            targetHF <= hf2
+        ) {
+
+            const ratio =
+                (targetHF - hf1) /
+                (hf2 - hf1);
+
+            return {
+
+                load:
+                    p1.load +
+                    ((p2.load - p1.load) * ratio),
+
+                lactate:
+                    p1.lactate +
+                    ((p2.lactate - p1.lactate) * ratio),
+
+                hf:
+                    targetHF,
+
+                stage:
+                    p1.stage
+            };
+        }
+    }
+
+    return null;
+}
+
 /**
  * 🔹 Automatic interpretation
  *
@@ -801,7 +918,6 @@ function calculateChartMaxLactate(
     return Math.ceil(max / 5) * 5;
 }
 
-
 function interpolateByLoad(
     data,
     targetLoad
@@ -868,6 +984,345 @@ function interpolateByLoad(
     return null;
 }
 
+function calculateTrainingZones(result) {
+
+    if (!result || !result.IANSPoint) return null;
+
+    const iansLoad = Number(result.IANSPoint.load);
+
+    const regEnd = Number((iansLoad * 0.75).toFixed(1));
+    const ga1End = Number((iansLoad * 0.85).toFixed(1));
+    const ga2End = Number((iansLoad * 0.95).toFixed(1));
+    const e1End = Number((iansLoad * 1.05).toFixed(1));
+
+    return {
+        REG: { from: 0, to: regEnd, percentFrom: 0, percentTo: 75, color: '#fff176' },
+        GA1: { from: regEnd, to: ga1End, percentFrom: 75, percentTo: 85, color: '#81c784' },
+        GA2: { from: ga1End, to: ga2End, percentFrom: 85, percentTo: 95, color: '#64b5f6' },
+        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 105, color: '#ef9a9a' },
+        E2: { from: e1End, to: null, percentFrom: 105, percentTo: null, color: '#e57373' }
+    };
+}
+function generateLinePoints(
+    segment,
+    line
+) {
+
+    const result = [];
+
+    for (let i = 0; i < segment.length; i++) {
+
+        const x =
+            Number(segment[i].load);
+
+        const y =
+            line.slope * x +
+            line.intercept;
+
+        result.push({
+
+            load: x,
+
+            predicted:
+                Number(y.toFixed(2))
+        });
+    }
+
+    return result;
+}
+
+function calculateLTP(data) {
+
+    if (
+        !data ||
+        data.length < 6
+    ) {
+        return null;
+    }
+
+    const points = [];
+
+    for (let i = 0; i < data.length; i++) {
+
+        const load =
+            Number(data[i].load);
+
+        const lactate =
+            Number(data[i].lactate);
+
+        if (
+            isNaN(load) ||
+            isNaN(lactate)
+        ) {
+            continue;
+        }
+
+        points.push({
+
+            load,
+            lactate,
+            hf: Number(data[i].hf)
+        });
+    }
+
+    if (points.length < 6) {
+
+        return null;
+    }
+
+    let bestError =
+        Number.MAX_VALUE;
+
+    let bestResult = null;
+
+    for (
+        let i = 1;
+        i < points.length - 4;
+        i++
+    ) {
+
+        for (
+            let j = i + 2;
+            j < points.length - 1;
+            j++
+        ) {
+
+            const segment1 =
+                points.slice(0, i + 1);
+
+            const segment2 =
+                points.slice(i, j + 1);
+
+            const segment3 =
+                points.slice(j);
+
+            if (
+                segment1.length < 2 ||
+                segment2.length < 2 ||
+                segment3.length < 2
+            ) {
+                continue;
+            }
+
+            const line1 =
+                fitLine(segment1);
+
+            const line2 =
+                fitLine(segment2);
+
+            const line3 =
+                fitLine(segment3);
+
+            const error1 =
+                calculateLineError(
+                    segment1,
+                    line1
+                );
+
+            const error2 =
+                calculateLineError(
+                    segment2,
+                    line2
+                );
+
+            const error3 =
+                calculateLineError(
+                    segment3,
+                    line3
+                );
+
+            const totalError =
+                error1 +
+                error2 +
+                error3;
+
+            if (
+                totalError < bestError
+            ) {
+
+                bestError =
+                    totalError;
+
+                bestResult = {
+
+                    line1Points:
+                        generateLinePoints(
+                            segment1,
+                            line1
+                        ),
+
+                    line2Points:
+                        generateLinePoints(
+                            segment2,
+                            line2
+                        ),
+
+                    line3Points:
+                        generateLinePoints(
+                            segment3,
+                            line3
+                        ),
+
+                    IASPoint:
+                        points[i],
+
+                    IANSPoint:
+                        points[j],
+
+                    segment1,
+                    segment2,
+                    segment3,
+
+                    line1,
+                    line2,
+                    line3,
+
+                    totalError
+                };
+            }
+        }
+    }
+
+    if (!bestResult) {
+
+        return null;
+    }
+
+    const IASPoint =
+        bestResult.IASPoint;
+
+    const IANSPoint =
+        bestResult.IANSPoint;
+
+    return {
+
+        model: 'ltp',
+
+        IAS:
+            IASPoint.lactate,
+
+        IANS:
+            IANSPoint.lactate,
+
+        IASPoint,
+
+        IANSPoint,
+
+        segment1:
+            bestResult.segment1,
+
+        segment2:
+            bestResult.segment2,
+
+        segment3:
+            bestResult.segment3,
+
+        line1:
+            bestResult.line1,
+
+        line2:
+            bestResult.line2,
+
+        line3:
+            bestResult.line3,
+
+        totalError:
+            bestResult.totalError,
+
+            line1Points:
+            bestResult.line1Points,
+
+        line2Points:
+            bestResult.line2Points,
+
+        line3Points:
+            bestResult.line3Points,
+    };
+}
+
+function fitLine(points) {
+
+    const n = points.length;
+
+    if (n < 2) {
+
+        return {
+
+            slope: 0,
+            intercept: 0
+        };
+    }
+
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+
+    for (let i = 0; i < points.length; i++) {
+
+        const x =
+            Number(points[i].load);
+
+        const y =
+            Number(points[i].lactate);
+
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumXX += x * x;
+    }
+
+    const slope =
+        (
+            n * sumXY -
+            sumX * sumY
+        ) /
+        (
+            n * sumXX -
+            sumX * sumX
+        );
+
+    const intercept =
+        (
+            sumY -
+            slope * sumX
+        ) / n;
+
+    return {
+
+        slope,
+        intercept
+    };
+}
+
+function calculateLineError(
+    points,
+    line
+) {
+
+    let error = 0;
+
+    for (let i = 0; i < points.length; i++) {
+
+        const x =
+            Number(points[i].load);
+
+        const actual =
+            Number(points[i].lactate);
+
+        const predicted =
+            line.slope * x +
+            line.intercept;
+
+        const diff =
+            actual - predicted;
+
+        error += diff * diff;
+    }
+
+    return error;
+}
+
 
 export const ErgometryModelsUtil = {
 
@@ -875,10 +1330,13 @@ export const ErgometryModelsUtil = {
     calculateLinear,
     calculateFreiburg,
     calculateKeul,
+    calculateMaxSlopeMethodKeulLegacy,
     calculateHFPercent,
     calculatePmaxPercent,
     calculateHRRPercent,
     generateInterpretation,
     calculateChartMaxLoad,
-    calculateChartMaxLactate
+    calculateChartMaxLactate,
+    calculateTrainingZones,
+    calculateLTP
 };
