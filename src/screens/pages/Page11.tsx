@@ -510,14 +510,17 @@ export default function Page11({ goTo }: any) {
             result = ErgometryModelsUtil.calculateLTP(rows);
         }
 
-        if (model === ERGOMETRY_MODELS.KEUL_LEGACY) {
-            result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
-        }
 
         if (model === ERGOMETRY_MODELS.KEUL) {
             result = ErgometryModelsUtil.calculateKeul(rows);
+            console.log("KEUL RESULT");
+            console.log(result);
+
         }
 
+        if (model === ERGOMETRY_MODELS.KEUL_LEGACY) {
+            result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
+        }
 
 
         // 🔹 example values

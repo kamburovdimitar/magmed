@@ -1,17 +1,17 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
 
 export default function RechenverfahrenComponent({ value, setValue }: any) {
 
     const options = [
-        { key: 'dickhuth', label: 'Dickhuth' },
-        { key: 'freiburg', label: 'Freiburger (L_min + 2.0 mmol/l)' },
-        { key: 'linear', label: 'Stückweise lineare Regression' },
-        { key: 'ltp', label: 'Stückweise lineare Regression (LTP)' },
-        { key: 'keul', label: 'Keul' },
-        { key: 'keullegacy', label: 'Keul Legacy' },
-
-    ]
+        { key: ERGOMETRY_MODELS.DICKHUTH, label: 'Dickhuth' },
+        { key: ERGOMETRY_MODELS.FREIBURG, label: 'Freiburger (L_min + 2.0 mmol/l)' },
+        { key: ERGOMETRY_MODELS.LINEAR, label: 'Stückweise lineare Regression' },
+        { key: ERGOMETRY_MODELS.LTP, label: 'Stückweise lineare Regression (LTP)' },
+        { key: ERGOMETRY_MODELS.KEUL, label: 'Keul' },
+        { key: ERGOMETRY_MODELS.KEUL_LEGACY, label: 'Keul Legacy' }
+    ];
 
     return (
         <View style={styles.container}>

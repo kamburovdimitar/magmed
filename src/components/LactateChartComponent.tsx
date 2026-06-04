@@ -31,8 +31,7 @@ export default function LactateChartComponent({
 
 }: any) {
 
-    const maxLoad =
-        ErgometryModelsUtil.calculateChartMaxLoad(data);
+    const maxLoad = ErgometryModelsUtil.calculateChartMaxLoad(data);
 
     const maxLactate = ErgometryModelsUtil.calculateChartMaxLactate(data);
 
@@ -44,16 +43,10 @@ export default function LactateChartComponent({
 
         for (let i = 0; i < data.length; i++) {
 
-            const load =
-                Number(data[i].load);
+            const load = Number(data[i].load);
+            const lactate = Number(data[i].lactate);
+            const hf = Number(data[i].hf);
 
-            const lactate =
-                Number(data[i].lactate);
-
-            const hf =
-                Number(data[i].hf);
-
-            // 🔹 skip invalid rows
             if (
                 isNaN(load) ||
                 isNaN(lactate) ||
@@ -63,18 +56,26 @@ export default function LactateChartComponent({
             }
 
             chartData.push({
-
                 load,
                 lactate,
                 hf
             });
+
         }
+
     }
 
-    // 🔹 sort by load
-    chartData.sort(
-        (a, b) => a.load - b.load
-    );
+    // 🔹 sort
+    chartData.sort((a, b) => a.load - b.load);
+
+    // 🔹 real chart end
+    const realChartMaxLoad =
+        chartData[
+            chartData.length - 1
+        ]?.load || 0;
+
+
+    const zoneChartMaxLoad = realChartMaxLoad;
 
     return (
 
@@ -87,7 +88,6 @@ export default function LactateChartComponent({
             }}
         >
 
-            {/* 🔹 title */}
             <Text
                 style={{
                     fontWeight: 'bold',
@@ -95,7 +95,7 @@ export default function LactateChartComponent({
                     textAlign: 'center'
                 }}
             >
-                Lactate Curve
+                Lactate curve ({(result?.model || 'DICKHUTH').toUpperCase()})
             </Text>
 
             <View
@@ -107,28 +107,23 @@ export default function LactateChartComponent({
 
                 <ResponsiveContainer>
 
-                    <LineChart
-                        data={chartData}
+                    <LineChart data={chartData}>
 
-                        margin={{
-                            top: 20,
-                            right: 30,
-                            left: 20,
-                            bottom: 20
-                        }}
-                    >
+                        <CartesianGrid strokeDasharray="3 3" />
 
-                        {/* 🔹 background grid */}
-                        <CartesianGrid
-                            strokeDasharray="3 3"
-                        />
-
-
-                        {/* 🔹 X */}
                         <XAxis
                             type="number"
                             dataKey="load"
-                            domain={['dataMin', 'dataMax']}
+
+                            domain={[
+                                chartData[0]?.load || 0,
+                                showTrainingZones
+                                    ? zoneChartMaxLoad
+                                    : realChartMaxLoad
+                            ]}
+
+                            allowDataOverflow={true}
+
                             label={{
                                 value: 'Load',
                                 position: 'insideBottom',
@@ -136,30 +131,19 @@ export default function LactateChartComponent({
                             }}
                         />
 
-                        {/* 🔹 Y */}
-                        {/* 🔹 HF axis */}
                         <YAxis
-
                             yAxisId="hf"
-
                             type="number"
-
                             domain={[60, 220]}
                         />
 
-                        {/* 🔹 Lactate axis */}
                         <YAxis
-
                             yAxisId="lactate"
-
                             orientation="right"
-
                             type="number"
-
                             domain={[0, maxLactate]}
                         />
 
-                        {/* 🔹 hover */}
                         <Tooltip />
 
                         {
@@ -167,272 +151,169 @@ export default function LactateChartComponent({
                             result?.IAS && (
 
                                 <ReferenceLine
-
                                     yAxisId="lactate"
                                     y={result.IAS}
-
                                     stroke="green"
-
                                     strokeWidth={2}
-
                                     strokeDasharray="5 5"
-
-                                    label={
-                                        showThresholdLabels
-                                            ? {
-                                                value: 'IAS',
-                                                position: 'left'
-                                            }
-                                            : undefined
-                                    }
                                 />
+
                             )
                         }
 
-                        {/* 🔹 IANS horizontal threshold */}
                         {
                             showThresholdLines &&
                             result?.IANS && (
 
                                 <ReferenceLine
-
                                     yAxisId="lactate"
                                     y={result.IANS}
-
                                     stroke="red"
-
                                     strokeWidth={2}
-
                                     strokeDasharray="5 5"
-
-                                    label={
-                                        showThresholdLabels
-                                            ? {
-                                                value: 'IANS',
-                                                position: 'right'
-                                            }
-                                            : undefined
-                                    }
                                 />
+
                             )
                         }
-                        {
-                            showTrainingZones && (() => {
 
-                                const zones = ErgometryModelsUtil.calculateTrainingZones(result);
+                        {
+                            showTrainingZones &&
+                            (() => {
+
+                                const zones =
+                                    ErgometryModelsUtil
+                                        .calculateTrainingZones(result);
 
                                 if (!zones) {
                                     return null;
                                 }
 
-                                const chartMaxLoad = chartData[chartData.length - 1]?.load || 0;
+                                const chartStart =
+                                    chartData[0]?.load || 0;
+
+                                const chartEnd =
+                                    chartData[
+                                        chartData.length - 1
+                                    ]?.load || 0;
+
+                                const visualMinWidth =
+                                    (chartEnd - chartStart) * 0.03;
+
+                                const e2Width =
+                                    zones.E2.to - zones.E2.from;
+
+                                const visualE2Start =
+                                    e2Width < visualMinWidth
+                                        ? chartEnd - visualMinWidth
+                                        : zones.E2.from;
+
                                 return (
 
                                     <>
 
+                                        <ReferenceArea
+                                            yAxisId="lactate"
+                                            x1={chartStart}
+                                            x2={zones.REG.to}
+                                            y1={0}
+                                            y2={maxLactate}
+                                            fill={zones.REG.color}
+                                            fillOpacity={0.15}
+                                        />
 
-                                        <ReferenceArea yAxisId="lactate" x1={chartData[0]?.load || 0} x2={zones.REG.to} y1={0} y2={maxLactate} fill={zones.REG.color} fillOpacity={0.15} />
+                                        <ReferenceArea
+                                            yAxisId="lactate"
+                                            x1={zones.GA1.from}
+                                            x2={zones.GA1.to}
+                                            y1={0}
+                                            y2={maxLactate}
+                                            fill={zones.GA1.color}
+                                            fillOpacity={0.15}
+                                        />
 
-                                        <ReferenceArea yAxisId="lactate" x1={zones.GA1.from} x2={zones.GA1.to} y1={0} y2={maxLactate} fill={zones.GA1.color} fillOpacity={0.15} />
+                                        <ReferenceArea
+                                            yAxisId="lactate"
+                                            x1={zones.GA2.from}
+                                            x2={zones.GA2.to}
+                                            y1={0}
+                                            y2={maxLactate}
+                                            fill={zones.GA2.color}
+                                            fillOpacity={0.15}
+                                        />
 
-                                        <ReferenceArea yAxisId="lactate" x1={zones.GA2.from} x2={zones.GA2.to} y1={0} y2={maxLactate} fill={zones.GA2.color} fillOpacity={0.15} />
+                                        <ReferenceArea
+                                            yAxisId="lactate"
+                                            x1={zones.E1.from}
+                                            x2={visualE2Start}
+                                            y1={0}
+                                            y2={maxLactate}
+                                            fill={zones.E1.color}
+                                            fillOpacity={0.15}
+                                        />
 
-                                        <ReferenceArea yAxisId="lactate" x1={zones.E1.from} x2={zones.E1.to} y1={0} y2={maxLactate} fill={zones.E1.color} fillOpacity={0.15} />
-
-                                        <ReferenceArea yAxisId="lactate" x1={zones.E2.from} x2={chartMaxLoad} y1={0} y2={maxLactate} fill="#ff0000" fillOpacity={0.4} />
+                                        <ReferenceArea
+                                            yAxisId="lactate"
+                                            x1={visualE2Start}
+                                            x2={chartEnd}
+                                            y1={0}
+                                            y2={maxLactate}
+                                            fill={zones.E2.color}
+                                            fillOpacity={0.35}
+                                        />
 
                                     </>
+
                                 );
+
                             })()
                         }
 
-                        {/* 🔹 lactate curve */}
+
+
+
                         <Line
-
-                            type="monotone"
                             yAxisId="lactate"
-
-
+                            type="linear"
                             dataKey="lactate"
+                            stroke="blue"
+                            strokeWidth={2}
+                            connectNulls={false}
+                            dot={(props: any) => {
 
-                            stroke="#1976D2"
+                                if (
+                                    props.payload?.virtual
+                                ) {
+                                    return null;
+                                }
 
-                            strokeWidth={3}
+                                return (
+                                    <circle
+                                        cx={props.cx}
+                                        cy={props.cy}
+                                        r={2}
+                                        fill="white"
+                                        stroke="blue"
+                                    />
+                                );
 
-                            dot={{
-                                r: 4
                             }}
+                            isAnimationActive={false}
                         />
 
                         {
                             showHeartRateCurve && (
 
                                 <Line
-
                                     yAxisId="hf"
-
-                                    type="monotone"
-
+                                    type="linear"
                                     dataKey="hf"
-
                                     stroke="#8B0000"
-
                                     strokeWidth={2}
-
                                     dot={false}
-                                />
-                            )
-                        }
-                        {/* 🔹 LTP segment 1 */}
-                        {
-                            result?.line1Points && (
-
-                                <Line
-
-                                    data={result.line1Points}
-
-                                    dataKey="predicted"
-
-                                    yAxisId="lactate"
-
-                                    type="linear"
-
-                                    stroke="#00cc66"
-
-                                    strokeWidth={3}
-
-                                    strokeDasharray="10 5"
-
-                                    dot={false}
-
+                                    connectNulls={true}
                                     isAnimationActive={false}
                                 />
-                            )
-                        }
 
-                        {/* 🔹 LTP segment 2 */}
-                        {
-                            result?.line2Points && (
-
-                                <Line
-
-                                    data={result.line2Points}
-
-                                    dataKey="predicted"
-
-                                    yAxisId="lactate"
-
-                                    type="linear"
-
-                                    stroke="#ff6600"
-
-                                    strokeWidth={3}
-
-                                    strokeDasharray="10 5"
-
-                                    dot={false}
-
-                                    isAnimationActive={false}
-                                />
-                            )
-                        }
-
-                        {/* 🔹 LTP segment 3 */}
-                        {
-                            result?.line3Points && (
-
-                                <Line
-
-                                    data={result.line3Points}
-
-                                    dataKey="predicted"
-
-                                    yAxisId="lactate"
-
-                                    type="linear"
-
-                                    stroke="#990000"
-
-                                    strokeWidth={3}
-
-                                    strokeDasharray="10 5"
-
-                                    dot={false}
-
-                                    isAnimationActive={false}
-                                />
-                            )
-                        }
-                        {
-                            result?.IASPoint && (
-
-                                <ReferenceDot
-                                    yAxisId="lactate"
-
-                                    x={
-                                        result
-                                            .IASPoint
-                                            .load
-                                    }
-
-                                    y={
-                                        result
-                                            .IASPoint
-                                            .lactate
-                                    }
-
-                                    r={8}
-
-                                    fill="green"
-
-                                    stroke="black"
-
-                                    label={
-                                        showThresholdLabels
-                                            ? {
-                                                value: 'IAS',
-                                                position: 'top'
-                                            }
-                                            : undefined
-                                    }
-                                />
-                            )
-                        }
-
-                        {/* 🔹 IANS point */}
-                        {
-                            result?.IANSPoint && (
-
-                                <ReferenceDot
-                                    yAxisId="lactate"
-
-                                    x={
-                                        result
-                                            .IANSPoint
-                                            .load
-                                    }
-
-                                    y={
-                                        result
-                                            .IANSPoint
-                                            .lactate
-                                    }
-
-                                    r={8}
-
-                                    fill="red"
-
-                                    stroke="black"
-
-                                    label={
-                                        showThresholdLabels
-                                            ? {
-                                                value: 'IANS',
-                                                position: 'top'
-                                            }
-                                            : undefined
-                                    }
-                                />
                             )
                         }
 
@@ -443,5 +324,6 @@ export default function LactateChartComponent({
             </View>
 
         </View>
+
     );
 }

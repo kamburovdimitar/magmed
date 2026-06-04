@@ -36,7 +36,7 @@
  */
 function calculateDickhuth(data) {
 
-    let lmin = Number.MAX_VALUE;
+    let lmin = 999;
 
     let lminRow = null;
 
@@ -363,9 +363,7 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
 
 function calculateKeul(data) {
 
-    if (!data || data.length < 3) {
-        return null;
-    }
+    if (!data || data.length < 3) return null;
 
     const points = [];
 
@@ -374,28 +372,22 @@ function calculateKeul(data) {
         const load = Number(data[i].load);
         const lactate = Number(data[i].lactate);
 
-        if (isNaN(load) || isNaN(lactate) || lactate <= 0) {
-            continue;
-        }
+        if (isNaN(load) || isNaN(lactate) || lactate <= 0) continue;
 
         points.push({
-            load,
-            lactate,
+            load: load,
+            lactate: lactate,
             hf: Number(data[i].hf),
             stage: data[i].stage
         });
     }
 
-    if (points.length < 3) {
-        return null;
-    }
+    if (points.length < 3) return null;
 
     let sumX = 0;
     let sumY = 0;
     let sumXY = 0;
     let sumXX = 0;
-
-    const n = points.length;
 
     for (let i = 0; i < points.length; i++) {
 
@@ -408,96 +400,57 @@ function calculateKeul(data) {
         sumXX += x * x;
     }
 
+    const n = points.length;
     const denominator = (n * sumXX) - (sumX * sumX);
 
-    if (denominator === 0) {
-        return null;
-    }
+    if (denominator === 0) return null;
 
     const b = ((n * sumXY) - (sumX * sumY)) / denominator;
-
     const lnA = (sumY - (b * sumX)) / n;
-
     const a = Math.exp(lnA);
 
-    if (a <= 0 || b <= 0) {
-        return null;
-    }
+    if (a <= 0 || b === 0 || (a * b) <= 0) return null;
 
     const targetSlope = 0.055;
 
-    let iansLoad =
-        Math.log(
-            targetSlope / (a * b)
-        ) / b;
+    let iansLoad = Math.log(targetSlope / (a * b)) / b;
 
-    const maxLoad =
-        Number(
-            data[data.length - 1].load
-        );
+    if (isNaN(iansLoad) || !isFinite(iansLoad)) return null;
 
-    if (iansLoad > maxLoad) {
-        iansLoad = maxLoad;
-    }
+    const minLoad = points[0].load;
+    const maxLoad = points[points.length - 1].load;
 
-    if (
-        isNaN(iansLoad) ||
-        !isFinite(iansLoad)
-    ) {
-        return null;
-    }
+    if (iansLoad < minLoad) iansLoad = minLoad;
 
-    const IANSPoint =
-        interpolateByLoad(
-            data,
-            iansLoad
-        );
+    if (iansLoad > maxLoad) iansLoad = maxLoad;
 
-    if (!IANSPoint) {
-        return null;
-    }
+    const IANSPoint = interpolateByLoad(data, iansLoad);
 
-    const targetHF =
-        IANSPoint.hf * 0.75;
+    if (!IANSPoint) return null;
 
-    const IASPoint =
-        interpolateByHF(
-            data,
-            targetHF
-        );
+    const IASPoint = interpolateByHF(data, IANSPoint.hf * 0.75);
 
     return {
 
         model: 'keul',
 
-        IAS:
-            IASPoint?.lactate || null,
+        IAS: IASPoint?.lactate || null,
 
-        IANS:
-            IANSPoint?.lactate || null,
+        IANS: IANSPoint.lactate,
 
-        IASPoint,
+        IASPoint: IASPoint,
 
-        IANSPoint,
+        IANSPoint: IANSPoint,
 
-        a:
-            Number(
-                a.toFixed(6)
-            ),
+        a: Number(a.toFixed(6)),
 
-        b:
-            Number(
-                b.toFixed(6)
-            ),
+        b: Number(b.toFixed(6)),
 
-        iansLoad:
-            Number(
-                iansLoad.toFixed(1)
-            ),
+        iansLoad: Number(iansLoad.toFixed(1)),
 
         exponentialFit: {
-            a,
-            b
+            a: a,
+            b: b
         }
     };
 }
@@ -848,7 +801,6 @@ function interpolateByLoad(
 
     return null;
 }
-
 function calculateTrainingZones(result) {
 
     if (!result || !result.IANSPoint) return null;
@@ -858,16 +810,20 @@ function calculateTrainingZones(result) {
     const regEnd = Number((iansLoad * 0.75).toFixed(1));
     const ga1End = Number((iansLoad * 0.85).toFixed(1));
     const ga2End = Number((iansLoad * 0.95).toFixed(1));
-    const e1End = Number((iansLoad * 1.05).toFixed(1));
+
+    const e1End = Number((iansLoad * 0.99).toFixed(1));
+    const e2End = iansLoad;
 
     return {
         REG: { from: 0, to: regEnd, percentFrom: 0, percentTo: 75, color: '#fff176' },
         GA1: { from: regEnd, to: ga1End, percentFrom: 75, percentTo: 85, color: '#81c784' },
         GA2: { from: ga1End, to: ga2End, percentFrom: 85, percentTo: 95, color: '#64b5f6' },
-        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 105, color: '#ef9a9a' },
-        E2: { from: e1End, to: null, percentFrom: 105, percentTo: null, color: '#e57373' }
+        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 99, color: '#ef9a9a' },
+        E2: { from: e1End, to: e2End, percentFrom: 99, percentTo: 100, color: '#e57373' }
     };
+
 }
+
 function generateLinePoints(
     segment,
     line
