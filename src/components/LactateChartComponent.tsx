@@ -208,7 +208,6 @@ export default function LactateChartComponent({
                                         : zones.E2.from;
 
                                 return (
-
                                     <>
 
                                         <ReferenceArea

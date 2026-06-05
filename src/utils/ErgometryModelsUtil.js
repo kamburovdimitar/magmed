@@ -36,7 +36,11 @@
  */
 function calculateDickhuth(data) {
 
-    let lmin = 999;
+    if (!data || data.length === 0) {
+        return null;
+    }
+
+    let lmin = Number.MAX_VALUE;
 
     let lminRow = null;
 
@@ -105,7 +109,13 @@ function calculateDickhuth(data) {
  * }
  */
 function calculateFreiburg(data) {
+
+    if (!data || data.length === 0) {
+        return null;
+    }
+
     let lmin = Number.MAX_VALUE;
+
     let lminRow = null;
 
     for (let i = 0; i < data.length; i++) {
@@ -810,16 +820,14 @@ function calculateTrainingZones(result) {
     const regEnd = Number((iansLoad * 0.75).toFixed(1));
     const ga1End = Number((iansLoad * 0.85).toFixed(1));
     const ga2End = Number((iansLoad * 0.95).toFixed(1));
-
-    const e1End = Number((iansLoad * 0.99).toFixed(1));
-    const e2End = iansLoad;
+    const e1End = Number((iansLoad * 1.05).toFixed(1));
 
     return {
         REG: { from: 0, to: regEnd, percentFrom: 0, percentTo: 75, color: '#fff176' },
         GA1: { from: regEnd, to: ga1End, percentFrom: 75, percentTo: 85, color: '#81c784' },
         GA2: { from: ga1End, to: ga2End, percentFrom: 85, percentTo: 95, color: '#64b5f6' },
-        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 99, color: '#ef9a9a' },
-        E2: { from: e1End, to: e2End, percentFrom: 99, percentTo: 100, color: '#e57373' }
+        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 105, color: '#ef9a9a' },
+        E2: { from: e1End, to: Number.MAX_VALUE, percentFrom: 105, percentTo: null, color: '#e57373' }
     };
 
 }
@@ -1149,15 +1157,33 @@ export const ErgometryModelsUtil = {
 
     calculateDickhuth,
     calculateLinear,
+
     calculateFreiburg,
+
     calculateKeul,
+
     calculateMaxSlopeMethodKeulLegacy,
+
+    interpolateThreshold,
+
+    interpolateByHF,
+
+    interpolateByLoad,
+
     calculateHFPercent,
+
     calculatePmaxPercent,
+
     calculateHRRPercent,
+
     generateInterpretation,
+
     calculateChartMaxLoad,
+
     calculateChartMaxLactate,
+
     calculateTrainingZones,
+
     calculateLTP
+
 };
