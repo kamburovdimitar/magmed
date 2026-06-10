@@ -19,6 +19,9 @@ import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponen
 import { ErgometryModel } from "../../constants/ergometryModels"
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 import { trainingZonesScenarios } from '../../tests/utils/trainingZonesScenarios'
+import { getVisibleZones } from '../../tests/utils/trainingZonesScenarios'
+
+
 
 
 
@@ -660,13 +663,13 @@ export default function Page11({ goTo }: any) {
         setReportMode(false);
     }
 
-    function generateFakeData() {
+    async function generateFakeData() {
 
         const fake = ErgometryUtil.generateFakeErgometry();
-        continueLogic(fake)
+        await continueLogic(fake)
     }
 
-    function continueLogic(fake) {
+    async function continueLogic(fake) {
         // 🔹 type
         setType(fake.type);
 
@@ -720,18 +723,24 @@ export default function Page11({ goTo }: any) {
 
     }
 
-    function generateFakeDataFromTestScenario() {
+    async function generateFakeDataFromTestScenario() {
 
-        const scenario =
-            trainingZonesScenarios[
-            Math.floor(
-                Math.random() *
-                trainingZonesScenarios.length
-            )
-            ];
+        const fake =
+            ErgometryUtil
+                .generateFromScenario(
+                    'normalBike'
+                );
 
-        continueLogic(scenario)
+        const zoneScenario =
+            trainingZonesScenarios[2];
 
+        fake.chartStart =
+            zoneScenario.chartStart;
+
+        fake.visible = getVisibleZones(zoneScenario.chartStart);
+
+        await continueLogic(fake);
+        save()
     }
 
     function saveIntoArchive_History() {

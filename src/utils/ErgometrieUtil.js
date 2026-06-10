@@ -114,53 +114,122 @@ function generateFakeTest({
 }
 
 // 🔥 FULL ERGOMETRY GENERATOR
-function generateFakeErgometry() {
+function generateFakeErgometry(options = {}) {
+
     // 🔹 type
-    const type = Math.random() > 0.5 ? 'bike' : 'run';
+    const type =
+        options.type ||
+        (Math.random() > 0.5 ? 'bike' : 'run');
 
     // 🔹 models
-    const models = Object.values(ERGOMETRY_MODELS);
+    const models =
+        Object.values(
+            ERGOMETRY_MODELS
+        );
 
     const model =
         models[
-            Math.floor(Math.random() * models.length)
+            Math.floor(
+                Math.random() *
+                models.length
+            )
         ];
 
     // 🔹 defaults
-    let startLoad = 30;
-    let increment = 30;
-    let timeStep = 3;
+    let startLoad =
+        options.startLoad ?? 30;
+
+    let increment =
+        options.increment ?? 30;
+
+    let timeStep =
+        options.timeStep ?? 3;
 
     // 🔹 run defaults
-    if (type === 'run') {
+    if (
+        type === 'run' &&
+        options.startLoad == null
+    ) {
+
         startLoad = 8;
-        increment = 2;
+        increment =
+            options.increment ?? 2;
     }
 
     // 🔹 data
-    const data = generateFakeTest({
-        stages: 10,
-        startLoad,
-        increment,
-        timeStep
-    });
+    const data =
+        generateFakeTest({
+
+            stages:
+                options.stages || 10,
+
+            startLoad,
+
+            increment,
+
+            timeStep
+        });
 
     return {
+
         type,
+
         model,
+
         startLoad,
+
         increment,
+
         timeStep,
+
         data
     };
+}
+
+const TEST_SCENARIO_NAMES = [
+
+    'normalBike',
+
+    'normalRun'
+];
+
+const TEST_SCENARIOS = {
+
+    normalBike() {
+
+        return generateFakeErgometry({
+
+            type: 'bike'
+        });
+    },
+
+    normalRun() {
+
+        return generateFakeErgometry({
+
+            type: 'run'
+        });
+    }
+};
+
+function generateFromScenario(name) {
+
+    return TEST_SCENARIOS[name]();
 }
 
 export const ErgometryUtil = {
 
     getSollLeistungNorm,
+
     getSollLeistungWeight,
 
     generateFakeTest,
+
     generateFakeErgometry,
-    
+
+    TEST_SCENARIOS,
+
+    TEST_SCENARIO_NAMES,
+
+    generateFromScenario
 };
