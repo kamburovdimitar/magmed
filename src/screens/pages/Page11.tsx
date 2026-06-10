@@ -18,6 +18,7 @@ import ErgometrySummaryComponent from '../../components/ErgometrySummaryComponen
 import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponent'
 import { ErgometryModel } from "../../constants/ergometryModels"
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
+import { trainingZonesScenarios } from '../../tests/utils/trainingZonesScenarios'
 
 
 
@@ -661,9 +662,11 @@ export default function Page11({ goTo }: any) {
 
     function generateFakeData() {
 
-        const fake =
-            ErgometryUtil.generateFakeErgometry();
+        const fake = ErgometryUtil.generateFakeErgometry();
+        continueLogic(fake)
+    }
 
+    function continueLogic(fake) {
         // 🔹 type
         setType(fake.type);
 
@@ -715,12 +718,21 @@ export default function Page11({ goTo }: any) {
 
         setData(uiRows);
 
-        //const result = ErgometryModelsUtil.calculateDickhuth(uiRows)
-
-
-
     }
 
+    function generateFakeDataFromTestScenario() {
+
+        const scenario =
+            trainingZonesScenarios[
+            Math.floor(
+                Math.random() *
+                trainingZonesScenarios.length
+            )
+            ];
+
+        continueLogic(scenario)
+
+    }
 
     function saveIntoArchive_History() {
 
@@ -902,7 +914,20 @@ export default function Page11({ goTo }: any) {
                                 title="Generate Fake Data"
                                 onPress={() => generateFakeData()}
                             />
+
                         </View>
+
+
+                        <View style={styles.paddingBottom_10}>
+
+                            <Button
+                                title="Generate Fake Data From Test Scenario"
+                                onPress={() => generateFakeDataFromTestScenario()}
+                            />
+
+                        </View>
+
+
 
                         <View style={styles.paddingBottom_10}>
                             <Button

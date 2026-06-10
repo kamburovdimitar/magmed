@@ -155,9 +155,6 @@ function generateFakeErgometry() {
     };
 }
 
-
-
-
 export const ErgometryUtil = {
 
     getSollLeistungNorm,
