@@ -1,4 +1,5 @@
 import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
+import { TEST_SCENARIOS } from './ErgometrieScenarioUtil';
 // utils/ergometryUtil.js
 
 // 👉 примерна таблица (можеш да я разшириш)
@@ -193,24 +194,7 @@ const TEST_SCENARIO_NAMES = [
     'normalRun'
 ];
 
-const TEST_SCENARIOS = {
 
-    normalBike() {
-
-        return generateFakeErgometry({
-
-            type: 'bike'
-        });
-    },
-
-    normalRun() {
-
-        return generateFakeErgometry({
-
-            type: 'run'
-        });
-    }
-};
 
 function generateFromScenario(name) {
 
@@ -225,11 +209,5 @@ export const ErgometryUtil = {
 
     generateFakeTest,
 
-    generateFakeErgometry,
-
-    TEST_SCENARIOS,
-
-    TEST_SCENARIO_NAMES,
-
-    generateFromScenario
+    generateFakeErgometry
 };

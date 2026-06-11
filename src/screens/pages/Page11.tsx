@@ -20,7 +20,7 @@ import { ErgometryModel } from "../../constants/ergometryModels"
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 import { trainingZonesScenarios } from '../../tests/utils/trainingZonesScenarios'
 import { getVisibleZones } from '../../tests/utils/trainingZonesScenarios'
-
+import { generateFromScenario } from '../../utils/ErgometrieScenarioUtil';
 
 
 
@@ -726,10 +726,9 @@ export default function Page11({ goTo }: any) {
     async function generateFakeDataFromTestScenario() {
 
         const fake =
-            ErgometryUtil
-                .generateFromScenario(
-                    'normalBike'
-                );
+            generateFromScenario(
+                'normalBike'
+            );
 
         const zoneScenario =
             trainingZonesScenarios[2];
@@ -737,10 +736,14 @@ export default function Page11({ goTo }: any) {
         fake.chartStart =
             zoneScenario.chartStart;
 
-        fake.visible = getVisibleZones(zoneScenario.chartStart);
+        fake.visible =
+            getVisibleZones(
+                zoneScenario.chartStart
+            );
 
         await continueLogic(fake);
-        save()
+
+        save();
     }
 
     function saveIntoArchive_History() {
@@ -926,18 +929,6 @@ export default function Page11({ goTo }: any) {
 
                         </View>
 
-
-                        <View style={styles.paddingBottom_10}>
-
-                            <Button
-                                title="Generate Fake Data From Test Scenario"
-                                onPress={() => generateFakeDataFromTestScenario()}
-                            />
-
-                        </View>
-
-
-
                         <View style={styles.paddingBottom_10}>
                             <Button
                                 title="Clear all data"
@@ -953,25 +944,25 @@ export default function Page11({ goTo }: any) {
                             result={resultPreview}
                         />
 
+
+
                         <ErgometrySummaryComponent
                             result={resultPreview}
                         />
 
-                        <View style={styles.paddingBottom_10}>
 
-                            <Button
-                                title="Toggle Zones"
-                                onPress={() => {
 
-                                    setShowTrainingZones(
-                                        !showTrainingZones
-                                    );
-                                }}
-                            />
-
-                        </View>
 
                         <View style={styles.paddingBottom_10}>
+
+                            <View style={styles.paddingBottom_10}>
+
+                                <Button
+                                    title="Generate Fake Data From Test Scenario"
+                                    onPress={() => generateFakeDataFromTestScenario()}
+                                />
+
+                            </View>
 
                             <Button
                                 title="Toggle HR"
@@ -998,6 +989,21 @@ export default function Page11({ goTo }: any) {
                             />
 
                         </View>
+
+                        <View style={styles.paddingBottom_10}>
+
+                            <Button
+                                title="Toggle Zones"
+                                onPress={() => {
+
+                                    setShowTrainingZones(
+                                        !showTrainingZones
+                                    );
+                                }}
+                            />
+
+                        </View>
+
 
 
                         <LactateChartComponent
