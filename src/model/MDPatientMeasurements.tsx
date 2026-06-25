@@ -21,6 +21,7 @@ export class MDPatientMeasurements {
     private _waistcm: number = 0;
     private _hipcm: number = 0;
     private _bodyfatpercent: number = 0;
+    private _maxspeed: number = 0;
 
     private _bloodpressurerestsystolic: number = 0;
     private _bloodpressurerestdiastolic: number = 0;
@@ -104,39 +105,122 @@ export class MDPatientMeasurements {
     // 🔹 ERGOMETRIE
 
     get sollLeistungProKg(): number {
-        return this._weightkg ? this.sollLeistungNorm / this._weightkg : 0; // #33
+        return this._weightkg
+            ? this.sollLeistungNorm / this._weightkg
+            : 0;
     }
 
     get istLeistungProKg(): number {
-        return this._weightkg ? this._istLeistungMax / this._weightkg : 0; // #34
+        return this._weightkg
+            ? this._istLeistungMax / this._weightkg
+            : 0;
     }
 
     get istProzentNorm(): number {
         return this.sollLeistungNorm
             ? (this._istLeistungMax * 100) / this.sollLeistungNorm
-            : 0; // #35
-    }
-
-    get sollLeistungWeight(): number {
-        return ErgometryUtil.getSollLeistungWeight(this._age, "male");
-    }
-
-    // #37
-    get sollLeistungWeightProKg(): number {
-        return this._weightkg ? this.sollLeistungWeight / this._weightkg : 0;
-    }
-
-    // #38
-    get istLeistungWeightProKg(): number {
-        return this._weightkg ? this._istLeistungMax / this._weightkg : 0;
-    }
-
-    // #39
-    get istProzentWeightNorm(): number {
-        return this.sollLeistungWeight
-            ? (this._istLeistungMax * 100) / this.sollLeistungWeight
             : 0;
     }
 
+    get sollLeistungWeight(): number {
+        return ErgometryUtil.getSollLeistungWeight(
+            this._age,
+            "male"
+        );
+    }
+
+    get sollLeistungWeightProKg(): number {
+        return this._weightkg
+            ? this.sollLeistungWeight / this._weightkg
+            : 0;
+    }
+
+    get istLeistungWeightProKg(): number {
+        return this._weightkg
+            ? this._istLeistungMax / this._weightkg
+            : 0;
+    }
+
+    get istProzentWeightNorm(): number {
+        return this.sollLeistungWeight
+            ? (this._istLeistungMax * 100)
+            / this.sollLeistungWeight
+            : 0;
+    }
+
+
+    // ---------- UI GETTERS ----------
+
+    // #31
+    get sollWatt(): number {
+        return +this.sollLeistungNorm.toFixed(0);
+    }
+
+    // #33
+    get sollWattKg(): number {
+        return +this.sollLeistungProKg.toFixed(2);
+    }
+
+    // #34
+    get istWattKg(): number {
+        return +this.istLeistungProKg.toFixed(2);
+    }
+
+    // #35
+    get istPercent(): number {
+        return +this.istProzentNorm.toFixed(1);
+    }
+
+    // #36
+    get sollWeightWatt(): number {
+        return +this.sollLeistungWeight.toFixed(0);
+    }
+
+    // #37
+    get sollWeightWattKg(): number {
+        return +this.sollLeistungWeightProKg.toFixed(2);
+    }
+
+    // #39
+    get istWeightPercent(): number {
+        return +this.istProzentWeightNorm.toFixed(1);
+    }
+
+
+    get maxspeed() {
+        return this._maxspeed;
+    }
+
+    set maxspeed(value: number) {
+        this._maxspeed = value;
+    }
+
+    get minperkm(): string {
+
+        if (!this._maxspeed)
+            return "";
+
+        let totalSeconds =
+            Math.round(
+                3600 / this._maxspeed
+            );
+
+        let minutes =
+            Math.floor(
+                totalSeconds / 60
+            );
+
+        let seconds =
+            totalSeconds % 60;
+
+        return (
+            minutes +
+            ":" +
+            seconds
+                .toString()
+                .padStart(2, '0')
+        );
+
+    }
 
 }

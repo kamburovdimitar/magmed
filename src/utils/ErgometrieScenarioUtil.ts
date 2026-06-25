@@ -1,5 +1,6 @@
 import { ErgometryUtil } from './ErgometrieUtil';
 
+
 const TEST_SCENARIOS = {
 
     normalBike() {

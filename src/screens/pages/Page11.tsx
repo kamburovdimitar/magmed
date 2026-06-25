@@ -564,10 +564,24 @@ export default function Page11({ goTo }: any) {
             result.model = model;
         }
 
+        //Пусни и гледай дали логът стане:
+
 
 
         // 🔥 update result preview
         setResultPreview(result);
+
+        const validation = ErgometryUtil.validateResult(result);
+        console.log(
+            ErgometryUtil
+                .validateAllModels(
+                    rows
+                )
+        );
+
+        console.log(validation);
+
+        console.log(result);
 
         // UI data
         // ↓
@@ -582,6 +596,7 @@ export default function Page11({ goTo }: any) {
         // threshold result
 
         console.log(result)
+
     }
 
     function applyHistoryReport(report: any) {
@@ -735,6 +750,8 @@ export default function Page11({ goTo }: any) {
 
         fake.chartStart =
             zoneScenario.chartStart;
+
+        console.log("временно", fake.chartStart);
 
         fake.visible =
             getVisibleZones(
@@ -1011,6 +1028,8 @@ export default function Page11({ goTo }: any) {
                             data={data}
 
                             result={resultPreview}
+
+                            chartStart={250}
 
                             showTrainingZones={showTrainingZones}
 

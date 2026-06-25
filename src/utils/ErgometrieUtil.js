@@ -1,6 +1,9 @@
 import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
 import { TEST_SCENARIOS } from './ErgometrieScenarioUtil';
+import {ErgometryModelsUtil} from './ErgometryModelsUtil';
 // utils/ergometryUtil.js
+
+
 
 // 👉 примерна таблица (можеш да я разшириш)
 const SOLL_TABLE = [
@@ -187,19 +190,84 @@ function generateFakeErgometry(options = {}) {
     };
 }
 
-const TEST_SCENARIO_NAMES = [
+function validateAllModels(rows) {
 
-    'normalBike',
+    const results = [];
 
-    'normalRun'
-];
+    const models = [
 
+        ERGOMETRY_MODELS.DICKHUTH,
 
+        ERGOMETRY_MODELS.FREIBURG,
 
-function generateFromScenario(name) {
+        ERGOMETRY_MODELS.LINEAR,
 
-    return TEST_SCENARIOS[name]();
+        ERGOMETRY_MODELS.LTP,
+
+        ERGOMETRY_MODELS.KEUL,
+
+        ERGOMETRY_MODELS.KEUL_LEGACY
+    ];
+
+    for (let i = 0; i < models.length; i++) {
+
+        let result = null;
+
+        if (models[i] === ERGOMETRY_MODELS.DICKHUTH) result = ErgometryModelsUtil.calculateDickhuth(rows);
+
+        if (models[i] === ERGOMETRY_MODELS.FREIBURG) result = ErgometryModelsUtil.calculateFreiburg(rows);
+
+        if (models[i] === ERGOMETRY_MODELS.LINEAR) result = ErgometryModelsUtil.calculateLinear(rows);
+
+        if (models[i] === ERGOMETRY_MODELS.LTP) result = ErgometryModelsUtil.calculateLTP(rows);
+
+        if (models[i] === ERGOMETRY_MODELS.KEUL) result = ErgometryModelsUtil.calculateKeul(rows);
+
+        if (models[i] === ERGOMETRY_MODELS.KEUL_LEGACY) result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
+
+        results.push({
+
+            model: models[i],
+
+            validation:
+                validateResult(
+                    result
+                ),
+
+            result
+        });
+    }
+
+    return results;
 }
+
+
+function validateResult(result) {
+
+    const errors = [];
+
+    if (result?.IASPoint && result?.IANSPoint && result.IASPoint.load > result.IANSPoint.load) errors.push('IAS load > IANS load');
+
+    if (result?.IAS != null && result?.IANS != null && result.IAS > result.IANS) errors.push('IAS > IANS');
+
+    if (result?.IASPoint && result?.IANSPoint && result.IASPoint.hf > result.IANSPoint.hf) errors.push('IAS HF > IANS HF');
+
+    if (result?.IASPoint?.load < 0 || result?.IANSPoint?.load < 0) errors.push('Negative load');
+
+    if (result?.IASPoint?.load > result?.IANSPoint?.load) errors.push('IAS load > IANS load');
+
+if (result?.IASPoint?.hf > result?.IANSPoint?.hf) errors.push('IAS HF > IANS HF');
+
+if (result?.IASPoint?.lactate > result?.IANSPoint?.lactate) errors.push('IAS lactate > IANS lactate');
+
+if (result?.IANSPoint?.load > 400) errors.push('IANS unrealistic load');
+
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+}
+
 
 export const ErgometryUtil = {
 
@@ -209,5 +277,8 @@ export const ErgometryUtil = {
 
     generateFakeTest,
 
-    generateFakeErgometry
+    generateFakeErgometry,
+
+    validateResult,
+    validateAllModels,
 };

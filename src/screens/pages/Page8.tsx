@@ -28,6 +28,7 @@ import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
 export default function Page8({ goTo }) {
     const dispatch = useDispatch();
     const selectedUser = useSelector((state) => state.user.selectedUser);
+    const [ergoType, setErgoType] = useState("bike");
 
     const rawMeasurements = useSelector(
         (state) => state.user.selectedUser?.measurements
@@ -74,14 +75,51 @@ export default function Page8({ goTo }) {
         setLeftView("interpratation")
     }
 
+    function onGenereateFakeData() {
+
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        let fake = new MDPatientMeasurements();
+
+        fake.age = random(18, 70);
+
+        fake.heightcm = random(160, 200);
+        fake.weightkg = random(55, 110);
+
+        fake.waistcm = random(70, 120);
+        fake.hipcm = random(85, 125);
+
+        fake.bodyfatpercent = random(8, 35);
+
+        fake.bloodpressurerestsystolic = random(105, 135);
+        fake.bloodpressurerestdiastolic = random(65, 90);
+
+        fake.bloodpressuremaxsystolic = random(160, 230);
+        fake.bloodpressuremaxdiastolic = random(80, 110);
+
+        fake.heartraterest = random(50, 85);
+
+        let expected = 220 - fake.age;
+        fake.heartratemax = random(expected - 15, expected + 10);
+
+        fake.istLeistungMax = random(140, 380);
+
+        return fake;
+    }
+
 
     function renderTestView() {
 
         if (ergoView === 'detail1') return <TestComponent1
             callback={updateHandler}
             measurements={measurements}
+            ergoType={ergoType}
+            setErgoType={setErgoType}
             onPrint={onPrint}
             onInterpration={onInterpration}
+            onGenereateFakeData={onGenereateFakeData}
         />
 
         if (ergoView === 'detail2') return <TestComponent2 />

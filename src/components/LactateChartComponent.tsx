@@ -24,6 +24,8 @@ export default function LactateChartComponent({
     data,
     result,
 
+    chartStart = null,
+
     showTrainingZones,
     showThresholdLines,
     showThresholdLabels,
@@ -190,20 +192,23 @@ export default function LactateChartComponent({
                                     return null;
                                 }
 
-                                const chartStart =
-                                    chartData[0]?.load || 0;
+
+                                const chartStart = chartData[0]?.load || 0;
+
 
                                 const chartEnd =
                                     chartData[
                                         chartData.length - 1
                                     ]?.load || 0;
 
+                                const zonesStart = chartStart;
+
                                 const visualMinWidth =
                                     (chartEnd - chartStart) * 0.03;
 
                                 const e2Start =
                                     Math.max(
-                                        chartStart,
+                                        zonesStart,
                                         zones.E2.from
                                     );
 
@@ -215,6 +220,8 @@ export default function LactateChartComponent({
                                 console.log('\n========== TRAINING ZONES ==========');
 
                                 console.log('chartStart=', chartStart);
+
+                                console.log('zonesStart=', zonesStart);
 
                                 console.log('chartEnd=', chartEnd);
 
@@ -230,18 +237,34 @@ export default function LactateChartComponent({
 
                                 console.log('E2', '#e57373', '105→INF', 'from=', zones.E2.from, 'to=', zones.E2.to);
 
-                                console.log('VISIBLE', 'REG=', Math.max(0, Math.min(zones.REG.to, chartEnd) - Math.max(zones.REG.from, chartStart)), 'GA1=', Math.max(0, Math.min(zones.GA1.to, chartEnd) - Math.max(zones.GA1.from, chartStart)), 'GA2=', Math.max(0, Math.min(zones.GA2.to, chartEnd) - Math.max(zones.GA2.from, chartStart)), 'E1=', Math.max(0, Math.min(zones.E1.to, chartEnd) - Math.max(zones.E1.from, chartStart)), 'E2=', Math.max(0, chartEnd - Math.max(zones.E2.from, chartStart)));
+                                console.log(
+                                    'VISIBLE',
+
+                                    'REG=', Math.max(0, Math.min(zones.REG.to, chartEnd) - Math.max(zones.REG.from, zonesStart)),
+
+                                    'GA1=', Math.max(0, Math.min(zones.GA1.to, chartEnd) - Math.max(zones.GA1.from, zonesStart)),
+
+                                    'GA2=', Math.max(0, Math.min(zones.GA2.to, chartEnd) - Math.max(zones.GA2.from, zonesStart)),
+
+                                    'E1=', Math.max(0, Math.min(zones.E1.to, chartEnd) - Math.max(zones.E1.from, zonesStart)),
+
+                                    'E2=', Math.max(0, chartEnd - Math.max(zones.E2.from, zonesStart))
+                                );
 
                                 console.log('visualE2Start=', visualE2Start);
 
                                 console.log('==============================');
                                 return (
                                     <>
-                                        {zones.REG.to > chartStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.REG.from, chartStart)} x2={Math.min(zones.REG.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.REG.color} fillOpacity={0.15} />}
-                                        {zones.GA1.to > chartStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.GA1.from, chartStart)} x2={Math.min(zones.GA1.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.GA1.color} fillOpacity={0.15} />}
-                                        {zones.GA2.to > chartStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.GA2.from, chartStart)} x2={Math.min(zones.GA2.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.GA2.color} fillOpacity={0.15} />}
-                                        {zones.E1.to > chartStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.E1.from, chartStart)} x2={Math.min(zones.E1.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.E1.color} fillOpacity={0.15} />}
-                                        {zones.E2.from < chartEnd && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.E2.from, chartStart)} x2={chartEnd} y1={0} y2={maxLactate} fill={zones.E2.color} fillOpacity={0.35} />}
+                                        {zones.REG.to > zonesStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.REG.from, zonesStart)} x2={Math.min(zones.REG.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.REG.color} fillOpacity={0.15} />}
+
+                                        {zones.GA1.to > zonesStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.GA1.from, zonesStart)} x2={Math.min(zones.GA1.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.GA1.color} fillOpacity={0.15} />}
+
+                                        {zones.GA2.to > zonesStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.GA2.from, zonesStart)} x2={Math.min(zones.GA2.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.GA2.color} fillOpacity={0.15} />}
+
+                                        {zones.E1.to > zonesStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.E1.from, zonesStart)} x2={Math.min(zones.E1.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.E1.color} fillOpacity={0.15} />}
+
+                                        {zones.E2.from < chartEnd && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.E2.from, zonesStart)} x2={chartEnd} y1={0} y2={maxLactate} fill={zones.E2.color} fillOpacity={0.35} />}
                                     </>
                                 );
 
