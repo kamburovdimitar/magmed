@@ -77,7 +77,15 @@ export class MDPatientMeasurements {
 
     // 🔹 SOLL (идва от util)
     get sollLeistungNorm(): number {
-        return ErgometryUtil.getSollLeistungNorm(this._age, "male");
+
+        return ErgometryUtil.getSollLeistungNorm(
+
+            this._age,
+
+            "male",
+
+        );
+
     }
 
     // calculated
@@ -123,10 +131,15 @@ export class MDPatientMeasurements {
     }
 
     get sollLeistungWeight(): number {
+
         return ErgometryUtil.getSollLeistungWeight(
+
             this._age,
+
             "male"
+
         );
+
     }
 
     get sollLeistungWeightProKg(): number {
@@ -214,11 +227,19 @@ export class MDPatientMeasurements {
             totalSeconds % 60;
 
         return (
-            minutes +
-            ":" +
-            seconds
-                .toString()
+
+            String(minutes)
                 .padStart(2, '0')
+
+            +
+
+            ":"
+
+            +
+
+            String(seconds)
+                .padStart(2, '0')
+
         );
 
     }

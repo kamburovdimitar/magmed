@@ -13,24 +13,41 @@ const SOLL_TABLE = [
     { min: 40, max: 49, male: 260, female: 210 },
     { min: 50, max: 59, male: 240, female: 190 },
     { min: 60, max: 200, male: 220, female: 170 }
+
 ];
 
-function getSollLeistungNorm(age, gender) {
+function getSollLeistungNorm(
+    age = 40,
+    gender = "male"
+) {
 
-    for (let i = 0; i < SOLL_TABLE.length; i++) {
+    for (
+        let i = 0;
+        i < SOLL_TABLE.length;
+        i++
+    ) {
 
-        const row = SOLL_TABLE[i];
+        let row =
+            SOLL_TABLE[i];
 
-        if (age >= row.min && age <= row.max) {
+        if (
+            age >= row.min
+            &&
+            age <= row.max
+        ) {
 
             return gender === "female"
                 ? row.female
                 : row.male;
+
         }
+
     }
 
-    return 0;
+    return 220;
+
 }
+
 
 function getSollLeistungWeight(age, gender) {
 
