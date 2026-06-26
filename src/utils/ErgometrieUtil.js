@@ -285,6 +285,34 @@ if (result?.IANSPoint?.load > 400) errors.push('IANS unrealistic load');
     };
 }
 
+function getReportByModel(
+    reports,
+    model
+) {
+
+    if (!reports)
+        return null;
+
+    for (
+        let i = 0;
+        i < reports.length;
+        i++
+    ) {
+
+        if (
+            reports[i].model === model
+        ) {
+
+            return reports[i];
+
+        }
+
+    }
+
+    return null;
+
+}
+
 
 export const ErgometryUtil = {
 
@@ -298,4 +326,5 @@ export const ErgometryUtil = {
 
     validateResult,
     validateAllModels,
+    getReportByModel
 };

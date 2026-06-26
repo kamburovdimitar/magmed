@@ -47,9 +47,12 @@ export default function Page8({ goTo }) {
 
     }, [selectedUser]);
 
-    function updateHandler(updatedMeasurements: MDPatientMeasurements) {
+
+
+    function updateHandler(updatedMeasurements) {
         console.log("test", updatedMeasurements)
-        dispatch(updateMeasurements(updatedMeasurements));
+        dispatch(updateMeasurements({ ...updatedMeasurements }));
+
     }
 
     useEffect(() => {

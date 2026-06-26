@@ -35,6 +35,7 @@
     "version": "0.1.0",
     "dependencies": {
         "@react-native-community/cli": "15.0.1",
+        "@react-native-picker/picker": "^2.11.4",
         "@reduxjs/toolkit": "^2.11.2",
         "@rnv/renative": "1.10.0-rc.3",
         "dotenv": "16.4.5",

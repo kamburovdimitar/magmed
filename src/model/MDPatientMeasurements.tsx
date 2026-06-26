@@ -81,7 +81,6 @@ export class MDPatientMeasurements {
         return ErgometryUtil.getSollLeistungNorm(
 
             this._age,
-
             "male",
 
         );
@@ -119,9 +118,18 @@ export class MDPatientMeasurements {
     }
 
     get istLeistungProKg(): number {
-        return this._weightkg
-            ? this._istLeistungMax / this._weightkg
-            : 0;
+
+        let weight =
+            Number(this._weightkg);
+
+        let ist =
+            Number(this._istLeistungMax);
+
+        if (!weight)
+            return 0;
+
+        return ist / weight;
+
     }
 
     get istProzentNorm(): number {
@@ -242,6 +250,40 @@ export class MDPatientMeasurements {
 
         );
 
+    }
+
+    get heartrateReserve(): number {
+        return this._heartratemax - this._heartraterest;
+    }
+
+    get hrr70(): number {
+        return this.heartrateReserve
+            ? this._heartraterest + this.heartrateReserve * 0.70
+            : 0;
+    }
+
+    get hrr80(): number {
+        return this.heartrateReserve
+            ? this._heartraterest + this.heartrateReserve * 0.80
+            : 0;
+    }
+
+    get hrr90(): number {
+        return this.heartrateReserve
+            ? this._heartraterest + this.heartrateReserve * 0.90
+            : 0;
+    }
+
+    get hfMax70(): number {
+        return this._heartratemax * 0.70;
+    }
+
+    get hfMax80(): number {
+        return this._heartratemax * 0.80;
+    }
+
+    get hfMax90(): number {
+        return this._heartratemax * 0.90;
     }
 
 }

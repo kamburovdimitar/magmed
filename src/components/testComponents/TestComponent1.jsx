@@ -1,9 +1,21 @@
 import React from 'react'
-import { View, StyleSheet, Button, TouchableOpacity, Text } from 'react-native'
+import { View, ScrollView, StyleSheet, Button, TouchableOpacity, Text } from 'react-native'
 import TestMeasurmentComponent from '../TestMeasurementsComponent'
 import { useEffect, useState } from "react";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import ErgoResultComponent from '../ErgoResultComponent'
+import HeartRateZoneComponent from '../HeartRateZoneComponent';
+import ErgometryTableComponent from '../ErgometryTableComponent';
+import { ErgometryUtil } from '../../utils/ErgometrieUtil';
+import ErgometryResultsComponent from '../ErgometryResultsComponent';
+import LactateThresholdComponent from '../LactateThresholdComponent';
+import VO2MaxComponent from '../VO2MaxComponent';
+import HeartRateZonesComponent from '../HeartRateZonesComponent';
+import LactateModelPickerComponent from '../LactateModelPickerComponent';
+import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
+
+
+
 
 export default function TestComponent1({
     callback,
@@ -15,8 +27,9 @@ export default function TestComponent1({
     onGenereateFakeData
 }) {
 
-    const [localMeasurements, setLocalMeasurements] =
-        useState(new MDPatientMeasurements(measurements));
+    const [selectedModel, setSelectedModel] = useState(ERGOMETRY_MODELS.DICKHUTH);
+
+    const [localMeasurements, setLocalMeasurements] = useState(new MDPatientMeasurements(measurements));
 
     useEffect(() => {
 
@@ -32,22 +45,14 @@ export default function TestComponent1({
 
         let updated = {
             ...localMeasurements,
-            [field]:
-                value === ''
-                    ? null
-                    : isNaN(Number(value))
-                        ? value
-                        : Number(value)
+            [field]: value === '' ? null : isNaN(Number(value)) ? value : Number(value)
         };
 
-        updated =
-            new MDPatientMeasurements(
-                updated
-            );
+        updated = new MDPatientMeasurements(updated);
 
-        setLocalMeasurements(
-            updated
-        );
+        setLocalMeasurements(updated);
+
+        console.log(updated.heartrateReserve, updated.hrr70, updated.hrr80, updated.hrr90);
 
         callback(updated);
 
@@ -63,18 +68,51 @@ export default function TestComponent1({
 
     function genereateFakeDataHandler() {
 
-        let fake = onGenereateFakeData();
+        let fake =
+            onGenereateFakeData();
+
+        fake.ergometry = ErgometryUtil.generateFakeErgometry();
 
         fake = new MDPatientMeasurements(fake);
+
+        fake.ergometryReports = ErgometryUtil.validateAllModels(fake.ergometry.data);
 
         setLocalMeasurements(fake);
 
         callback(fake);
+
+    }
+
+    function onUpdateRow(index, field, value) {
+
+        let data =
+            [...localMeasurements.ergometry.data];
+
+        data[index] = {
+
+            ...data[index],
+
+            [field]: value
+
+        };
+
+        let updated =
+            new MDPatientMeasurements(localMeasurements);
+
+        updated.ergometry.data = data;
+
+        setLocalMeasurements(updated);
+
+        callback(updated);
+
     }
 
     return (
 
-        <View style={styles.container}>
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.container}
+        >
 
             <View style={styles.ergoRow}>
 
@@ -110,6 +148,11 @@ export default function TestComponent1({
 
                 </TouchableOpacity>
 
+                <LactateModelPickerComponent
+                    selectedModel={selectedModel}
+                    setSelectedModel={setSelectedModel}
+                />
+
             </View>
 
 
@@ -129,6 +172,34 @@ export default function TestComponent1({
                     onUpdateMeasurements
                 }
             />
+
+            <HeartRateZoneComponent
+                measurements={localMeasurements}
+            />
+
+
+            <ErgometryTableComponent
+                measurements={localMeasurements}
+                onUpdateRow={onUpdateRow}
+            />
+
+            <ErgometryResultsComponent
+                measurements={localMeasurements}
+            />
+
+            <LactateThresholdComponent
+                measurements={localMeasurements}
+            />
+
+            <VO2MaxComponent
+                measurements={localMeasurements}
+            />
+
+            <HeartRateZonesComponent
+                measurements={localMeasurements}
+            />
+
+
 
 
             <Button
@@ -152,7 +223,7 @@ export default function TestComponent1({
                 }
             />
 
-        </View>
+        </ScrollView >
 
     );
 }
@@ -160,8 +231,8 @@ export default function TestComponent1({
 const styles = StyleSheet.create({
 
     container: {
-        flex: 1,
         gap: 10,
+        paddingBottom: 30,
     },
 
     ergoRow: {
