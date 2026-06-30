@@ -1,3 +1,4 @@
+import { MDErgometryReportResult } from '../model/MDErgometryReportResult';
 /**
  * 🔹 Dickhuth method
  *
@@ -200,6 +201,7 @@ function calculateChartMaxLoad(data) {
  * }
  */
 function calculateLinear(data) {
+
     if (data.length < 3) {
         return null;
     }
@@ -212,24 +214,31 @@ function calculateLinear(data) {
 
     // 🔹 IAS
     for (let i = 1; i < data.length; i++) {
+
         const current = Number(data[i].lactate);
 
         if (current > baseline + 0.4) {
+
             IASPoint = {
+
                 lactate: current,
                 load: data[i].load,
                 hf: Number(data[i].hf),
                 stage: data[i].stage
+
             };
 
             IASIndex = i;
+
             break;
         }
     }
 
     // 🔹 IANS ONLY AFTER IAS
     if (IASIndex !== -1) {
+
         for (let i = IASIndex; i < data.length - 1; i++) {
+
             const prev = Number(data[i - 1].lactate);
             const current = Number(data[i].lactate);
             const next = Number(data[i + 1].lactate);
@@ -237,13 +246,15 @@ function calculateLinear(data) {
             const slope1 = current - prev;
             const slope2 = next - current;
 
-            // 🔹 strong rise
             if (slope2 > slope1 * 1.5) {
+
                 IANSPoint = {
+
                     lactate: current,
                     load: data[i].load,
                     hf: Number(data[i].hf),
                     stage: data[i].stage
+
                 };
 
                 break;
@@ -251,12 +262,23 @@ function calculateLinear(data) {
         }
     }
 
-    return {
-        IAS: IASPoint?.lactate || null,
-        IANS: IANSPoint?.lactate || null,
-        IASPoint,
-        IANSPoint
-    };
+    const result =
+        new MDErgometryReportResult();
+
+    result.IAS =
+        IASPoint?.lactate ?? null;
+
+    result.IANS =
+        IANSPoint?.lactate ?? null;
+
+    result.IASPoint =
+        IASPoint;
+
+    result.IANSPoint =
+        IANSPoint;
+
+    return result;
+
 }
 /**
  * 🔹 Keul method

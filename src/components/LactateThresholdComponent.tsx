@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ErgometryUtil } from '../.../../utils/ErgometrieUtil';
-import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
+import { ErgometryUtil } from '../utils/ErgometrieUtil';
 
 export default function LactateThresholdComponent({
-    measurements
+    measurements,
+    selectedModel
 }) {
 
     const report =
         ErgometryUtil.getReportByModel(
             measurements?.ergometryReports,
-            ERGOMETRY_MODELS.LINEAR
+            selectedModel
         )?.result;
 
     return (

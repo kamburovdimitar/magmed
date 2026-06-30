@@ -1,12 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { ERGOMETRY_MODELS } from '../constants/ergometryModels';
 
 export default function LactateModelPickerComponent({
     selectedModel,
     setSelectedModel
 }) {
+
+    const items = [
+        { label: 'Dickhuth', value: ERGOMETRY_MODELS.DICKHUTH },
+        { label: 'Freiburg', value: ERGOMETRY_MODELS.FREIBURG },
+        { label: 'Linear', value: ERGOMETRY_MODELS.LINEAR },
+        { label: 'LTP', value: ERGOMETRY_MODELS.LTP },
+        { label: 'Keul', value: ERGOMETRY_MODELS.KEUL },
+        { label: 'Keul Legacy', value: ERGOMETRY_MODELS.KEUL_LEGACY }
+    ];
 
     return (
 
@@ -18,45 +26,36 @@ export default function LactateModelPickerComponent({
 
             <View style={styles.pickerContainer}>
 
-                <Picker
-                    style={styles.picker}
-                    selectedValue={selectedModel}
-                    onValueChange={(value) =>
-                        setSelectedModel(value)
-                    }
-                >
+                {
+                    Platform.OS === 'web' ? (
 
-                    <Picker.Item
-                        label="Dickhuth"
-                        value={ERGOMETRY_MODELS.DICKHUTH}
-                    />
+                        <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            style={styles.webSelect}
+                        >
+                            {
+                                items.map((item) => (
 
-                    <Picker.Item
-                        label="Freiburg"
-                        value={ERGOMETRY_MODELS.FREIBURG}
-                    />
+                                    <option
+                                        key={item.value}
+                                        value={item.value}
+                                    >
+                                        {item.label}
+                                    </option>
 
-                    <Picker.Item
-                        label="Linear"
-                        value={ERGOMETRY_MODELS.LINEAR}
-                    />
+                                ))
+                            }
+                        </select>
 
-                    <Picker.Item
-                        label="LTP"
-                        value={ERGOMETRY_MODELS.LTP}
-                    />
+                    ) : (
 
-                    <Picker.Item
-                        label="Keul"
-                        value={ERGOMETRY_MODELS.KEUL}
-                    />
+                        <Text>
+                            Picker not implemented
+                        </Text>
 
-                    <Picker.Item
-                        label="Keul Legacy"
-                        value={ERGOMETRY_MODELS.KEUL_LEGACY}
-                    />
-
-                </Picker>
+                    )
+                }
 
             </View>
 
@@ -71,9 +70,7 @@ const styles = StyleSheet.create({
     container: {
 
         width: 240,
-
         marginLeft: 15,
-
         justifyContent: 'center'
 
     },
@@ -81,11 +78,8 @@ const styles = StyleSheet.create({
     label: {
 
         fontSize: 10,
-
         color: '#666',
-
         marginLeft: 4,
-
         marginBottom: 2
 
     },
@@ -93,26 +87,23 @@ const styles = StyleSheet.create({
     pickerContainer: {
 
         borderWidth: 1,
-
         borderColor: '#999',
-
         borderRadius: 4,
-
         overflow: 'hidden',
-
         backgroundColor: '#fff',
-
         height: 32,
-
         justifyContent: 'center'
 
     },
 
-    picker: {
+    webSelect: {
 
-        height: 32,
-
-        fontSize: 13
+        width: '100%',
+        height: '100%',
+        borderWidth: 0,
+        fontSize: 13,
+        paddingLeft: 6,
+        backgroundColor: 'transparent'
 
     }
 

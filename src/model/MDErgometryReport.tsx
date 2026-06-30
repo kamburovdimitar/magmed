@@ -1,4 +1,5 @@
 import { MDErgometry } from "./MDErgometry";
+import { MDErgometryReportResult } from "./MDErgometryReportResult";
 
 export class MDErgometryReport {
 
@@ -7,12 +8,11 @@ export class MDErgometryReport {
 
     ergometry: MDErgometry = new MDErgometry();
 
-    result: any = null;
+    result: MDErgometryReportResult = new MDErgometryReportResult();
 
     notes: string = '';
 
     constructor(data?: Partial<MDErgometryReport>) {
-
         Object.assign(this, data);
     }
 }

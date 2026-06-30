@@ -4,13 +4,13 @@
     "outDir": "./lib",
     "rootDir": ".",
     "noImplicitAny": false,
-    // "resolveJsonModule": false
+    "strictNullChecks": true,
+    "jsx": "react-jsx",
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "strictNullChecks": true
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -21,7 +21,8 @@
     "platformBuilds/template_web/output/types/**/*.ts",
     "platformBuilds\\app_web\\output/types/**/*.ts",
     "src/screens/auth/LoginScreen.js",
-    "src/components/WattMeasurmentComponent"
+    "src/components/WattMeasurmentComponent",
+    "src/components/CommonPickerComponent.jsx"
   ],
   "exclude": [
     "**/rn_modules"

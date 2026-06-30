@@ -2,11 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function ErgometryResultsComponent({
-    measurements
+    measurements,
+    selectedModel
 }) {
 
     const reports =
         measurements?.ergometryReports ?? [];
+
+    const report =
+        reports.find(r => r.model === selectedModel);
+
+    if (!report)
+        return null;
 
     return (
 
@@ -16,64 +23,53 @@ export default function ErgometryResultsComponent({
                 Ergometry Results
             </Text>
 
-            {
+            <View style={styles.block}>
 
-                reports.map((report, i) => (
+                <Text style={styles.model}>
+                    {report.model}
+                </Text>
 
-                    <View
-                        key={i}
-                        style={styles.block}
-                    >
+                <View style={styles.row}>
 
-                        <Text style={styles.model}>
-                            {report.model}
-                        </Text>
+                    <Text style={styles.label}>
+                        IAS
+                    </Text>
 
-                        <View style={styles.row}>
+                    <Text style={styles.value}>
+                        {report.result?.IAS ?? "-"}
+                    </Text>
 
-                            <Text style={styles.label}>
-                                IAS
-                            </Text>
+                    <Text style={styles.value}>
+                        {report.result?.IASPoint?.hf ?? "-"} bpm
+                    </Text>
 
-                            <Text style={styles.value}>
-                                {report.result?.IAS ?? "-"}
-                            </Text>
+                    <Text style={styles.value}>
+                        {report.result?.IASPoint?.lactate ?? "-"} mmol
+                    </Text>
 
-                            <Text style={styles.value}>
-                                {report.result?.IASPoint?.hf ?? "-"} bpm
-                            </Text>
+                </View>
 
-                            <Text style={styles.value}>
-                                {report.result?.IASPoint?.lactate ?? "-"} mmol
-                            </Text>
+                <View style={styles.row}>
 
-                        </View>
+                    <Text style={styles.label}>
+                        IANS
+                    </Text>
 
-                        <View style={styles.row}>
+                    <Text style={styles.value}>
+                        {report.result?.IANS ?? "-"}
+                    </Text>
 
-                            <Text style={styles.label}>
-                                IANS
-                            </Text>
+                    <Text style={styles.value}>
+                        {report.result?.IANSPoint?.hf ?? "-"} bpm
+                    </Text>
 
-                            <Text style={styles.value}>
-                                {report.result?.IANS ?? "-"}
-                            </Text>
+                    <Text style={styles.value}>
+                        {report.result?.IANSPoint?.lactate ?? "-"} mmol
+                    </Text>
 
-                            <Text style={styles.value}>
-                                {report.result?.IANSPoint?.hf ?? "-"} bpm
-                            </Text>
+                </View>
 
-                            <Text style={styles.value}>
-                                {report.result?.IANSPoint?.lactate ?? "-"} mmol
-                            </Text>
-
-                        </View>
-
-                    </View>
-
-                ))
-
-            }
+            </View>
 
         </View>
 
@@ -96,8 +92,7 @@ const styles = StyleSheet.create({
 
     block: {
         borderWidth: 1,
-        padding: 10,
-        marginBottom: 10
+        padding: 10
     },
 
     model: {

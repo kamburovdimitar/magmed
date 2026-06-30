@@ -185,18 +185,22 @@ export default function TestComponent1({
 
             <ErgometryResultsComponent
                 measurements={localMeasurements}
+                selectedModel={selectedModel}
             />
 
             <LactateThresholdComponent
                 measurements={localMeasurements}
+                selectedModel={selectedModel}
             />
 
             <VO2MaxComponent
                 measurements={localMeasurements}
+                selectedModel={selectedModel}
             />
 
             <HeartRateZonesComponent
                 measurements={localMeasurements}
+                selectedModel={selectedModel}
             />
 
 
