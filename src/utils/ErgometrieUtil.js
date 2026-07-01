@@ -313,6 +313,149 @@ function getReportByModel(
 
 }
 
+function calculateWattPerKg(load, weight) {
+
+    if (
+        load == null ||
+        weight == null ||
+        weight === 0
+    ) {
+
+        return null;
+
+    }
+
+    return Number(
+        (load / weight).toFixed(2)
+    );
+
+}
+
+function calculateHFPercent(hf, hfMax) {
+
+    if (
+        hf == null ||
+        hfMax == null ||
+        hfMax === 0
+    ) {
+
+        return null;
+
+    }
+
+    return Number(
+        ((hf / hfMax) * 100).toFixed(0)
+    );
+
+}
+
+function calculateVO2Percent(
+    report
+) {
+
+    // TODO:
+    // Formula not available yet.
+
+    return "TODO";
+
+}
+
+function calculateSpeed(
+    point,
+    ergoType
+) {
+
+    if (
+        !point ||
+        ergoType === "bike"
+    ) {
+
+        return "-";
+
+    }
+
+    // TODO:
+    // Calculate treadmill speed from stage/load.
+
+    return "TODO";
+
+}
+
+function calculateVO2(point,measurements) {
+
+    // TODO:
+    // VO₂ formula
+
+    return "TODO";
+
+}
+
+function calculateVO2Kg(point, measurements) {
+
+    // TODO:
+    // VO₂ ml/kg/min formula
+
+    return "TODO";
+
+}
+
+function calculateHeartRateZones(
+    measurements
+) {
+
+    if (
+        !measurements?.heartrateReserve ||
+        !measurements?.heartraterest
+    ) {
+
+        return [];
+
+    }
+
+    const percents = [
+
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110
+
+    ];
+
+    const zones = [];
+
+    for (let i = 0; i < percents.length; i++) {
+
+        const p =
+            percents[i] / 100;
+
+        zones.push(
+
+            Math.round(
+
+                measurements.heartraterest +
+
+                measurements.heartrateReserve * p
+
+            )
+
+        );
+
+    }
+
+    return zones;
+
+}
+
 
 export const ErgometryUtil = {
 
@@ -326,5 +469,14 @@ export const ErgometryUtil = {
 
     validateResult,
     validateAllModels,
-    getReportByModel
+    getReportByModel,
+
+    calculateWattPerKg,
+    calculateHFPercent,
+    calculateSpeed,
+    calculateVO2Percent,
+    calculateVO2,
+    calculateVO2Kg,
+    calculateHeartRateZones
+
 };

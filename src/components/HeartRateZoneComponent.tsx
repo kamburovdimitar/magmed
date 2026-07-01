@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import LabelAndInputTextComponent from './LabelAndInputComponent';
 
+
 export default function HeartRateZoneComponent({ measurements }) {
 
     return (

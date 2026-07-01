@@ -16,7 +16,7 @@ import Page9 from './screens/pages/Page9'
 import Page10 from './screens/pages/Page10'
 import Page11 from './screens/pages/Page11'
 import SettingsComponent from './screens/pages/SettingsComponent'
-
+import InfoPopupComponent from './components/InfoPopUpComponent'
 
 export default function App() {
 
@@ -50,6 +50,7 @@ export default function App() {
         <ThemeProvider>
             <div style={{ width: '100vw', height: '100vh' }}>
                 {renderScreen()}
+                <InfoPopupComponent />
             </div>
         </ThemeProvider>
     )

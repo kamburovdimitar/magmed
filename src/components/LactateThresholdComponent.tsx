@@ -13,6 +13,52 @@ export default function LactateThresholdComponent({
             selectedModel
         )?.result;
 
+    const firstWattKg =
+        ErgometryUtil.calculateWattPerKg(
+            report?.IASPoint?.load,
+            measurements?.weightkg
+        );
+
+    const secondWattKg =
+        ErgometryUtil.calculateWattPerKg(
+            report?.IANSPoint?.load,
+            measurements?.weightkg
+        );
+
+    const firstHFPercent =
+        ErgometryUtil.calculateHFPercent(
+            report?.IASPoint?.hf,
+            measurements?.heartratemax
+        );
+
+    const secondHFPercent =
+        ErgometryUtil.calculateHFPercent(
+            report?.IANSPoint?.hf,
+            measurements?.heartratemax
+        );
+
+    const firstVO2Percent =
+        ErgometryUtil.calculateVO2Percent(
+            report?.IASPoint
+        );
+
+    const secondVO2Percent =
+        ErgometryUtil.calculateVO2Percent(
+            report?.IANSPoint
+        );
+
+    const firstSpeed =
+        ErgometryUtil.calculateSpeed(
+            report?.IASPoint,
+            measurements?.ergometry?.type
+        );
+
+    const secondSpeed =
+        ErgometryUtil.calculateSpeed(
+            report?.IANSPoint,
+            measurements?.ergometry?.type
+        );
+
     return (
 
         <View style={styles.container}>
@@ -62,19 +108,19 @@ export default function LactateThresholdComponent({
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {firstWattKg ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {firstVO2Percent}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {firstSpeed}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {firstHFPercent ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>
@@ -94,19 +140,19 @@ export default function LactateThresholdComponent({
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {secondWattKg ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {secondVO2Percent}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {secondSpeed}
                 </Text>
 
                 <Text style={styles.cell}>
-                    -
+                    {secondHFPercent ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>

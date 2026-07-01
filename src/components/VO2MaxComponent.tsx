@@ -1,10 +1,53 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TableCellComponent from './TableCellComponent';
+import { ErgometryUtil } from '../utils/ErgometrieUtil';
 
 export default function VO2MaxComponent({
-    measurements
+    measurements,
+    selectedModel
 }) {
+
+    const report =
+        ErgometryUtil.getReportByModel(
+            measurements?.ergometryReports,
+            selectedModel
+        )?.result;
+
+    const firstVO2 =
+        ErgometryUtil.calculateVO2(
+            report?.IASPoint,
+            measurements
+        );
+
+    const secondVO2 =
+        ErgometryUtil.calculateVO2(
+            report?.IANSPoint
+        );
+
+    const firstVO2Kg =
+        ErgometryUtil.calculateVO2Kg(
+            report?.IASPoint,
+            measurements?.weightkg
+        );
+
+    const secondVO2Kg =
+        ErgometryUtil.calculateVO2Kg(
+            report?.IANSPoint,
+            measurements?.weightkg
+        );
+
+    const firstPower =
+        report?.IASPoint?.load ?? "-";
+
+    const secondPower =
+        report?.IANSPoint?.load ?? "-";
+
+    const firstHF =
+        report?.IASPoint?.hf ?? "-";
+
+    const secondHF =
+        report?.IANSPoint?.hf ?? "-";
 
     return (
 
@@ -40,32 +83,33 @@ export default function VO2MaxComponent({
             <View style={styles.row}>
 
                 <Text style={styles.name}>
-                    VT1
+                    First LT
+
                 </Text>
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={firstVO2} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={firstVO2Kg} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={firstPower} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={firstHF} />
 
             </View>
 
             <View style={styles.row}>
 
                 <Text style={styles.name}>
-                    VT2
+                    Second LT
                 </Text>
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={secondVO2} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={secondVO2Kg} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={secondPower} />
 
-                <TableCellComponent value="" />
+                <TableCellComponent value={secondHF} />
 
             </View>
 
