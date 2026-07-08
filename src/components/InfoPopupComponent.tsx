@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { registerPopup } from '../services/PopupService';
 
-import {
-    registerPopup
-} from '../services/PopupService';
-
-export default function InfoPopupComponent() {
+export default function InfoPopUpComponent() {
 
     const [visible, setVisible] = useState(false);
 
@@ -58,9 +50,52 @@ export default function InfoPopupComponent() {
                     {infoObject?.description}
                 </Text>
 
-                <Text style={styles.formula}>
-                    {infoObject?.formula}
-                </Text>
+                {
+
+                    infoObject?.formula &&
+
+                    <Text style={styles.formula}>
+                        {infoObject.formula}
+                    </Text>
+
+                }
+
+                {
+
+                    infoObject?.fields?.length > 0 &&
+
+                    <View style={styles.fieldsContainer}>
+
+                        {
+
+                            infoObject.fields.map((field, i) => (
+
+                                <Text
+                                    key={i}
+                                    style={styles.field}
+                                >
+                                    • {field}
+                                </Text>
+
+                            ))
+
+                        }
+
+                    </View>
+
+                }
+
+                {
+
+                    infoObject?.source &&
+
+                    <Text style={styles.source}>
+
+                        Source: {infoObject.source}
+
+                    </Text>
+
+                }
 
                 <TouchableOpacity
                     style={styles.button}
@@ -156,6 +191,42 @@ const styles = StyleSheet.create({
         marginBottom: 20,
 
         fontFamily: 'monospace'
+
+    },
+
+    fieldsContainer: {
+
+        borderWidth: 1,
+
+        borderColor: '#ddd',
+
+        backgroundColor: '#fafafa',
+
+        padding: 15,
+
+        marginBottom: 20
+
+    },
+
+    field: {
+
+        fontSize: 14,
+
+        lineHeight: 22,
+
+        marginVertical: 2
+
+    },
+
+    source: {
+
+        fontSize: 12,
+
+        color: '#666',
+
+        fontStyle: 'italic',
+
+        marginBottom: 20
 
     },
 

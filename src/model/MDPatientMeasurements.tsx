@@ -1,6 +1,7 @@
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import { MDErgometry } from "./MDErgometry";
 import { MDErgometryReport } from "./MDErgometryReport";
+import { CodexUtil } from '../utils/CodexUtil';
 
 export class MDPatientMeasurements {
 
@@ -75,98 +76,148 @@ export class MDPatientMeasurements {
     get istLeistungMax() { return this._istLeistungMax; }
     set istLeistungMax(value: number) { this._istLeistungMax = value; }
 
-    // 🔹 SOLL (идва от util)
-    get sollLeistungNorm(): number {
 
-        return ErgometryUtil.getSollLeistungNorm(
+    // calculated
+    get bodysurfacearea(): number {
 
-            this._age,
-            "male",
-
+        return (
+            CodexUtil.calculateBSA(
+                this._heightcm,
+                this._weightkg
+            ) ?? 0
         );
 
     }
 
-    // calculated
-    get bodysurfacearea(): number {
-        return Math.sqrt((this._heightcm * this._weightkg) / 3600);
-    }
-
     get bmi(): number {
-        const heightm = this._heightcm / 100;
-        return heightm ? this._weightkg / (heightm * heightm) : 0;
+
+        return (
+            CodexUtil.calculateBMI(
+                this._heightcm,
+                this._weightkg
+            ) ?? 0
+        );
+
     }
 
     get whrindex(): number {
-        return this._hipcm ? this._waistcm / this._hipcm : 0;
+
+        return (
+            CodexUtil.calculateWHR(
+                this._waistcm,
+                this._hipcm
+            ) ?? 0
+        );
+
     }
 
     get fatmasskg(): number {
-        return this._weightkg * (this._bodyfatpercent / 100);
+
+        return (
+            CodexUtil.calculateFatMass(
+                this._weightkg,
+                this._bodyfatpercent
+            ) ?? 0
+        );
+
     }
 
     get expectedheartrate(): number {
-        return 220 - this._age;
+
+        return (
+            CodexUtil.calculateExpectedHeartRate(
+                this._age
+            ) ?? 0
+        );
+
     }
 
     // 🔹 ERGOMETRIE
 
+
+
+
+
+    get sollLeistungNorm(): number {
+        return ErgometryUtil.getSollLeistungNorm(
+            this._age,
+            "male"
+        );
+    }
+
     get sollLeistungProKg(): number {
-        return this._weightkg
-            ? this.sollLeistungNorm / this._weightkg
-            : 0;
+
+        return (
+            CodexUtil.calculateSollWattKg(
+                this.sollLeistungNorm,
+                this._weightkg
+            ) ?? 0
+        );
+
     }
 
     get istLeistungProKg(): number {
 
-        let weight =
-            Number(this._weightkg);
-
-        let ist =
-            Number(this._istLeistungMax);
-
-        if (!weight)
-            return 0;
-
-        return ist / weight;
+        return (
+            CodexUtil.calculateIstWattKg(
+                this._istLeistungMax,
+                this._weightkg
+            ) ?? 0
+        );
 
     }
 
     get istProzentNorm(): number {
-        return this.sollLeistungNorm
-            ? (this._istLeistungMax * 100) / this.sollLeistungNorm
-            : 0;
+
+        return (
+            CodexUtil.calculateIstPercent(
+                this._istLeistungMax,
+                this.sollLeistungNorm
+            ) ?? 0
+        );
+
     }
 
     get sollLeistungWeight(): number {
 
         return ErgometryUtil.getSollLeistungWeight(
-
             this._age,
-
             "male"
-
         );
 
     }
 
     get sollLeistungWeightProKg(): number {
-        return this._weightkg
-            ? this.sollLeistungWeight / this._weightkg
-            : 0;
+
+        return (
+            CodexUtil.calculateSollWeightWattKg(
+                this.sollLeistungWeight,
+                this._weightkg
+            ) ?? 0
+        );
+
     }
 
     get istLeistungWeightProKg(): number {
-        return this._weightkg
-            ? this._istLeistungMax / this._weightkg
-            : 0;
+
+        return (
+            CodexUtil.calculateIstWeightWattKg(
+                this._istLeistungMax,
+                this._weightkg
+            ) ?? 0
+        );
+
     }
 
     get istProzentWeightNorm(): number {
-        return this.sollLeistungWeight
-            ? (this._istLeistungMax * 100)
-            / this.sollLeistungWeight
-            : 0;
+
+        return (
+            CodexUtil.calculateIstWeightPercent(
+                this._istLeistungMax,
+                this.sollLeistungWeight
+            ) ?? 0
+        );
+
     }
 
 
@@ -218,72 +269,115 @@ export class MDPatientMeasurements {
 
     get minperkm(): string {
 
-        if (!this._maxspeed)
-            return "";
-
-        let totalSeconds =
-            Math.round(
-                3600 / this._maxspeed
-            );
-
-        let minutes =
-            Math.floor(
-                totalSeconds / 60
-            );
-
-        let seconds =
-            totalSeconds % 60;
-
         return (
-
-            String(minutes)
-                .padStart(2, '0')
-
-            +
-
-            ":"
-
-            +
-
-            String(seconds)
-                .padStart(2, '0')
-
+            CodexUtil.calculatePace(
+                this._maxspeed
+            ) ?? ""
         );
 
     }
 
     get heartrateReserve(): number {
-        return this._heartratemax - this._heartraterest;
+
+        return (
+            this._heartratemax -
+            this._heartraterest
+        );
+
     }
 
+    get hrr60(): number {
+
+        return (
+            CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                60
+            ) ?? 0
+        );
+
+    }
+
+    get hrr65(): number {
+
+        return (
+            CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                65
+            ) ?? 0
+        );
+
+    }
+
+
     get hrr70(): number {
-        return this.heartrateReserve
-            ? this._heartraterest + this.heartrateReserve * 0.70
-            : 0;
+
+        return (
+            CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                70
+            ) ?? 0
+        );
+
     }
 
     get hrr80(): number {
-        return this.heartrateReserve
-            ? this._heartraterest + this.heartrateReserve * 0.80
-            : 0;
+
+        return (
+            CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                80
+            ) ?? 0
+        );
+
     }
 
     get hrr90(): number {
-        return this.heartrateReserve
-            ? this._heartraterest + this.heartrateReserve * 0.90
-            : 0;
+
+        return (
+            CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                90
+            ) ?? 0
+        );
+
     }
 
     get hfMax70(): number {
-        return this._heartratemax * 0.70;
+
+        return (
+            CodexUtil.calculateVO2HeartRate(
+                this._heartratemax,
+                70
+            ) ?? 0
+        );
+
     }
 
     get hfMax80(): number {
-        return this._heartratemax * 0.80;
+
+        return (
+            CodexUtil.calculateVO2HeartRate(
+                this._heartratemax,
+                80
+            ) ?? 0
+        );
+
     }
 
     get hfMax90(): number {
-        return this._heartratemax * 0.90;
+
+        return (
+            CodexUtil.calculateVO2HeartRate(
+                this._heartratemax,
+                90
+            ) ?? 0
+        );
+
     }
 
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 import TableCellComponent from './TableCellComponent';
+import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import { openPopup } from '../services/PopupService';
 
@@ -50,18 +51,9 @@ export default function HeartRateZonesComponent({
 
         <View style={styles.container}>
 
-            <View style={styles.titleRow}>
 
-                <Text style={styles.title}>
-                    Heart Rate Zones (%)
-                </Text>
 
-                <Button
-                    title="ⓘ"
-                    onPress={infoHandler}
-                />
-
-            </View>
+            <TitleWithInfoComponent title='Heart Rate Zones (%)' infoHandler={infoHandler} />
 
 
             <View style={styles.row}>

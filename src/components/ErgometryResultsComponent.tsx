@@ -1,10 +1,46 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import TitleWithInfoComponent from './TitleWithInfoComponent'
+import { openPopup } from '../services/PopupService';
 
 export default function ErgometryResultsComponent({
     measurements,
     selectedModel
 }) {
+
+    function infoHandler() {
+
+        openPopup({
+
+            title: "Ergometry Results",
+
+            description:
+                "Displays the calculated aerobic (IAS) and anaerobic (IANS) thresholds according to the selected lactate evaluation model. "
+                + "The displayed values represent the exercise intensity, heart rate and blood lactate concentration at each threshold.",
+
+            formula:
+                "Thresholds are calculated using the selected evaluation algorithm (Dickhuth, Freiburg, Linear, LTP, Keul or Keul Legacy).",
+
+            source:
+                "Calculated from the recorded ergometry test data using the selected lactate evaluation model.",
+
+            fields: [
+
+                "IAS = Individual Aerobic Threshold",
+
+                "IANS = Individual Anaerobic Threshold",
+
+                "HF = Heart Rate at the threshold",
+
+                "Lactate = Blood lactate concentration (mmol/L)",
+
+                "Model = Selected lactate evaluation algorithm"
+
+            ]
+
+        });
+
+    }
 
     const reports =
         measurements?.ergometryReports ?? [];
@@ -19,9 +55,7 @@ export default function ErgometryResultsComponent({
 
         <View style={styles.container}>
 
-            <Text style={styles.title}>
-                Ergometry Results
-            </Text>
+            <TitleWithInfoComponent title=' Ergometry Results' infoHandler={infoHandler} />
 
             <View style={styles.block}>
 

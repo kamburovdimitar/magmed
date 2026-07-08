@@ -9,6 +9,7 @@ export default function TestMeasurmentComponent({
     onUpdateMeasurements
 }) {
 
+
     function update(field, value) {
         onUpdateMeasurements(field, value);
     }

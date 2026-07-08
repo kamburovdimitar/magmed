@@ -2,11 +2,45 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TableCellComponent from './TableCellComponent';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
+import TitleWithInfoComponent from './TitleWithInfoComponent'
+import { openPopup } from '../services/PopupService';
 
 export default function VO2MaxComponent({
     measurements,
     selectedModel
 }) {
+
+    function infoHandler() {
+
+        openPopup({
+
+            title: "Heart Rate Zones (%)",
+
+            description:
+                "The table displays the calculated heart rate for different training intensities. "
+                + "Each value represents the target heart rate for the selected percentage of Heart Rate Reserve (HRR).",
+
+            formula:
+                "Target HR = HRrest + (HRmax - HRrest) × (% / 100)",
+
+            source:
+                "Calculated from the patient's Resting Heart Rate and Maximum Heart Rate using the Karvonen formula.",
+
+            fields: [
+
+                "HRrest = Resting Heart Rate",
+
+                "HRmax = Maximum Heart Rate",
+
+                "HRR = HRmax - HRrest",
+
+                "Displayed zones: 45% - 110% HRR"
+
+            ]
+
+        });
+
+    }
 
     const report =
         ErgometryUtil.getReportByModel(
@@ -53,9 +87,8 @@ export default function VO2MaxComponent({
 
         <View style={styles.container}>
 
-            <Text style={styles.title}>
-                Maximum Oxygen Uptake (VO₂max)
-            </Text>
+
+            <TitleWithInfoComponent title='  Maximum Oxygen Uptake (VO₂max)' infoHandler={infoHandler} />
 
             <View style={styles.header}>
 

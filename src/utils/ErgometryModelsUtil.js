@@ -210,28 +210,37 @@ function calculateLinear(data) {
     let IANSPoint = null;
     let IASIndex = -1;
 
-    const baseline = Number(data[0].lactate);
+    const baseline =
+        Number(data[0].lactate);
 
     // 🔹 IAS
     for (let i = 1; i < data.length; i++) {
 
-        const current = Number(data[i].lactate);
+        const current =
+            Number(data[i].lactate);
 
         if (current > baseline + 0.4) {
 
             IASPoint = {
 
                 lactate: current,
+
                 load: data[i].load,
+
                 hf: Number(data[i].hf),
-                stage: data[i].stage
+
+                stage: data[i].stage,
+
+                stageRange: `${data[i].stage}`
 
             };
 
             IASIndex = i;
 
             break;
+
         }
+
     }
 
     // 🔹 IANS ONLY AFTER IAS
@@ -239,27 +248,43 @@ function calculateLinear(data) {
 
         for (let i = IASIndex; i < data.length - 1; i++) {
 
-            const prev = Number(data[i - 1].lactate);
-            const current = Number(data[i].lactate);
-            const next = Number(data[i + 1].lactate);
+            const prev =
+                Number(data[i - 1].lactate);
 
-            const slope1 = current - prev;
-            const slope2 = next - current;
+            const current =
+                Number(data[i].lactate);
+
+            const next =
+                Number(data[i + 1].lactate);
+
+            const slope1 =
+                current - prev;
+
+            const slope2 =
+                next - current;
 
             if (slope2 > slope1 * 1.5) {
 
                 IANSPoint = {
 
                     lactate: current,
+
                     load: data[i].load,
+
                     hf: Number(data[i].hf),
-                    stage: data[i].stage
+
+                    stage: data[i].stage,
+
+                    stageRange: `${data[i].stage}`
 
                 };
 
                 break;
+
             }
+
         }
+
     }
 
     const result =
@@ -310,20 +335,16 @@ function calculateLinear(data) {
  * }
  */
 function calculateMaxSlopeMethodKeulLegacy(data) {
+
     if (!data || data.length < 2) {
         return null;
     }
 
-    /**
-     * 🔹 interpolate point by load
-     */
     let maxSlope = 0;
     let IANSPoint = null;
 
-    /**
-     * 🔹 find maximum slope
-     */
     for (let i = 0; i < data.length - 1; i++) {
+
         const p1 = data[i];
         const p2 = data[i + 1];
 
@@ -345,52 +366,79 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
             continue;
         }
 
-        const slope = (lactate2 - lactate1) / loadDiff;
+        const slope =
+            (lactate2 - lactate1) / loadDiff;
 
         if (slope > maxSlope) {
+
             maxSlope = slope;
 
             IANSPoint = {
+
                 lactate: lactate2,
+
                 load: load2,
+
                 hf: Number(p2.hf),
-                stage: p2.stage
+
+                stage: p2.stage,
+
+                stageRange: `${p1.stage}-${p2.stage}`
+
             };
+
         }
+
     }
 
-    /**
-     * 🔹 derive IAS
-     * 75% of IANS load
-     */
     let IASPoint = null;
 
     if (IANSPoint) {
-        const derivedLoad = Number((IANSPoint.load * 0.75).toFixed(1));
 
-        IASPoint = interpolateByLoad(data, derivedLoad);
+        const derivedLoad =
+            Number((IANSPoint.load * 0.75).toFixed(1));
+
+        IASPoint =
+            interpolateByLoad(
+                data,
+                derivedLoad
+            );
+
     }
 
-    /**
-     * 🔹 validation
-     */
     if (
         IASPoint &&
         IANSPoint &&
         IASPoint.lactate >= IANSPoint.lactate
     ) {
-        console.warn('Invalid Keul thresholds');
+
+        console.warn(
+            'Invalid Keul thresholds'
+        );
+
     }
 
     return {
+
         lmin: null,
-        IAS: IASPoint?.lactate || null,
-        IANS: IANSPoint?.lactate || null,
+
+        IAS:
+            IASPoint?.lactate || null,
+
+        IANS:
+            IANSPoint?.lactate || null,
+
         lminRow: null,
+
         IASPoint,
+
         IANSPoint,
-        maxSlope: Number(maxSlope.toFixed(4))
+
+        maxSlope:
+            Number(maxSlope.toFixed(4))
+
     };
+
 }
 
 function calculateKeul(data) {
@@ -605,53 +653,73 @@ function calculateHRRPercent(hf, hfRest, hfMax) {
  *   stage
  * }
  */
-function interpolateThreshold(data, target) {
+function interpolateThreshold(
+    data,
+    target
+) {
 
     for (let i = 0; i < data.length - 1; i++) {
 
         const p1 = data[i];
-
         const p2 = data[i + 1];
 
         const l1 = Number(p1.lactate);
-
         const l2 = Number(p2.lactate);
 
-        // 🔹 target between points
-        if (target >= l1 && target <= l2) {
+        if (
+            target >= l1 &&
+            target <= l2
+        ) {
 
-            const ratio = (target - l1) / (l2 - l1);
+            const ratio =
+                (target - l1) /
+                (l2 - l1);
 
-            const interpolatedLoad = p1.load + ratio * (p2.load - p1.load);
+            const interpolatedLoad =
+                p1.load +
+                ratio * (p2.load - p1.load);
 
             const hf1 = Number(p1.hf);
-
             const hf2 = Number(p2.hf);
 
-            const interpolatedHF = hf1 + ratio * (hf2 - hf1);
+            const interpolatedHF =
+                hf1 +
+                ratio * (hf2 - hf1);
 
             return {
 
                 lactate: target,
 
-                load: Number(interpolatedLoad.toFixed(1)),
+                load:
+                    Number(interpolatedLoad.toFixed(1)),
 
-                hf: Number(interpolatedHF.toFixed(0)),
+                hf:
+                    Number(interpolatedHF.toFixed(0)),
 
-                stage: `${p1.stage}-${p2.stage}`
+                stage:
+                    `${p1.stage}-${p2.stage}`,
+
+                stageRange:
+                    `${p1.stage}-${p2.stage}`
+
             };
+
         }
+
     }
 
     return null;
+
 }
 
 function interpolateByHF(data, targetHF) {
+
     if (!data || data.length < 2) {
         return null;
     }
 
     for (let i = 0; i < data.length - 1; i++) {
+
         const p1 = data[i];
         const p2 = data[i + 1];
 
@@ -663,20 +731,35 @@ function interpolateByHF(data, targetHF) {
         }
 
         if (targetHF >= hf1 && targetHF <= hf2) {
-            const ratio = (targetHF - hf1) / (hf2 - hf1);
+
+            const ratio =
+                (targetHF - hf1) / (hf2 - hf1);
 
             return {
-                load: p1.load + ((p2.load - p1.load) * ratio),
-                lactate: p1.lactate + ((p2.lactate - p1.lactate) * ratio),
+
+                load:
+                    p1.load + ((p2.load - p1.load) * ratio),
+
+                lactate:
+                    p1.lactate + ((p2.lactate - p1.lactate) * ratio),
+
                 hf: targetHF,
-                stage: p1.stage
+
+                // Старото поведение
+                stage: p1.stage,
+
+                // Новото - за UI
+                stageRange: `${p1.stage}-${p2.stage}`
+
             };
+
         }
+
     }
 
     return null;
-}
 
+}
 /**
  * 🔹 Automatic interpretation
  *
@@ -778,11 +861,8 @@ function interpolateByLoad(
         const p1 = data[i];
         const p2 = data[i + 1];
 
-        const load1 =
-            Number(p1.load);
-
-        const load2 =
-            Number(p2.load);
+        const load1 = Number(p1.load);
+        const load2 = Number(p2.load);
 
         if (
             targetLoad >= load1 &&
@@ -793,46 +873,30 @@ function interpolateByLoad(
                 (targetLoad - load1) /
                 (load2 - load1);
 
-            const lactate1 =
-                Number(p1.lactate);
-
-            const lactate2 =
-                Number(p2.lactate);
-
-            const hf1 =
-                Number(p1.hf);
-
-            const hf2 =
-                Number(p2.hf);
-
             return {
 
-                load:
-                    targetLoad,
+                load: targetLoad,
 
                 lactate:
-                    Number(
-                        (
-                            lactate1 +
-                            ratio *
-                            (lactate2 - lactate1)
-                        ).toFixed(1)
-                    ),
+                    p1.lactate + ((p2.lactate - p1.lactate) * ratio),
 
                 hf:
-                    Number(
-                        (
-                            hf1 +
-                            ratio *
-                            (hf2 - hf1)
-                        ).toFixed(0)
-                    )
+                    p1.hf + ((p2.hf - p1.hf) * ratio),
+
+                stage: p1.stage,
+
+                stageRange: `${p1.stage}-${p2.stage}`
+
             };
+
         }
+
     }
 
     return null;
+
 }
+
 function calculateTrainingZones(result) {
 
     if (!result || !result.IANSPoint) return null;
@@ -911,14 +975,23 @@ function calculateLTP(data) {
         points.push({
 
             load,
+
             lactate,
-            hf: Number(data[i].hf)
+
+            hf: Number(data[i].hf),
+
+            stage: data[i].stage,
+
+            stageRange: `${data[i].stage}`
+
         });
+
     }
 
     if (points.length < 6) {
 
         return null;
+
     }
 
     let bestError =
@@ -1021,22 +1094,31 @@ function calculateLTP(data) {
                         points[j],
 
                     segment1,
+
                     segment2,
+
                     segment3,
 
                     line1,
+
                     line2,
+
                     line3,
 
                     totalError
+
                 };
+
             }
+
         }
+
     }
 
     if (!bestResult) {
 
         return null;
+
     }
 
     const IASPoint =
@@ -1080,15 +1162,17 @@ function calculateLTP(data) {
         totalError:
             bestResult.totalError,
 
-            line1Points:
+        line1Points:
             bestResult.line1Points,
 
         line2Points:
             bestResult.line2Points,
 
         line3Points:
-            bestResult.line3Points,
+            bestResult.line3Points
+
     };
+
 }
 
 function fitLine(points) {
@@ -1175,6 +1259,597 @@ function calculateLineError(
 }
 
 
+// ------------------------------------------------
+// Performance
+// ------------------------------------------------
+
+function calculateSollWatt(
+    bodySurfaceArea,
+    age,
+    gender
+) {
+
+}
+
+
+
+
+
+/**
+ * ------------------------------------------------
+ * #35 - Performance (% Norm)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #35 = (#32 × 100) / #31
+ *
+ * Returns:
+ * %
+ */
+function calculateIstPercent(
+    istWatt,
+    sollWatt
+) {
+
+    if (
+        istWatt == null ||
+        sollWatt == null ||
+        sollWatt <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            (istWatt * 100) /
+            sollWatt
+        ).toFixed(0)
+    );
+
+}
+
+function calculateSollWeightWatt(
+    age,
+    gender
+) {
+
+}
+
+/**
+ * ------------------------------------------------
+ * #37 - Weight SOLL Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #37 = #36 / #11
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateSollWeightWattKg(
+    sollWeightWatt,
+    weightKg
+) {
+
+    if (
+        sollWeightWatt == null ||
+        weightKg == null ||
+        weightKg <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (sollWeightWatt / weightKg).toFixed(2)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #38 - Weight IST Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #38 = #32 / #11
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateIstWeightWattKg(
+    istWatt,
+    weightKg
+) {
+
+    if (
+        istWatt == null ||
+        weightKg == null ||
+        weightKg <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (istWatt / weightKg).toFixed(2)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #39 - Weight Performance (% Norm)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #39 = (#32 × 100) / #36
+ *
+ * Returns:
+ * %
+ */
+function calculateIstWeightPercent(
+    istWatt,
+    sollWeightWatt
+) {
+
+    if (
+        istWatt == null ||
+        sollWeightWatt == null ||
+        sollWeightWatt <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            (istWatt * 100) /
+            sollWeightWatt
+        ).toFixed(0)
+    );
+
+}
+
+// ------------------------------------------------
+// Heart Rate Reserve
+// ------------------------------------------------
+
+function calculateHRR(
+    restHF,
+    maxHF,
+    intensity
+) {
+
+    if (
+        restHF == null ||
+        maxHF == null
+    ) {
+        return null;
+    }
+
+    return Math.round(
+        restHF +
+        ((maxHF - restHF) * intensity)
+    );
+
+}
+
+
+
+// ------------------------------------------------
+// VO2
+// ------------------------------------------------
+
+function calculateVO2HeartRate(
+    maxHF,
+    percent
+) {
+
+    if (
+        maxHF == null
+    ) {
+        return null;
+    }
+
+    return Math.round(
+        maxHF *
+        (percent / 100)
+    );
+
+}
+
+function calculateWattPerKg(
+    watt,
+    weight
+) {
+
+    if (
+        watt == null ||
+        weight == null ||
+        weight <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (watt / weight).toFixed(2)
+    );
+
+}
+
+function calculateVO2Percent(
+    point
+) {
+
+    if (!point) {
+        return "-";
+    }
+
+    // TODO:
+    // Implement according to the official MAGMED
+    // Ergometry Formula Specification (PDF 3.21b).
+    //
+    // The current IAS/IANS points do not contain
+    // enough information to calculate %VO₂ correctly.
+    //
+    // The final implementation should use the
+    // official formula from the specification.
+
+    return "-";
+
+}
+
+
+/**
+ * ------------------------------------------------
+ * #12 - Body Surface Area (BSA)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #12 = 0.007184 × Weight^0.425 × Height^0.725
+ *
+ * Du Bois Formula
+ *
+ * Height: cm
+ * Weight: kg
+ *
+ * Returns:
+ * m²
+ */
+function calculateBSA(
+    heightCm,
+    weightKg
+) {
+
+    if (
+        heightCm == null ||
+        weightKg == null
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            0.007184 *
+            Math.pow(weightKg, 0.425) *
+            Math.pow(heightCm, 0.725)
+        ).toFixed(2)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #13 - Body Mass Index (BMI)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #13 = Weight / Height²
+ *
+ * Height: meters
+ *
+ * Returns:
+ * kg/m²
+ */
+function calculateBMI(
+    heightCm,
+    weightKg
+) {
+
+    if (
+        heightCm == null ||
+        weightKg == null ||
+        heightCm <= 0
+    ) {
+        return null;
+    }
+
+    const heightM =
+        heightCm / 100;
+
+    return Number(
+        (
+            weightKg /
+            (heightM * heightM)
+        ).toFixed(1)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #16 - Waist Hip Ratio (WHR)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #16 = Waist / Hip
+ *
+ * Returns:
+ * Ratio
+ */
+function calculateWHR(
+    waistCm,
+    hipCm
+) {
+
+    if (
+        waistCm == null ||
+        hipCm == null ||
+        hipCm <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            waistCm / hipCm
+        ).toFixed(2)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #18 - Fat Mass
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #18 = Weight × Fat% / 100
+ *
+ * Returns:
+ * kg
+ */
+function calculateFatMass(
+    weightKg,
+    bodyFatPercent
+) {
+
+    if (
+        weightKg == null ||
+        bodyFatPercent == null
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            weightKg *
+            (bodyFatPercent / 100)
+        ).toFixed(1)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #25 - Expected Heart Rate
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #25 = 220 - Age
+ *
+ * Returns:
+ * bpm
+ */
+function calculateExpectedHeartRate(
+    age
+) {
+
+    if (
+        age == null
+    ) {
+        return null;
+    }
+
+    return 220 - age;
+
+}
+
+/**
+ * ------------------------------------------------
+ * #33 - SOLL Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #33 = #31 / #11
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateSollWattKg(
+    sollWatt,
+    weightKg
+) {
+
+    if (
+        sollWatt == null ||
+        weightKg == null ||
+        weightKg <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (sollWatt / weightKg).toFixed(2)
+    );
+
+}
+
+
+/**
+ * ------------------------------------------------
+ * #34 - IST Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #34 = #32 / #11
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateIstWattKg(
+    istWatt,
+    weightKg
+) {
+
+    if (
+        istWatt == null ||
+        weightKg == null ||
+        weightKg <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (istWatt / weightKg).toFixed(2)
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #47 - IAS Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #47 = IAS Watt / Weight
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateIASWattKg(
+    IASPoint,
+    weightKg
+) {
+
+    return calculateWattPerKg(
+        IASPoint?.load,
+        weightKg
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #48 - IANS Power / kg
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #48 = IANS Watt / Weight
+ *
+ * Returns:
+ * Watt/kg
+ */
+function calculateIANSWattKg(
+    IANSPoint,
+    weightKg
+) {
+
+    return calculateWattPerKg(
+        IANSPoint?.load,
+        weightKg
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * #49 - IAS Heart Rate
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #49 = Heart Rate at IAS
+ *
+ * Returns:
+ * bpm
+ */
+function calculateIASHeartRate(
+    IASPoint
+) {
+
+    if (!IASPoint) {
+        return null;
+    }
+
+    return IASPoint.hf ?? null;
+
+}
+
+/**
+ * ------------------------------------------------
+ * #50 - IANS Heart Rate
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #50 = Heart Rate at IANS
+ *
+ * Returns:
+ * bpm
+ */
+function calculateIANSHeartRate(
+    IANSPoint
+) {
+
+    if (!IANSPoint) {
+        return null;
+    }
+
+    return IANSPoint.hf ?? null;
+
+}
+
+/**
+ * ------------------------------------------------
+ * #68 - IAS Speed (% Max Speed)
+ * ------------------------------------------------
+ *
+ * MAGMED Codex:
+ * #68 = IAS Speed × 100 / Max Speed
+ *
+ * Returns:
+ * %
+ */
+function calculateIASSpeedPercent(
+    IASSpeed,
+    maxSpeed
+) {
+
+    if (
+        IASSpeed == null ||
+        maxSpeed == null ||
+        maxSpeed <= 0
+    ) {
+        return null;
+    }
+
+    return Math.round(
+        (IASSpeed * 100) / maxSpeed
+    );
+
+}
+
+
+
+
+
 export const ErgometryModelsUtil = {
 
     calculateDickhuth,
@@ -1206,6 +1881,38 @@ export const ErgometryModelsUtil = {
 
     calculateTrainingZones,
 
-    calculateLTP
+    calculateLTP,
+
+    // Performance
+    calculateSollWatt,
+    calculateSollWattKg,
+    calculateIstWattKg,
+    calculateIstPercent,
+    calculateSollWeightWatt,
+    calculateSollWeightWattKg,
+    calculateIstWeightWattKg,
+    calculateIstWeightPercent,
+
+    // Heart Rate Reserve
+    calculateHRR,
+
+    // IANS
+    calculateIANSHeartRate,
+
+    // VO₂
+    calculateVO2HeartRate,
+    calculateVO2Percent,
+    calculateWattPerKg,
+    // CODEX
+    calculateBSA,
+    calculateBMI,
+    calculateWHR,
+    calculateFatMass,
+    calculateExpectedHeartRate,
+    calculateIASWattKg,
+    calculateIANSWattKg,
+    calculateIASHeartRate,
+    calculateIASSpeedPercent
+    
 
 };

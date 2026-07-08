@@ -1,11 +1,48 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
+import TitleWithInfoComponent from './TitleWithInfoComponent'
+import { openPopup } from '../services/PopupService';
 
 export default function LactateThresholdComponent({
     measurements,
     selectedModel
 }) {
+
+    function infoHandler() {
+
+        openPopup({
+
+            title: "Lactate Threshold",
+
+            description:
+                "Displays the calculated First (LT1/IAS) and Second (LT2/IANS) Lactate Thresholds using the selected evaluation model.",
+
+            formula:
+                "Thresholds are determined by the selected lactate evaluation algorithm.",
+
+            source:
+                "Results are calculated from the ergometry test data using the selected evaluation model (Dickhuth, Freiburg, Linear, LTP, Keul or Keul Legacy).",
+
+            fields: [
+
+                "Watt = Power output at the threshold",
+
+                "Watt/kg = Power relative to body weight",
+
+                "%VO₂max = Estimated oxygen uptake at the threshold",
+
+                "Speed = Running speed (treadmill only)",
+
+                "%HFmax = Heart rate as percentage of maximum heart rate",
+
+                "HF = Heart rate at the threshold"
+
+            ]
+
+        });
+
+    }
 
     const report =
         ErgometryUtil.getReportByModel(
@@ -63,9 +100,8 @@ export default function LactateThresholdComponent({
 
         <View style={styles.container}>
 
-            <Text style={styles.title}>
-                Lactate Threshold
-            </Text>
+
+            <TitleWithInfoComponent title='  Lactate Threshold' infoHandler={infoHandler} />
 
             <View style={styles.header}>
 

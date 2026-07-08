@@ -5,7 +5,7 @@
     "rootDir": ".",
     "noImplicitAny": false,
     "strictNullChecks": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"

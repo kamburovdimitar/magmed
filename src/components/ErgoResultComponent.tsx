@@ -1,12 +1,49 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import LabelAndInputTextComponent from './LabelAndInputComponent'
+import TitleWithInfoComponent from './TitleWithInfoComponent'
+import { openPopup } from '../services/PopupService';
 
 export default function ErgoResultComponent({
     measurements,
     ergoType,
     onUpdateMeasurements
 }) {
+
+    function infoHandler() {
+
+        openPopup({
+
+            title: "Ergometry Performance",
+
+            description:
+                "Displays the patient's measured exercise performance compared with the expected reference values. "
+                + "Results are shown both relative to body surface area and body weight.",
+
+            formula:
+                "IST % = (Measured Performance / Expected Performance) × 100",
+
+            source:
+                "Reference values are calculated from patient characteristics. "
+                + "Measured performance corresponds to the maximum achieved workload during the ergometry test.",
+
+            fields: [
+
+                "SOLL = Expected (reference) performance",
+
+                "IST = Measured maximum performance",
+
+                "Watt = Absolute power output",
+
+                "Watt/kg = Power relative to body weight",
+
+                "% Norm = Percentage of the expected reference performance"
+
+            ]
+
+        });
+
+    }
 
     if (ergoType === 'laufband') {
 
@@ -16,9 +53,7 @@ export default function ErgoResultComponent({
 
                 <View style={styles.block}>
 
-                    <Text style={styles.title}>
-                        Laufband
-                    </Text>
+
 
                     <LabelAndInputTextComponent
                         label="Max Speed"
@@ -51,9 +86,7 @@ export default function ErgoResultComponent({
 
             <View style={styles.block}>
 
-                <Text style={styles.title}>
-                    Körper Oberfläche bezogen
-                </Text>
+                <TitleWithInfoComponent title='    Körper Oberfläche bezogen' infoHandler={infoHandler} />
 
                 <LabelAndInputTextComponent
                     label="SOLL"

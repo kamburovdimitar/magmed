@@ -16,7 +16,6 @@ import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 
 
 
-
 export default function TestComponent1({
     callback,
     measurements,
@@ -28,8 +27,9 @@ export default function TestComponent1({
 }) {
 
     const [selectedModel, setSelectedModel] = useState(ERGOMETRY_MODELS.DICKHUTH);
-
     const [localMeasurements, setLocalMeasurements] = useState(new MDPatientMeasurements(measurements));
+
+
 
     useEffect(() => {
 
@@ -101,11 +101,18 @@ export default function TestComponent1({
 
         updated.ergometry.data = data;
 
+        updated.ergometryReports =
+            ErgometryUtil.validateAllModels(
+                updated.ergometry.data
+            );
+
         setLocalMeasurements(updated);
 
         callback(updated);
 
     }
+
+
 
     return (
 
@@ -180,6 +187,7 @@ export default function TestComponent1({
 
             <ErgometryTableComponent
                 measurements={localMeasurements}
+                selectedModel={selectedModel}
                 onUpdateRow={onUpdateRow}
             />
 
