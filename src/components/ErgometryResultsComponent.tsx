@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { openPopup } from '../services/PopupService';
+import { CodexUtil } from '../utils/CodexUtil';
 
 export default function ErgometryResultsComponent({
     measurements,
@@ -26,15 +27,35 @@ export default function ErgometryResultsComponent({
 
             fields: [
 
-                "IAS = Individual Aerobic Threshold",
+                "IAS = Individual Aerobic Threshold (First Lactate Threshold).\nRepresents the transition from purely aerobic metabolism to increasing lactate production.",
 
-                "IANS = Individual Anaerobic Threshold",
+                "IANS = Individual Anaerobic Threshold (Second Lactate Threshold).\nRepresents the exercise intensity above which lactate accumulation increases rapidly.",
 
-                "HF = Heart Rate at the threshold",
+                "Watt = Power output at the threshold.\nSource: IASPoint.load / IANSPoint.load.",
 
-                "Lactate = Blood lactate concentration (mmol/L)",
+                "Watt/kg = Relative power output normalized to body weight.\nFormula: Watt / Body Weight.\nImplementation: CodexUtil.calculateIASWattKg() and CodexUtil.calculateIANSWattKg().",
 
-                "Model = Selected lactate evaluation algorithm"
+                "HF = Heart Rate at the threshold.\nSource: IASPoint.hf / IANSPoint.hf.",
+
+                "Lactate = Blood lactate concentration at the threshold.\nSource: IASPoint.lactate / IANSPoint.lactate.",
+
+                "Model = Selected lactate evaluation algorithm used for threshold detection.",
+
+                "",
+
+                "MAGMED Codex Mapping:",
+
+                "#45 -> IAS Watt\nSource: IASPoint.load",
+
+                "#46 -> IANS Watt\nSource: IANSPoint.load",
+
+                "#47 -> IAS Watt/kg\nFormula: IAS Watt / Body Weight",
+
+                "#48 -> IANS Watt/kg\nFormula: IANS Watt / Body Weight",
+
+                "#49 -> IAS Heart Rate\nSource: IASPoint.hf",
+
+                "#50 -> IANS Heart Rate\nSource: IANSPoint.hf"
 
             ]
 
@@ -55,7 +76,10 @@ export default function ErgometryResultsComponent({
 
         <View style={styles.container}>
 
-            <TitleWithInfoComponent title=' Ergometry Results' infoHandler={infoHandler} />
+            <TitleWithInfoComponent
+                title=' Ergometry Results'
+                infoHandler={infoHandler}
+            />
 
             <View style={styles.block}>
 
@@ -63,20 +87,56 @@ export default function ErgometryResultsComponent({
                     {report.model}
                 </Text>
 
+                <View style={styles.header}>
+
+                    <Text style={styles.label}>
+                    </Text>
+
+                    <Text style={styles.value}>
+                        Watt
+                    </Text>
+
+                    <Text style={styles.value}>
+                        Watt/kg
+                    </Text>
+
+                    <Text style={styles.value}>
+                        HF
+                    </Text>
+
+                    <Text style={styles.value}>
+                        Lactate
+                    </Text>
+
+                </View>
+
                 <View style={styles.row}>
 
                     <Text style={styles.label}>
                         IAS
                     </Text>
 
+                    {/* #45 */}
                     <Text style={styles.value}>
-                        {report.result?.IAS ?? "-"}
+                        {report.result?.IASPoint?.load ?? "-"} W
                     </Text>
 
+                    {/* #47 */}
+                    <Text style={styles.value}>
+                        {
+                            CodexUtil.calculateIASWattKg(
+                                report.result?.IASPoint,
+                                measurements?.weightkg
+                            ) ?? "-"
+                        } W/kg
+                    </Text>
+
+                    {/* #49 */}
                     <Text style={styles.value}>
                         {report.result?.IASPoint?.hf ?? "-"} bpm
                     </Text>
 
+                    {/* Lactate */}
                     <Text style={styles.value}>
                         {report.result?.IASPoint?.lactate ?? "-"} mmol
                     </Text>
@@ -89,14 +149,27 @@ export default function ErgometryResultsComponent({
                         IANS
                     </Text>
 
+                    {/* #46 */}
                     <Text style={styles.value}>
-                        {report.result?.IANS ?? "-"}
+                        {report.result?.IANSPoint?.load ?? "-"} W
                     </Text>
 
+                    {/* #48 */}
+                    <Text style={styles.value}>
+                        {
+                            CodexUtil.calculateIANSWattKg(
+                                report.result?.IANSPoint,
+                                measurements?.weightkg
+                            ) ?? "-"
+                        } W/kg
+                    </Text>
+
+                    {/* #50 */}
                     <Text style={styles.value}>
                         {report.result?.IANSPoint?.hf ?? "-"} bpm
                     </Text>
 
+                    {/* Lactate */}
                     <Text style={styles.value}>
                         {report.result?.IANSPoint?.lactate ?? "-"} mmol
                     </Text>
@@ -112,6 +185,25 @@ export default function ErgometryResultsComponent({
 }
 
 const styles = StyleSheet.create({
+    header: {
+        flexDirection: 'row',
+        marginBottom: 10
+    },
+
+    row: {
+        flexDirection: 'row',
+        marginVertical: 4
+    },
+
+    label: {
+        width: 120,
+        fontWeight: 'bold'
+    },
+
+    value: {
+        flex: 1,
+        textAlign: 'center'
+    },
 
     container: {
         marginTop: 20,
@@ -134,18 +226,6 @@ const styles = StyleSheet.create({
         marginBottom: 8
     },
 
-    row: {
-        flexDirection: 'row',
-        marginVertical: 3
-    },
 
-    label: {
-        width: 70,
-        fontWeight: 'bold'
-    },
-
-    value: {
-        flex: 1
-    }
 
 });
