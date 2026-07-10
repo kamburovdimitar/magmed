@@ -21,16 +21,20 @@ export default function HeartRateZoneComponent({ measurements }) {
 
             source:
                 "Calculated from the patient's Resting Heart Rate and Maximum Heart Rate using the Karvonen Heart Rate Reserve method.",
-
             fields: [
 
-                "HRrest = Resting Heart Rate",
+                "Resting Heart Rate = CODEX #23 - heartraterest\nMeasured heart rate at rest.",
 
-                "HRmax = Maximum Heart Rate",
+                "Maximum Heart Rate = CODEX #24 - heartratemax\nMaximum heart rate achieved during the ergometry test.",
 
-                "HRR = Heart Rate Reserve (HRmax - HRrest)",
+                "Heart Rate Reserve = Derived Value - heartrateReserve\nFormula: HRmax - HRrest.",
 
-                "70%, 80%, 90% = Recommended target heart rates for the selected training intensity"
+                "Target Heart Rate 70% = Derived Value - hrr70\nFormula: HRrest + ((HRmax - HRrest) × 0.70).\nImplementation: CodexUtil.calculateKarvonenHeartRate().",
+
+                "Target Heart Rate 80% = Derived Value - hrr80\nFormula: HRrest + ((HRmax - HRrest) × 0.80).\nImplementation: CodexUtil.calculateKarvonenHeartRate().",
+
+                "Target Heart Rate 90% = Derived Value - hrr90\nFormula: HRrest + ((HRmax - HRrest) × 0.90).\nImplementation: CodexUtil.calculateKarvonenHeartRate()."
+
             ]
 
         });

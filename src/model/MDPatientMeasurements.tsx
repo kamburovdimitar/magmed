@@ -380,4 +380,8 @@ export class MDPatientMeasurements {
 
     }
 
+    get istWatt(): number {
+        return this._istLeistungMax;
+    }
+
 }

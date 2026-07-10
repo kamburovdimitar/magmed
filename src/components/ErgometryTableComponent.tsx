@@ -28,17 +28,49 @@ export default function ErgometryTableComponent({
 
             fields: [
 
-                "Stage = Exercise stage number",
+                "Stage = Exercise stage number.\nEach row represents one exercise interval.",
 
-                "Time = Duration or elapsed time of the stage",
+                "Time = Stage duration or elapsed time.\nUsed by lactate interpolation models.",
 
-                "Load = Exercise workload (Watt or treadmill speed)",
+                "Load = Exercise intensity.\nBike ergometry uses Watt.\nTreadmill ergometry uses Speed (km/h).",
 
-                "HF = Heart Rate (beats per minute)",
+                "HF = Heart Rate.\nMeasured at the end of each stage.\nUnit: bpm.",
 
-                "Lactate = Blood lactate concentration (mmol/L)",
+                "Lactate = Blood lactate concentration.\nUnit: mmol/L.",
 
-                "LT1 / LT2 = Stages selected by the currently selected Lactate Model"
+                "LT1 / IAS = First lactate threshold selected by the active model.\nRepresents predominantly aerobic metabolism.",
+
+                "LT2 / IANS = Second lactate threshold selected by the active model.\nRepresents transition to predominantly anaerobic metabolism.",
+
+                "",
+
+                "Derived values generated from this table:",
+
+                "CODEX #47 = IAS Watt/kg",
+
+                "CODEX #48 = IANS Watt/kg",
+
+                "CODEX #68 = IAS Speed %",
+
+                "CODEX #69 = IANS Speed %",
+
+                "CODEX #72 = IAS Pace",
+
+                "CODEX #73 = IANS Pace",
+
+                "CODEX #92 = VO₂ ml/kg",
+
+                "CODEX #96 = VT1 Watt/kg",
+
+                "CODEX #97 = VT2 Watt/kg",
+
+                "CODEX #100 = VT1 %",
+
+                "CODEX #101 = VT2 %",
+
+                "CODEX #116 = VT1 Running %",
+
+                "CODEX #117 = VT2 Running %"
 
             ]
 

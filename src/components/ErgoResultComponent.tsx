@@ -10,6 +10,36 @@ export default function ErgoResultComponent({
     onUpdateMeasurements
 }) {
 
+    function laufbandInfoHandler() {
+
+        openPopup({
+
+            title: "Running Ergometry Performance",
+
+            description:
+                "Displays the patient's maximal running performance achieved during the treadmill ergometry test. "
+                + "The maximum speed is entered manually and the corresponding running pace is calculated automatically.",
+
+            formula:
+                "Pace (min/km) = 60 / Speed (km/h)",
+
+            source:
+                "Maximum running speed corresponds to the highest successfully completed treadmill stage during the test.",
+
+            fields: [
+
+                "Maximum Speed = CODEX #27 - maxspeed\nMaximum achieved running speed during the treadmill test.\nUnit: km/h.",
+
+                "Running Pace = CODEX #28 - minperkm\nCalculated from maximum speed.\nFormula: 60 / Speed.\nImplementation: CodexUtil.calculatePace().",
+
+                "Treadmill Ergometry = CODEX #30\nIndicates that the current test type is treadmill based."
+
+            ]
+
+        });
+
+    }
+
     function infoHandler() {
 
         openPopup({
@@ -29,15 +59,37 @@ export default function ErgoResultComponent({
 
             fields: [
 
-                "SOLL = Expected (reference) performance",
+                "SOLL = Expected (reference) performance.\nReference value calculated from age, gender and body surface area or body weight.",
 
-                "IST = Measured maximum performance",
+                "IST = Measured maximum performance.\nRepresents the maximum workload achieved during the ergometry test.",
 
-                "Watt = Absolute power output",
+                "Watt = Absolute power output.\nMeasured independently of body size.",
 
-                "Watt/kg = Power relative to body weight",
+                "Watt/kg = Relative power output.\nAllows comparison between subjects with different body weights.",
 
-                "% Norm = Percentage of the expected reference performance"
+                "% Norm = Percentage of expected performance.\nFormula: IST × 100 / SOLL.",
+
+                "",
+
+                "SOLL Watt = CODEX #31 - sollWatt\nExpected performance based on body surface area.\nSource: ErgometryUtil.getSollLeistungNorm().",
+
+                "IST Watt = CODEX #32 - istWatt\nMaximum achieved workload entered by the user.\nSource field: _istLeistungMax.",
+
+                "SOLL Watt/kg = CODEX #33 - sollWattKg\nFormula: #31 / Body Weight.\nImplementation: CodexUtil.calculateSollWattKg().",
+
+                "IST Watt/kg = CODEX #34 - istWattKg\nFormula: #32 / Body Weight.\nImplementation: CodexUtil.calculateIstWattKg().",
+
+                "IST % Norm = CODEX #35 - istPercent\nFormula: #32 × 100 / #31.\nImplementation: CodexUtil.calculateIstPercent().",
+
+                "",
+
+                "SOLL Weight Watt = CODEX #36 - sollWeightWatt\nExpected performance based on body weight.\nSource: ErgometryUtil.getSollLeistungWeight().",
+
+                "SOLL Weight Watt/kg = CODEX #37 - sollWeightWattKg\nFormula: #36 / Body Weight.\nImplementation: CodexUtil.calculateSollWeightWattKg().",
+
+                "IST Weight Watt/kg = CODEX #38 - istWeightWattKg\nFormula: #32 / Body Weight.\nImplementation: CodexUtil.calculateIstWeightWattKg().",
+
+                "IST Weight % Norm = CODEX #39 - istWeightPercent\nFormula: #32 × 100 / #36.\nImplementation: CodexUtil.calculateIstWeightPercent()."
 
             ]
 
@@ -52,6 +104,13 @@ export default function ErgoResultComponent({
             <View style={styles.container}>
 
                 <View style={styles.block}>
+
+
+
+                    <TitleWithInfoComponent
+                        title='    Laufband Leistung'
+                        infoHandler={laufbandInfoHandler}
+                    />
 
 
 
@@ -86,27 +145,53 @@ export default function ErgoResultComponent({
 
             <View style={styles.block}>
 
-                <TitleWithInfoComponent title='    Körper Oberfläche bezogen' infoHandler={infoHandler} />
+                <TitleWithInfoComponent
+                    title='    Körper Oberfläche bezogen'
+                    infoHandler={infoHandler}
+                />
 
                 <LabelAndInputTextComponent
                     label="SOLL"
                     measure="Watt"
+
+                    // MAGMED #31
+                    // measurements.sollWatt
+                    // -> sollLeistungNorm
+                    // -> ErgometryUtil.getSollLeistungNorm()
                     value={measurements?.sollWatt ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="SOLL"
                     measure="Watt/kg"
+
+                    // MAGMED #33
+                    // measurements.sollWattKg
+                    // -> sollLeistungProKg
+                    // -> CodexUtil.calculateSollWattKg()
                     value={measurements?.sollWattKg ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="IST"
                     measure="Watt"
-                    value={measurements?.istLeistungMax ?? 0}
+
+                    // MAGMED #32
+                    // measurements.istWatt
+                    // Editable input
+                    // Source for:
+                    // #34
+                    // #35
+                    // #38
+                    // #39
+                    value={measurements?.istWatt ?? 0}
+
                     isEditable={true}
+
                     setValue={(v) =>
                         onUpdateMeasurements(
                             'istLeistungMax',
@@ -118,14 +203,24 @@ export default function ErgoResultComponent({
                 <LabelAndInputTextComponent
                     label="IST"
                     measure="Watt/kg"
+
+                    // MAGMED #34
+                    // measurements.istWattKg
+                    // -> CodexUtil.calculateIstWattKg()
                     value={measurements?.istWattKg ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="% Norm"
                     measure="%"
+
+                    // MAGMED #35
+                    // measurements.istPercent
+                    // -> CodexUtil.calculateIstPercent()
                     value={measurements?.istPercent ?? 0}
+
                     isEditable={false}
                 />
 
@@ -140,35 +235,60 @@ export default function ErgoResultComponent({
                 <LabelAndInputTextComponent
                     label="SOLL"
                     measure="Watt"
+
+                    // MAGMED #36
+                    // measurements.sollWeightWatt
+                    // -> ErgometryUtil.getSollLeistungWeight()
                     value={measurements?.sollWeightWatt ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="SOLL"
                     measure="Watt/kg"
+
+                    // MAGMED #37
+                    // measurements.sollWeightWattKg
+                    // -> CodexUtil.calculateSollWeightWattKg()
                     value={measurements?.sollWeightWattKg ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="IST"
                     measure="Watt"
-                    value={measurements?.istLeistungMax ?? 0}
+
+                    // MAGMED #32
+                    // measurements.istWatt
+                    value={measurements?.istWatt ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="IST"
                     measure="Watt/kg"
-                    value={measurements?.istWattKg ?? 0}
+
+                    // MAGMED #38
+                    // measurements.istWeightWattKg
+                    // -> istLeistungWeightProKg
+                    // -> CodexUtil.calculateIstWeightWattKg()
+                    value={measurements?.istWeightWattKg ?? 0}
+
                     isEditable={false}
                 />
 
                 <LabelAndInputTextComponent
                     label="% Norm"
                     measure="%"
+
+                    // MAGMED #39
+                    // measurements.istWeightPercent
+                    // -> CodexUtil.calculateIstWeightPercent()
                     value={measurements?.istWeightPercent ?? 0}
+
                     isEditable={false}
                 />
 

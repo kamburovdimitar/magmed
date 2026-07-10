@@ -1,33 +1,61 @@
 export class MDErgometry {
 
     constructor(data?: Partial<MDErgometry>) {
+
         Object.assign(this, data);
 
-        if (data?.data?.length) {
-            this.data = data.data.map(d => ({ ...d })); // shallow copy
+        if (!this.data?.length) {
+            this.fillDefaultRows();
         }
 
-        if (data?.results?.length) {
-            this.results = data.results.map(r => ({ ...r })); //shallow copy
-        }
-
-        if (data?.detail != null) {
-            this.detail = { ...data.detail }; //shallow copy
-        }
     }
 
-    type: 'bike' | 'run' = 'bike'
-    startLoad: number = 0
-    increment: number = 0
-    timeStep: number = 0
+    type: 'bike' | 'laufband' = 'bike';
 
-    data: MDErgometryRow[] = []
+    startLoad: number = 0;
 
-    model: string = ""
+    increment: number = 0;
 
-    results: MDErgometryResult[] = []
+    timeStep: number = 180;
 
-    detail?: MDErgometryDetail
+    data: MDErgometryRow[] = [];
+
+    model: string = "";
+
+    results: MDErgometryResult[] = [];
+
+    detail?: MDErgometryDetail;
+
+
+    fillDefaultRows() {
+
+        this.data = [];
+
+        for (let i = 0; i < 10; i++) {
+
+            const minutes = i * 3;
+            let hourText = "";
+
+            if (minutes < 10) {
+                hourText = "0" + minutes;
+            } else {
+                hourText = minutes.toString();
+            }
+
+            const time = hourText + ":00";
+
+            this.data.push({
+                stage: i,
+                time: time,
+                load: 0,
+                hf: 0,
+                lactate: 0
+            });
+
+        }
+
+    }
+
 }
 
 

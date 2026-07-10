@@ -3,10 +3,10 @@ import { View, Text, TextInput, StyleSheet } from 'react-native'
 
 export default function LabelAndInputTextComponent({
     label,
-    measure,
+    measure = "",
     isEditable,
     value,
-    setValue = () => { }
+    setValue = (v) => { }
 }) {
 
     return (
