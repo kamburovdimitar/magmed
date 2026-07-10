@@ -1,3 +1,4 @@
+import { ErgometryUtil } from "./ErgometrieUtil";
 // ------------------------------------------------
 // Person
 // ------------------------------------------------
@@ -763,8 +764,14 @@ function calculateCode52(
  * ------------------------------------------------
  */
 function calculateIASSpeed(
-    IASPoint
+    IASPoint,
+    ergoType
 ) {
+
+    if (
+        ergoType !== "laufband"
+    )
+        return null;
 
     return IASPoint?.load ?? null;
 
@@ -776,8 +783,14 @@ function calculateIASSpeed(
  * ------------------------------------------------
  */
 function calculateIANSSpeed(
-    IANSPoint
+    IANSPoint,
+    ergoType
 ) {
+
+    if (
+        ergoType !== "laufband"
+    )
+        return null;
 
     return IANSPoint?.load ?? null;
 
@@ -1573,6 +1586,61 @@ function calculateVO2Percent(
 
 }
 
+function calculateIASHFPercent(
+    IASPoint,
+    hfMax
+) {
+
+    return ErgometryUtil.calculateHFPercent(
+        IASPoint?.hf,
+        hfMax
+    );
+
+}
+
+function calculateIANSHFPercent(
+    IANSPoint,
+    hfMax
+) {
+
+    return ErgometryUtil.calculateHFPercent(
+        IANSPoint?.hf,
+        hfMax
+    );
+
+}
+
+/**
+ * ------------------------------------------------
+ * IAS VO2 %
+ * ------------------------------------------------
+ */
+function calculateIASVO2Percent(
+    IASPoint
+) {
+
+       return "TODO";
+
+
+}
+
+/**
+ * ------------------------------------------------
+ * IANS VO2 %
+ * ------------------------------------------------
+ */
+function calculateIANSVO2Percent(
+    IANSPoint
+) {
+
+       return "TODO";
+
+
+}
+
+
+
+
 
 export const CodexUtil = {
 
@@ -1775,6 +1843,14 @@ export const CodexUtil = {
     calculateWattPerKg,
 
     calculateVO2Percent,
+    calculateIASHFPercent,
+    calculateIANSHFPercent,
+    calculateIASVO2Percent,
+    calculateIANSVO2Percent,
+
+    
+    calculateIANSSpeed
+
     
     
 

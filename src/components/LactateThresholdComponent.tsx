@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { openPopup } from '../services/PopupService';
+import { CodexUtil } from '../utils/CodexUtil';
 
 export default function LactateThresholdComponent({
     measurements,
@@ -50,48 +51,51 @@ export default function LactateThresholdComponent({
             selectedModel
         )?.result;
 
+    if (!report)
+        return null;
+
     const firstWattKg =
-        ErgometryUtil.calculateWattPerKg(
-            report?.IASPoint?.load,
+        CodexUtil.calculateIASWattKg(
+            report?.IASPoint,
             measurements?.weightkg
         );
 
     const secondWattKg =
-        ErgometryUtil.calculateWattPerKg(
-            report?.IANSPoint?.load,
+        CodexUtil.calculateIANSWattKg(
+            report?.IANSPoint,
             measurements?.weightkg
         );
 
     const firstHFPercent =
-        ErgometryUtil.calculateHFPercent(
-            report?.IASPoint?.hf,
+        CodexUtil.calculateIASHFPercent(
+            report?.IASPoint,
             measurements?.heartratemax
         );
 
     const secondHFPercent =
-        ErgometryUtil.calculateHFPercent(
-            report?.IANSPoint?.hf,
+        CodexUtil.calculateIANSHFPercent(
+            report?.IANSPoint,
             measurements?.heartratemax
         );
 
     const firstVO2Percent =
-        ErgometryUtil.calculateVO2Percent(
+        CodexUtil.calculateIASVO2Percent(
             report?.IASPoint
         );
 
     const secondVO2Percent =
-        ErgometryUtil.calculateVO2Percent(
+        CodexUtil.calculateIANSVO2Percent(
             report?.IANSPoint
         );
 
     const firstSpeed =
-        ErgometryUtil.calculateSpeed(
+        CodexUtil.calculateIASSpeed(
             report?.IASPoint,
             measurements?.ergometry?.type
         );
 
     const secondSpeed =
-        ErgometryUtil.calculateSpeed(
+        CodexUtil.calculateIANSSpeed(
             report?.IANSPoint,
             measurements?.ergometry?.type
         );

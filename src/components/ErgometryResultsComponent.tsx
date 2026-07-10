@@ -67,9 +67,11 @@ export default function ErgometryResultsComponent({
         measurements?.ergometryReports ?? [];
 
     const report =
-        reports.find(r => r.model === selectedModel);
+        reports.find(
+            r => r.model === selectedModel
+        );
 
-    if (!report)
+    if (!report?.result)
         return null;
 
     return (
