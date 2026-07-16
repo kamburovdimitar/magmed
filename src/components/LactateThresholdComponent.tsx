@@ -54,6 +54,24 @@ export default function LactateThresholdComponent({
     if (!report)
         return null;
 
+    // openPopup({
+
+    //     title: "Debug",
+
+    //     fields: [
+
+    //         `ergometry.type = ${measurements?.ergometry?.type}`,
+
+    //         `isBike = ${measurements?.isBike}`,
+
+    //         `IAS Load = ${report?.IASPoint?.load}`,
+
+    //         `IANS Load = ${report?.IANSPoint?.load}`
+
+    //     ]
+
+    // });
+
     const firstWattKg =
         CodexUtil.calculateIASWattKg(
             report?.IASPoint,
@@ -104,19 +122,29 @@ export default function LactateThresholdComponent({
 
         <View style={styles.container}>
 
-
-            <TitleWithInfoComponent title='  Lactate Threshold' infoHandler={infoHandler} />
+            <TitleWithInfoComponent
+                title='  Lactate Threshold'
+                infoHandler={infoHandler}
+            />
 
             <View style={styles.header}>
 
                 <Text style={styles.label}></Text>
 
                 <Text style={styles.cell}>
-                    Watt
+                    {
+                        measurements?.isBike
+                            ? "Watt"
+                            : "Speed"
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    Watt/kg
+                    {
+                        measurements?.isBike
+                            ? "Watt/kg"
+                            : "-"
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
@@ -143,28 +171,50 @@ export default function LactateThresholdComponent({
                     First LT
                 </Text>
 
+                {/* #45 / #53 */}
                 <Text style={styles.cell}>
-                    {report?.IASPoint?.load ?? "-"}
+                    {
+                        measurements?.isBike
+                            ? `${report?.IASPoint?.load ?? "-"} W`
+                            : `${firstSpeed ?? "-"} km/h`
+                    }
+                </Text>
+
+                {/* #47 */}
+                <Text style={styles.cell}>
+                    {
+                        measurements?.isBike
+                            ? `${firstWattKg ?? "-"} W/kg`
+                            : "-"
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {firstWattKg ?? "-"}
+                    {firstVO2Percent ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>
-                    {firstVO2Percent}
+                    {
+                        firstSpeed == null
+                            ? "-"
+                            : `${firstSpeed} km/h`
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {firstSpeed}
+                    {
+                        firstHFPercent == null
+                            ? "-"
+                            : `${firstHFPercent}%`
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {firstHFPercent ?? "-"}
-                </Text>
-
-                <Text style={styles.cell}>
-                    {report?.IASPoint?.hf ?? "-"}
+                    {
+                        report?.IASPoint?.hf == null
+                            ? "-"
+                            : `${report.IASPoint.hf} bpm`
+                    }
                 </Text>
 
             </View>
@@ -175,28 +225,50 @@ export default function LactateThresholdComponent({
                     Second LT
                 </Text>
 
+                {/* #46 / #54 */}
                 <Text style={styles.cell}>
-                    {report?.IANSPoint?.load ?? "-"}
+                    {
+                        measurements?.isBike
+                            ? `${report?.IANSPoint?.load ?? "-"} W`
+                            : `${secondSpeed ?? "-"} km/h`
+                    }
+                </Text>
+
+                {/* #48 */}
+                <Text style={styles.cell}>
+                    {
+                        measurements?.isBike
+                            ? `${secondWattKg ?? "-"} W/kg`
+                            : "-"
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {secondWattKg ?? "-"}
+                    {secondVO2Percent ?? "-"}
                 </Text>
 
                 <Text style={styles.cell}>
-                    {secondVO2Percent}
+                    {
+                        secondSpeed == null
+                            ? "-"
+                            : `${secondSpeed} km/h`
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {secondSpeed}
+                    {
+                        secondHFPercent == null
+                            ? "-"
+                            : `${secondHFPercent}%`
+                    }
                 </Text>
 
                 <Text style={styles.cell}>
-                    {secondHFPercent ?? "-"}
-                </Text>
-
-                <Text style={styles.cell}>
-                    {report?.IANSPoint?.hf ?? "-"}
+                    {
+                        report?.IANSPoint?.hf == null
+                            ? "-"
+                            : `${report.IANSPoint.hf} bpm`
+                    }
                 </Text>
 
             </View>

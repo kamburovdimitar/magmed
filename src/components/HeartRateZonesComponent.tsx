@@ -1,38 +1,63 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import TableCellComponent from './TableCellComponent';
-import TitleWithInfoComponent from './TitleWithInfoComponent'
+import TitleWithInfoComponent from './TitleWithInfoComponent';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import { openPopup } from '../services/PopupService';
 
 export default function HeartRateZonesComponent({
-    measurements
+    measurements,
+    selectedModel
 }) {
 
     function infoHandler() {
 
         openPopup({
 
-            title: "Heart Rate Zones",
+            title: "Heart Rate Zones (%)",
 
-            info: "This table displays the training heart rate zones.",
+            description:
+                "Displays the recommended training heart rate zones based on the Individual Anaerobic Threshold (IANS). "
+                + "The original MAGMED lactate protocol uses percentages of IANS Heart Rate rather than the Karvonen method.",
 
-            formula: "HR = HRrest + (HRmax - HRrest) × %"
+            formula:
+                "Target HR = IANS HF × (% / 100)",
+
+            source:
+                "Calculated from the Individual Anaerobic Threshold Heart Rate (IANS HF) using the selected lactate model.",
+
+            fields: [
+
+                "IANS HF = Heart Rate at the Individual Anaerobic Threshold.",
+
+                "60% - 110% = Recommended training zones relative to IANS HF.",
+
+                "Formula = IANS HF × (% / 100).",
+
+                "",
+
+                "MAGMED Codex Mapping:",
+
+                "#50 -> IANS Heart Rate",
+
+                "#51 -> Heart Rate Zones (%)"
+
+            ]
 
         });
 
     }
 
-    const zones =
-        ErgometryUtil.calculateHeartRateZones(
-            measurements
-        );
+    const report =
+        ErgometryUtil.getReportByModel(
+            measurements?.ergometryReports,
+            selectedModel
+        )?.result;
+
+    if (!report)
+        return null;
 
     const percents = [
-
-        45,
-        50,
-        55,
         60,
         65,
         70,
@@ -44,17 +69,44 @@ export default function HeartRateZonesComponent({
         100,
         105,
         110
-
     ];
+
+    const iansHF =
+        report?.IANSPoint?.hf;
+
+    let zones = [];
+
+    for (
+        let i = 0;
+        i < percents.length;
+        i++
+    ) {
+
+        let value = "-";
+
+        if (iansHF != null) {
+
+            value = String(Math.round(
+                iansHF *
+                percents[i] /
+                100
+            ))
+                ;
+
+        }
+
+        zones.push(value);
+
+    }
 
     return (
 
         <View style={styles.container}>
 
-
-
-            <TitleWithInfoComponent title='Heart Rate Zones (%)' infoHandler={infoHandler} />
-
+            <TitleWithInfoComponent
+                title='Heart Rate Zones (%)'
+                infoHandler={infoHandler}
+            />
 
             <View style={styles.row}>
 
@@ -116,11 +168,6 @@ const styles = StyleSheet.create({
         padding: 10
     },
 
-    title: {
-        fontWeight: 'bold',
-        marginBottom: 10
-    },
-
     row: {
         flexDirection: 'row'
     },
@@ -133,17 +180,6 @@ const styles = StyleSheet.create({
     header: {
         marginBottom: 4,
         fontWeight: 'bold'
-    },
-    titleRow: {
-
-        flexDirection: 'row',
-
-        justifyContent: 'flex-start',
-
-        alignItems: 'center',
-
-        marginBottom: 10
-
-    },
+    }
 
 });

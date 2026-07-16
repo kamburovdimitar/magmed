@@ -97,7 +97,7 @@ export default function ErgoResultComponent({
 
     }
 
-    if (ergoType === 'laufband') {
+    if (measurements?.ergometry?.type === 'run') {
 
         return (
 
@@ -111,8 +111,6 @@ export default function ErgoResultComponent({
                         title='    Laufband Leistung'
                         infoHandler={laufbandInfoHandler}
                     />
-
-
 
                     <LabelAndInputTextComponent
                         label="Max Speed"

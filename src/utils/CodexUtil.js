@@ -769,14 +769,19 @@ function calculateIASSpeed(
 ) {
 
     if (
-        ergoType !== "laufband"
-    )
+        ergoType !== "run") {
         return null;
+    }
 
     return IASPoint?.load ?? null;
 
 }
 
+/**
+ * ------------------------------------------------
+ * #54 - IANS Speed
+ * ------------------------------------------------
+ */
 /**
  * ------------------------------------------------
  * #54 - IANS Speed
@@ -788,9 +793,11 @@ function calculateIANSSpeed(
 ) {
 
     if (
-        ergoType !== "laufband"
-    )
+        ergoType !== "run"
+        
+    ) {
         return null;
+    }
 
     return IANSPoint?.load ?? null;
 

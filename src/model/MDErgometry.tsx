@@ -10,7 +10,7 @@ export class MDErgometry {
 
     }
 
-    type: 'bike' | 'laufband' = 'bike';
+    type: 'bike' | 'run' = 'bike';
 
     startLoad: number = 0;
 

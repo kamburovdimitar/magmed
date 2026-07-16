@@ -19,8 +19,6 @@ import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 export default function TestComponent1({
     callback,
     measurements,
-    ergoType,
-    setErgoType,
     onPrint,
     onInterpration,
     onGenereateFakeData
@@ -68,8 +66,8 @@ export default function TestComponent1({
 
     function genereateFakeDataHandler() {
 
-        let fake =
-            onGenereateFakeData();
+        let fake = onGenereateFakeData();
+        //setErgoType(fake.ergometry.type)
 
         fake.ergometry = ErgometryUtil.generateFakeErgometry();
 
@@ -126,12 +124,28 @@ export default function TestComponent1({
                 <TouchableOpacity
                     style={[
                         styles.ergoButton,
-                        ergoType === 'bike'
+                        localMeasurements?.ergometry?.type === 'bike'
                         && styles.selected
                     ]}
-                    onPress={() =>
-                        setErgoType('bike')
-                    }
+                    onPress={() => {
+
+                        let updated =
+                            new MDPatientMeasurements(
+                                localMeasurements
+                            );
+
+                        updated.ergometry.type =
+                            'bike';
+
+                        setLocalMeasurements(
+                            updated
+                        );
+
+                        callback(
+                            updated
+                        );
+
+                    }}
                 >
                     <Text>
                         🚴 Bike
@@ -142,12 +156,28 @@ export default function TestComponent1({
                 <TouchableOpacity
                     style={[
                         styles.ergoButton,
-                        ergoType === 'laufband'
+                        localMeasurements?.ergometry?.type === 'run'
                         && styles.selected
                     ]}
-                    onPress={() =>
-                        setErgoType('laufband')
-                    }
+                    onPress={() => {
+
+                        let updated =
+                            new MDPatientMeasurements(
+                                localMeasurements
+                            );
+
+                        updated.ergometry.type =
+                            'run';
+
+                        setLocalMeasurements(
+                            updated
+                        );
+
+                        callback(
+                            updated
+                        );
+
+                    }}
                 >
                     <Text>
                         🏃 Laufband
@@ -168,13 +198,11 @@ export default function TestComponent1({
                 onUpdateMeasurements={
                     onUpdateMeasurements
                 }
-                ergoType={ergoType}
-            />
 
+            />
 
             <ErgoResultComponent
                 measurements={localMeasurements}
-                ergoType={ergoType}
                 onUpdateMeasurements={
                     onUpdateMeasurements
                 }
@@ -210,9 +238,6 @@ export default function TestComponent1({
                 measurements={localMeasurements}
                 selectedModel={selectedModel}
             />
-
-
-
 
             <Button
                 title="Print"

@@ -384,4 +384,20 @@ export class MDPatientMeasurements {
         return this._istLeistungMax;
     }
 
+    get isBike() {
+
+        return (
+            this.ergometry?.type === "bike"
+        );
+
+    }
+
+    get isTreadmill() {
+
+        return (
+            this.ergometry?.type === "run"
+        );
+
+    }
+
 }

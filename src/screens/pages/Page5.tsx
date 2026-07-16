@@ -66,7 +66,6 @@ export default function Page8({ goTo }) {
         if (ergoView === 'detail1') return <TestComponent1
             callback={updateHandler}
             measurements={measurements}
-
         />
 
         if (ergoView === 'detail2') return <TestComponent2 />
