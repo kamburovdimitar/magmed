@@ -87,17 +87,6 @@ export default function ErgometryTableComponent({
             selectedModel
         )?.result;
 
-    console.log("Selected Model:", selectedModel);
-    console.log(report);
-
-    console.log(report?.IASPoint?.stage);
-    console.log(typeof report?.IASPoint?.stage);
-
-    console.log(report?.IANSPoint?.stage);
-    console.log(typeof report?.IANSPoint?.stage);
-
-
-
     return (
 
         <View style={styles.container}>

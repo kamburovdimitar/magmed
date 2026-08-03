@@ -37,9 +37,29 @@ import { MDErgometryReportResult } from '../model/MDErgometryReportResult';
  */
 function calculateDickhuth(data) {
 
+
+
+        console.trace("calculateDickhuth called");
+
+    console.log("========== DICKHUTH ==========");
+
+
+    console.log("Array.isArray:", Array.isArray(data));
+    console.log("Length:", data?.length);
+
+    if (data?.length) {
+        console.log("First item:");
+        console.log(data[0]);
+    }
+
     if (!data || data.length === 0) {
+
+        console.log("No data.");
+
         return null;
     }
+
+    console.table(data);
 
     let lmin = Number.MAX_VALUE;
 
@@ -47,24 +67,64 @@ function calculateDickhuth(data) {
 
     for (let i = 0; i < data.length; i++) {
 
-        const lactate = Number(data[i].lactate);
+        const lactate =
+            Number(data[i].lactate);
+
+        console.log(
+            "Row:",
+            i,
+            " Lactate:",
+            data[i].lactate,
+            " Number:",
+            lactate
+        );
 
         if (lactate < lmin) {
 
             lmin = lactate;
 
             lminRow = data[i];
+
+            console.log(
+                "New LMIN:",
+                lmin
+            );
+
         }
+
     }
 
-    const IAS = lmin + 0.5;
+    console.log("Final LMIN:", lmin);
+    console.log("LMIN ROW:", lminRow);
 
-    const IANS = lmin + 1.5;
+    const IAS =
+        lmin + 0.5;
 
-    // 🔹 closest practical points
-    const IASPoint = interpolateThreshold(data, IAS);
+    const IANS =
+        lmin + 1.5;
 
-    const IANSPoint = interpolateThreshold(data, IANS);
+    console.log("IAS:", IAS);
+    console.log("IANS:", IANS);
+
+    const IASPoint =
+        interpolateThreshold(
+            data,
+            IAS
+        );
+
+    const IANSPoint =
+        interpolateThreshold(
+            data,
+            IANS
+        );
+
+    console.log("IASPoint:");
+    console.log(IASPoint);
+
+    console.log("IANSPoint:");
+    console.log(IANSPoint);
+
+    console.log("==============================");
 
     return {
 
@@ -79,7 +139,9 @@ function calculateDickhuth(data) {
         IASPoint,
 
         IANSPoint
+
     };
+
 }
 
 /**
@@ -658,6 +720,9 @@ function interpolateThreshold(
     target
 ) {
 
+    if (!data || data.length < 2)
+        return null;
+
     for (let i = 0; i < data.length - 1; i++) {
 
         const p1 = data[i];
@@ -667,8 +732,19 @@ function interpolateThreshold(
         const l2 = Number(p2.lactate);
 
         if (
-            target >= l1 &&
-            target <= l2
+            isNaN(l1) ||
+            isNaN(l2)
+        ) {
+            continue;
+        }
+
+        if (l1 === l2) {
+            continue;
+        }
+
+        if (
+            (target >= l1 && target <= l2) ||
+            (target >= l2 && target <= l1)
         ) {
 
             const ratio =
@@ -679,8 +755,11 @@ function interpolateThreshold(
                 p1.load +
                 ratio * (p2.load - p1.load);
 
-            const hf1 = Number(p1.hf);
-            const hf2 = Number(p2.hf);
+            const hf1 =
+                Number(p1.hf);
+
+            const hf2 =
+                Number(p2.hf);
 
             const interpolatedHF =
                 hf1 +
@@ -691,10 +770,14 @@ function interpolateThreshold(
                 lactate: target,
 
                 load:
-                    Number(interpolatedLoad.toFixed(1)),
+                    Number(
+                        interpolatedLoad.toFixed(1)
+                    ),
 
                 hf:
-                    Number(interpolatedHF.toFixed(0)),
+                    Number(
+                        interpolatedHF.toFixed(0)
+                    ),
 
                 stage:
                     `${p1.stage}-${p2.stage}`,
@@ -711,7 +794,6 @@ function interpolateThreshold(
     return null;
 
 }
-
 function interpolateByHF(data, targetHF) {
 
     if (!data || data.length < 2) {

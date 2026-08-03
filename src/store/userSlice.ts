@@ -22,10 +22,35 @@ const userSlice = createSlice({
             state.selectedUser = null;
         },
         updateMeasurements: (state, action) => {
-            if (!state.selectedUser) return; state.selectedUser =
-            {
-                ...state.selectedUser, measurements: action.payload
+
+            console.log("REDUCER START");
+
+            console.log(action.payload);
+
+            if (!state.selectedUser) {
+
+                console.log("NO USER");
+
+                return;
+
+            }
+
+            console.log("USER EXISTS");
+
+            state.selectedUser = {
+
+                ...state.selectedUser,
+
+                measurements: action.payload
+
             };
+
+            console.log("STATE AFTER");
+
+            console.log(state.selectedUser);
+
+            console.log(state.selectedUser.measurements);
+
         }
     }
 });

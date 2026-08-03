@@ -1645,6 +1645,32 @@ function calculateIANSVO2Percent(
 
 }
 
+function calculateIASVO2(
+    IASPoint
+) {
+    return null;
+}
+
+function calculateIANSVO2(
+    IANSPoint
+) {
+    return null;
+}
+
+function calculateIASVO2Kg(
+    IASPoint,
+    weightKg
+) {
+    return null;
+}
+
+function calculateIANSVO2Kg(
+    IANSPoint,
+    weightKg
+) {
+    return null;
+}
+
 
 
 
@@ -1856,7 +1882,11 @@ export const CodexUtil = {
     calculateIANSVO2Percent,
 
     
-    calculateIANSSpeed
+    calculateIANSSpeed,
+    calculateIASVO2,
+    calculateIANSVO2,
+    calculateIASVO2Kg,
+    calculateIANSVO2Kg,
 
     
     

@@ -21,7 +21,7 @@ import { updateMeasurements } from "../../store/userSlice";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 
 
-export default function Page8({ goTo }) {
+export default function Page5({ goTo }) {
     const dispatch = useDispatch();
     const selectedUser = useSelector((state) => state.user.selectedUser);
 

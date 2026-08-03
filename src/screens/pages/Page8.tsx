@@ -22,6 +22,7 @@ import { useDispatch } from "react-redux";
 import { updateMeasurements } from "../../store/userSlice";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
+import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
 
 
 
@@ -29,16 +30,31 @@ export default function Page8({ goTo }) {
     const dispatch = useDispatch();
     const selectedUser = useSelector((state) => state.user.selectedUser);
     const [ergoType, setErgoType] = useState("bike");
+    const [model, setModel] = useState(ERGOMETRY_MODELS.DICKHUTH);
+
+    const [ergoView, setErgoView] = useState('');
+    const [leftView, setLeftView] = useState('');
+    const [dataPatient, setDataPatient] = useState({} as MDPatient);
+
 
     const rawMeasurements = useSelector(
         (state) => state.user.selectedUser?.measurements
     );
 
-    const measurements = new MDPatientMeasurements(rawMeasurements);
+    const measurement = new MDPatientMeasurements(rawMeasurements);
 
-    const [ergoView, setErgoView] = useState('');
-    const [leftView, setLeftView] = useState('');
-    const [dataPatient, setDataPatient] = useState({} as MDPatient);
+    console.log(
+        "PAGE8 render",
+        measurement.ergometry.data[0]
+    );
+
+    console.log("PAGE8 measurement");
+    console.log(measurement);
+
+    console.log("PAGE8 ergometry");
+    console.table(measurement?.ergometry?.data);
+
+
 
     useEffect(() => {
         if (!selectedUser) return;
@@ -47,23 +63,36 @@ export default function Page8({ goTo }) {
 
     }, [selectedUser]);
 
+    useEffect(() => {
+
+
+    }, [model]);
+
 
 
     function updateHandler(updatedMeasurements) {
-        console.log("test", updatedMeasurements)
-        dispatch(updateMeasurements({ ...updatedMeasurements }));
+
+        console.log("UPDATE HANDLER");
+
+        console.log(updatedMeasurements);
+
+        console.table(updatedMeasurements?.ergometry?.data);
+
+        dispatch(
+            updateMeasurements({
+                ...updatedMeasurements
+            })
+        );
 
     }
 
     useEffect(() => {
 
         // const model = new MDPatientMeasurements(measurements);
-
-
         // console.log("after dispatch fatmass", model.fatmasskg);
 
 
-    }, [measurements])
+    }, [measurement])
 
     function handlerButton(value) {
         setErgoView(value)
@@ -117,17 +146,16 @@ export default function Page8({ goTo }) {
 
         if (ergoView === 'detail1') return <TestComponent1
             callback={updateHandler}
-            measurements={measurements}
-            ergoType={ergoType}
-            setErgoType={setErgoType}
+            measurement={measurement}
             onPrint={onPrint}
             onInterpration={onInterpration}
             onGenereateFakeData={onGenereateFakeData}
+            setModel={setModel}
         />
 
         if (ergoView === 'detail2') return <TestComponent2 />
         if (ergoView === 'detail3') return <TestComponent3 />
-        if (ergoView === 'detail4') return <TestComponent4 measurements={measurements} callback={updateHandler} />
+        if (ergoView === 'detail4') return <TestComponent4 measurements={measurement} callback={updateHandler} />
         if (ergoView === 'detail5') return <TestComponent5 />
         if (ergoView === 'detail6') return <TestComponent6 />
         if (ergoView === 'detail7') return <TestComponent7 />
@@ -139,7 +167,8 @@ export default function Page8({ goTo }) {
         content = <PrintTestPanel />;
     } else if (leftView === 'interpratation') {
         content = <Text>Interpretation here</Text>;
-        content = <InterprationPanel />;
+
+        content = <InterprationPanel model={model} measurement={measurement} />;
     } else {
         content = <TestPanel handlerButton={handlerButton} />;
     }

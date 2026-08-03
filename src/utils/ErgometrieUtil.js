@@ -273,11 +273,11 @@ function validateResult(result) {
 
     if (result?.IASPoint?.load > result?.IANSPoint?.load) errors.push('IAS load > IANS load');
 
-if (result?.IASPoint?.hf > result?.IANSPoint?.hf) errors.push('IAS HF > IANS HF');
+    if (result?.IASPoint?.hf > result?.IANSPoint?.hf) errors.push('IAS HF > IANS HF');
 
-if (result?.IASPoint?.lactate > result?.IANSPoint?.lactate) errors.push('IAS lactate > IANS lactate');
+    if (result?.IASPoint?.lactate > result?.IANSPoint?.lactate) errors.push('IAS lactate > IANS lactate');
 
-if (result?.IANSPoint?.load > 400) errors.push('IANS unrealistic load');
+    if (result?.IANSPoint?.load > 400) errors.push('IANS unrealistic load');
 
     return {
         valid: errors.length === 0,
@@ -285,31 +285,78 @@ if (result?.IANSPoint?.load > 400) errors.push('IANS unrealistic load');
     };
 }
 
-function getReportByModel(
-    reports,
+function getReportByModel(reports, model) {
+
+    if (!reports || !model)
+        return null;
+
+    return reports.find(
+        p => p.model === model
+    ) ?? null;
+}
+
+function createReport(
+    measurements,
     model
 ) {
 
-    if (!reports)
-        return null;
-
-    for (
-        let i = 0;
-        i < reports.length;
-        i++
+    if (
+        !measurements ||
+        !model
     ) {
-
-        if (
-            reports[i].model === model
-        ) {
-
-            return reports[i];
-
-        }
-
+        return null;
     }
 
-    return null;
+    const rows =
+        measurements?.ergometry?.data;
+
+    console.log("===== CREATE REPORT =====");
+    console.log("model:", model);
+    console.table(rows);
+
+    if (!rows?.length)
+        return null;
+
+    let result = null;
+
+    if (model === ERGOMETRY_MODELS.DICKHUTH)
+        result =
+            ErgometryModelsUtil.calculateDickhuth(rows);
+
+    if (model === ERGOMETRY_MODELS.FREIBURG)
+        result =
+            ErgometryModelsUtil.calculateFreiburg(rows);
+
+    if (model === ERGOMETRY_MODELS.LINEAR)
+        result =
+            ErgometryModelsUtil.calculateLinear(rows);
+
+    if (model === ERGOMETRY_MODELS.LTP)
+        result =
+            ErgometryModelsUtil.calculateLTP(rows);
+
+    if (model === ERGOMETRY_MODELS.KEUL)
+        result =
+            ErgometryModelsUtil.calculateKeul(rows);
+
+    if (model === ERGOMETRY_MODELS.KEUL_LEGACY)
+        result =
+            ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
+
+    console.log("RESULT");
+    console.log(result);
+
+    return {
+
+        model,
+
+        validation:
+            validateResult(
+                result
+            ),
+
+        result
+    };
 
 }
 
@@ -477,6 +524,7 @@ export const ErgometryUtil = {
     calculateVO2Percent,
     calculateVO2,
     calculateVO2Kg,
-    calculateHeartRateZones
+    calculateHeartRateZones,
+    createReport
 
 };

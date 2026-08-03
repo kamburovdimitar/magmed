@@ -18,26 +18,32 @@ import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 
 export default function TestComponent1({
     callback,
-    measurements,
+    measurement,
     onPrint,
     onInterpration,
-    onGenereateFakeData
+    onGenereateFakeData,
+    setModel
 }) {
 
     const [selectedModel, setSelectedModel] = useState(ERGOMETRY_MODELS.DICKHUTH);
-    const [localMeasurements, setLocalMeasurements] = useState(new MDPatientMeasurements(measurements));
+    const [localMeasurements, setLocalMeasurements] = useState(new MDPatientMeasurements(measurement));
+
+    useEffect(() => {
+
+        setModel(selectedModel)
+
+    }, [selectedModel]);
+
 
 
 
     useEffect(() => {
 
-        if (!measurements) return;
+        if (!measurement) return;
 
-        setLocalMeasurements(
-            new MDPatientMeasurements(measurements)
-        );
+        setLocalMeasurements(new MDPatientMeasurements(measurement));
 
-    }, [measurements]);
+    }, [measurement]);
 
     function onUpdateMeasurements(field, value) {
 
