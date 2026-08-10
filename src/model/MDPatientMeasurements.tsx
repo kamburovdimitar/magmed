@@ -400,4 +400,24 @@ export class MDPatientMeasurements {
 
     }
 
+    get heartRateZones() {
+
+        const intensities = [
+            45, 50, 55, 60,
+            65, 70, 75, 80,
+            85, 90, 95,
+            100, 105, 110
+        ];
+
+        return intensities.map(percent => ({
+            percent,
+            bpm: CodexUtil.calculateKarvonenHeartRate(
+                this._heartraterest,
+                this._heartratemax,
+                percent
+            ) ?? 0
+        }));
+
+    }
+
 }

@@ -1,5 +1,12 @@
 import React from 'react'
-import { View, Text, TextInput, StyleSheet, Button } from 'react-native'
+import {
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    Button,
+    Modal,
+} from 'react-native';
 import LanguageUtil from '../../utils/LanguageUtil'
 import HeaderSearchComponent from '../../components/HeaderComponent'
 import PatientList from '../../components/Lists/PatientList'
@@ -35,6 +42,10 @@ export default function Page8({ goTo }) {
     const [ergoView, setErgoView] = useState('');
     const [leftView, setLeftView] = useState('');
     const [dataPatient, setDataPatient] = useState({} as MDPatient);
+    const [showInterpretationModal, setShowInterpretationModal] = useState(false);
+
+
+
 
 
     const rawMeasurements = useSelector(
@@ -67,6 +78,25 @@ export default function Page8({ goTo }) {
 
 
     }, [model]);
+
+
+    useEffect(() => {
+
+        function handleKeyDown(event) {
+            if (event.key === "Escape") {
+                setShowInterpretationModal(false);
+            }
+        }
+
+        if (showInterpretationModal) {
+            window.addEventListener("keydown", handleKeyDown);
+        }
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+
+    }, [showInterpretationModal]);
 
 
 
@@ -103,10 +133,8 @@ export default function Page8({ goTo }) {
     }
 
     function onInterpration(value) {
-        //console.log(value);
-        setLeftView("interpratation")
+        setShowInterpretationModal(true);
     }
-
     function onGenereateFakeData() {
 
         function random(min, max) {
@@ -168,7 +196,7 @@ export default function Page8({ goTo }) {
     } else if (leftView === 'interpratation') {
         content = <Text>Interpretation here</Text>;
 
-        content = <InterprationPanel model={model} measurement={measurement} />;
+        content = <InterprationPanel />;
     } else {
         content = <TestPanel handlerButton={handlerButton} />;
     }
@@ -216,12 +244,50 @@ export default function Page8({ goTo }) {
                 {content}
             </View>
 
+            <Modal
+                visible={showInterpretationModal}
+                animationType="fade"
+                transparent={false}
+                onRequestClose={() => setShowInterpretationModal(false)}
+            >
+                <View style={styles.modalContainer}>
+
+                    <View style={styles.modalHeader}>
+                        <Button
+                            title="Close"
+                            onPress={() => setShowInterpretationModal(false)}
+                        />
+                    </View>
+
+                    <View style={styles.modalContent}>
+                        <View style={{ zoom: 1.5 } as any}>
+                            <InterprationPanel />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
         </View>
 
     )
 }
 
 const styles = StyleSheet.create({
+    modalContainer: {
+        flex: 1,
+        backgroundColor: "white",
+    },
+
+    modalHeader: {
+        padding: 10,
+        borderBottomWidth: 1,
+        alignItems: "flex-end",
+    },
+
+    modalContent: {
+        flex: 1,
+        padding: 15,
+    },
 
     container: {
         borderWidth: 1,
