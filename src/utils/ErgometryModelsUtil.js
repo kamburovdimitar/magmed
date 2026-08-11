@@ -1,3 +1,12 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 13:30 (Europe/Sofia) — Added calculateTrainingZoneTable(): Codex/CCC
+//   "3.34 Laktatkurve und Trainingsbereich" cascade — HF zone boundary first
+//   (% of IANS-HF for Freiburger/Keul, or anchored to the measured IAS/IANS
+//   points for Dickhuth/Stückweise-linear/Linear/Keul-Legacy), then Watt/km-h
+//   looked up on the real measured stage curve via interpolateByHF (never a
+//   % multiplication of the threshold load).
+// ============================================
+
 import { MDErgometryReportResult } from '../model/MDErgometryReportResult';
 /**
  * 🔹 Dickhuth method
@@ -1000,6 +1009,112 @@ function calculateTrainingZones(result) {
 
 }
 
+// ------------------------------------------------
+// Training Zones — Codex/CCC-compliant cascade
+// ------------------------------------------------
+//
+// Per "3.34 CCC Laktatkurve und Trainingsbereich":
+//   - Freiburger / Keul: zone boundaries = % of IANS heart rate
+//     (REG 65-75%, IAS=75%, GA1 75-85%, GA2 85-95%, IANS=100%, E1 95-105%, E2 >105%)
+//   - Stückweise linear (LTP) / Dickhuth (and, absent a spec-named bucket,
+//     Linear / Keul-Legacy): zone boundaries anchored to the *measured*
+//     IAS/IANS heart-rate points instead (REG = IAS-10% .. IAS HF; GA1/GA2
+//     split the band between IAS HF and IANS HF-5%). E1/E2 still use %IANS-HF
+//     for every model per the spec table.
+//
+// The spec explicitly forbids deriving zone Watt/km-h by multiplying the
+// threshold load by a percentage — instead each HF boundary must be looked
+// up against the real measured stage curve. We reuse interpolateByHF for
+// that lookup (piecewise-linear over the actual test stages).
+
+const PERCENT_IANS_MODELS = ['freiburg', 'keul'];
+
+function formatPace(kmh) {
+
+    if (!kmh || kmh <= 0) return null;
+
+    const paceMin = 60 / kmh;
+    const minutes = Math.floor(paceMin);
+    const seconds = Math.round((paceMin - minutes) * 60);
+
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function lookupZonePoint(data, targetHF, isRun) {
+
+    if (targetHF == null || isNaN(targetHF) || !data?.length) return null;
+
+    const point = interpolateByHF(data, targetHF);
+
+    if (!point) return null;
+
+    return {
+        hf: Math.round(targetHF),
+        lactate: point.lactate != null ? Number(Number(point.lactate).toFixed(1)) : null,
+        load: isRun ? Number(Number(point.load).toFixed(1)) : Math.round(point.load),
+        pace: isRun ? formatPace(point.load) : null
+    };
+}
+
+function calculateTrainingZoneTable(result, ergometryData, model, isRun = false) {
+
+    if (!result?.IASPoint || !result?.IANSPoint || !ergometryData?.length) {
+        return null;
+    }
+
+    const iasHF = Number(result.IASPoint.hf);
+    const iansHF = Number(result.IANSPoint.hf);
+
+    if (!iasHF || !iansHF) return null;
+
+    const usesPercentIANS = PERCENT_IANS_MODELS.includes(model);
+
+    // REG always tops out exactly at the IAS point in both methods.
+    const regToHF = iasHF;
+
+    const ga2UpperHF = iansHF * 0.95;
+
+    const ga1ToHF = usesPercentIANS
+        ? iansHF * 0.85
+        : (iasHF + ga2UpperHF) / 2;
+
+    const ga2ToHF = usesPercentIANS
+        ? iansHF * 0.95
+        : ga2UpperHF;
+
+    const e1ToHF = iansHF * 1.05;
+
+    const rowDefs = [
+        { key: 'REG', label: 'REG', percent: 75, hfTarget: regToHF },
+        { key: 'IAS', label: 'IAS/LTP1', percent: 75, hfTarget: iasHF },
+        { key: 'GA1', label: 'GA1', percent: usesPercentIANS ? 85 : null, hfTarget: ga1ToHF },
+        { key: 'GA2', label: 'GA2', percent: usesPercentIANS ? 95 : null, hfTarget: ga2ToHF },
+        { key: 'IANS', label: 'IANS/LTP2', percent: 100, hfTarget: iansHF },
+        { key: 'E1', label: 'E1', percent: 105, hfTarget: e1ToHF },
+        { key: 'E2', label: 'E2', percent: 105, hfTarget: e1ToHF }
+    ];
+
+    const rows = rowDefs.map(row => {
+
+        const point = lookupZonePoint(ergometryData, row.hfTarget, isRun);
+
+        return {
+            key: row.key,
+            label: row.label,
+            percent: row.percent,
+            hf: point?.hf ?? Math.round(row.hfTarget),
+            lactate: point?.lactate ?? null,
+            load: point?.load ?? null,
+            pace: point?.pace ?? null
+        };
+    });
+
+    return {
+        method: usesPercentIANS ? 'percent' : 'point',
+        rows
+    };
+}
+
 function generateLinePoints(
     segment,
     line
@@ -1962,6 +2077,7 @@ export const ErgometryModelsUtil = {
     calculateChartMaxLactate,
 
     calculateTrainingZones,
+    calculateTrainingZoneTable,
 
     calculateLTP,
 

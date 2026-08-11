@@ -1,41 +1,43 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Screen split (1:1 with 3.25CCC_Test_Ergometri_
+//   PROJEKT.pdf and Präsentation2.pptx): this screen used to render EVERYTHING
+//   (body measurements + bike/run toggle + SOLL/IST Watt + HR reserve +
+//   ergometry stage table + IAS/IANS results + lactate threshold + VO2max +
+//   %IANS HR zones + Print/Generate-Fake-Data/Interpretation buttons) on one
+//   screen. Per the Codex's 7-button "3.00 Test" menu and the presentation's
+//   "3.1-F Neuer Test - Körpermaße und Vitalparameter" mockup, this button
+//   ("detail1") should show ONLY the body measurements / vital parameters
+//   block (Codex #10-25) — nothing ergometry/lactate/VO2max related.
+//   Everything that used to live here (the combined view) was moved as-is to
+//   TestComponent7.jsx, which is now the real content behind the "ALLE Tests"
+//   (button 7) menu item — that item is explicitly meant to show the combined
+//   view per the Codex, so no functionality was lost, only relocated to the
+//   correct button. Page8.tsx's renderTestView() was updated to match (no
+//   longer passes onPrint/onInterpration/onGenereateFakeData/setModel here —
+//   those now flow to TestComponent7 instead).
+// 2026-08-11 (Europe/Sofia) — Added a per-screen "Generate Fake Data" button:
+//   the user wants one under every split screen that fills ONLY that
+//   screen's own object, while the one on the last page ("ALLE Tests") keeps
+//   filling everything. Here that means only the body measurement / vital
+//   fields this screen actually shows (Codex #10-25) — it clones the
+//   CURRENT localMeasurements (so it never wipes ergometry/lactate data
+//   entered on the other screens) and only overwrites the vitals fields,
+//   using the exact same random ranges as Page8.tsx's original
+//   onGenereateFakeData().
+// ============================================
+
 import React from 'react'
-import { View, ScrollView, StyleSheet, Button, TouchableOpacity, Text } from 'react-native'
+import { View, ScrollView, StyleSheet, Button } from 'react-native'
 import TestMeasurmentComponent from '../TestMeasurementsComponent'
 import { useEffect, useState } from "react";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
-import ErgoResultComponent from '../ErgoResultComponent'
-import HeartRateZoneComponent from '../HeartRateZoneComponent';
-import ErgometryTableComponent from '../ErgometryTableComponent';
-import { ErgometryUtil } from '../../utils/ErgometrieUtil';
-import ErgometryResultsComponent from '../ErgometryResultsComponent';
-import LactateThresholdComponent from '../LactateThresholdComponent';
-import VO2MaxComponent from '../VO2MaxComponent';
-import HeartRateZonesComponent from '../HeartRateZonesComponent';
-import LactateModelPickerComponent from '../LactateModelPickerComponent';
-import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
-
-
 
 export default function TestComponent1({
     callback,
-    measurement,
-    onPrint,
-    onInterpration,
-    onGenereateFakeData,
-    setModel
+    measurement
 }) {
 
-    const [selectedModel, setSelectedModel] = useState(ERGOMETRY_MODELS.DICKHUTH);
     const [localMeasurements, setLocalMeasurements] = useState(new MDPatientMeasurements(measurement));
-
-    useEffect(() => {
-
-        setModel(selectedModel)
-
-    }, [selectedModel]);
-
-
-
 
     useEffect(() => {
 
@@ -56,67 +58,44 @@ export default function TestComponent1({
 
         setLocalMeasurements(updated);
 
-        console.log(updated.heartrateReserve, updated.hrr70, updated.hrr80, updated.hrr90);
-
         callback(updated);
 
     }
 
-    function onPrintHandler() {
-        onPrint();
-    }
-
-    function onInterprationHandler() {
-        onInterpration();
-    }
-
     function genereateFakeDataHandler() {
 
-        let fake = onGenereateFakeData();
-        //setErgoType(fake.ergometry.type)
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
-        fake.ergometry = ErgometryUtil.generateFakeErgometry();
+        let updated = new MDPatientMeasurements(localMeasurements);
 
-        fake = new MDPatientMeasurements(fake);
+        updated.age = random(18, 70);
 
-        fake.ergometryReports = ErgometryUtil.validateAllModels(fake.ergometry.data);
+        updated.heightcm = random(160, 200);
+        updated.weightkg = random(55, 110);
 
-        setLocalMeasurements(fake);
+        updated.waistcm = random(70, 120);
+        updated.hipcm = random(85, 125);
 
-        callback(fake);
+        updated.bodyfatpercent = random(8, 35);
 
-    }
+        updated.bloodpressurerestsystolic = random(105, 135);
+        updated.bloodpressurerestdiastolic = random(65, 90);
 
-    function onUpdateRow(index, field, value) {
+        updated.bloodpressuremaxsystolic = random(160, 230);
+        updated.bloodpressuremaxdiastolic = random(80, 110);
 
-        let data =
-            [...localMeasurements.ergometry.data];
+        updated.heartraterest = random(50, 85);
 
-        data[index] = {
-
-            ...data[index],
-
-            [field]: value
-
-        };
-
-        let updated =
-            new MDPatientMeasurements(localMeasurements);
-
-        updated.ergometry.data = data;
-
-        updated.ergometryReports =
-            ErgometryUtil.validateAllModels(
-                updated.ergometry.data
-            );
+        let expected = 220 - updated.age;
+        updated.heartratemax = random(expected - 15, expected + 10);
 
         setLocalMeasurements(updated);
 
         callback(updated);
 
     }
-
-
 
     return (
 
@@ -125,148 +104,17 @@ export default function TestComponent1({
             contentContainerStyle={styles.container}
         >
 
-            <View style={styles.ergoRow}>
-
-                <TouchableOpacity
-                    style={[
-                        styles.ergoButton,
-                        localMeasurements?.ergometry?.type === 'bike'
-                        && styles.selected
-                    ]}
-                    onPress={() => {
-
-                        let updated =
-                            new MDPatientMeasurements(
-                                localMeasurements
-                            );
-
-                        updated.ergometry.type =
-                            'bike';
-
-                        setLocalMeasurements(
-                            updated
-                        );
-
-                        callback(
-                            updated
-                        );
-
-                    }}
-                >
-                    <Text>
-                        🚴 Bike
-                    </Text>
-
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                        styles.ergoButton,
-                        localMeasurements?.ergometry?.type === 'run'
-                        && styles.selected
-                    ]}
-                    onPress={() => {
-
-                        let updated =
-                            new MDPatientMeasurements(
-                                localMeasurements
-                            );
-
-                        updated.ergometry.type =
-                            'run';
-
-                        setLocalMeasurements(
-                            updated
-                        );
-
-                        callback(
-                            updated
-                        );
-
-                    }}
-                >
-                    <Text>
-                        🏃 Laufband
-                    </Text>
-
-                </TouchableOpacity>
-
-                <LactateModelPickerComponent
-                    selectedModel={selectedModel}
-                    setSelectedModel={setSelectedModel}
-                />
-
-            </View>
-
-
             <TestMeasurmentComponent
                 measurements={localMeasurements}
-                onUpdateMeasurements={
-                    onUpdateMeasurements
-                }
-
-            />
-
-            <ErgoResultComponent
-                measurements={localMeasurements}
-                onUpdateMeasurements={
-                    onUpdateMeasurements
-                }
-            />
-
-            <HeartRateZoneComponent
-                measurements={localMeasurements}
-            />
-
-
-            <ErgometryTableComponent
-                measurements={localMeasurements}
-                selectedModel={selectedModel}
-                onUpdateRow={onUpdateRow}
-            />
-
-            <ErgometryResultsComponent
-                measurements={localMeasurements}
-                selectedModel={selectedModel}
-            />
-
-            <LactateThresholdComponent
-                measurements={localMeasurements}
-                selectedModel={selectedModel}
-            />
-
-            <VO2MaxComponent
-                measurements={localMeasurements}
-                selectedModel={selectedModel}
-            />
-
-            <HeartRateZonesComponent
-                measurements={localMeasurements}
-                selectedModel={selectedModel}
-            />
-
-            <Button
-                title="Print"
-                onPress={
-                    onPrintHandler
-                }
+                onUpdateMeasurements={onUpdateMeasurements}
             />
 
             <Button
                 title="Generate Fake Data"
-                onPress={
-                    genereateFakeDataHandler
-                }
+                onPress={genereateFakeDataHandler}
             />
 
-            <Button
-                title="Interpration"
-                onPress={
-                    onInterprationHandler
-                }
-            />
-
-        </ScrollView >
+        </ScrollView>
 
     );
 }
@@ -276,22 +124,6 @@ const styles = StyleSheet.create({
     container: {
         gap: 10,
         paddingBottom: 30,
-    },
-
-    ergoRow: {
-        flexDirection: 'row',
-        gap: 10
-    },
-
-    ergoButton: {
-        width: 130,
-        padding: 10,
-        borderWidth: 1,
-        alignItems: 'center'
-    },
-
-    selected: {
-        backgroundColor: '#ffe600'
     }
 
 })

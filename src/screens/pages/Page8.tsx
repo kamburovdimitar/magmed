@@ -1,3 +1,35 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 14:20 (Europe/Sofia) — Restored the "enlarge to read" zoom control
+//   (Codex 3.13) via zoomLevel state + A-/Reset/A+ buttons in the Interpretation
+//   modal header, wired to InterprationPanel's new zoomLevel prop (real font
+//   scaling, not the old CSS `zoom` transform that broke scrolling). Also added
+//   a Print button + print-only CSS (#interpretation-print-area) so the
+//   Interpretation itself can be printed (Codex: "Interpretation wird gedruckt"),
+//   instead of only the separate basic PrintTestPanel.
+// 2026-08-11 14:55 (Europe/Sofia) — Fixed print breaking/overlapping content
+//   above ~145% zoom: the old print CSS used the classic
+//   "visibility:hidden + position:absolute" single-element-print trick, which
+//   cannot paginate content taller than one page (Chrome overlaps sections
+//   instead of splitting them across pages). Replaced with explicit
+//   display:none on the two things we don't want printed (#magmed-app-root,
+//   #interpretation-modal-header) while the print target itself stays in
+//   normal document flow, so it now paginates cleanly across as many pages
+//   as needed at any zoom level.
+// 2026-08-11 15:05 (Europe/Sofia) — Default Interpretation zoom changed from
+//   100% to 145% (INTERPRETATION_ZOOM_DEFAULT); "Reset" now returns to 145%
+//   instead of 100%.
+// 2026-08-11 (Europe/Sofia) — Screen split (1:1 with 3.25CCC_Test_Ergometri_
+//   PROJEKT.pdf and Präsentation2.pptx): renderTestView() now wires
+//   detail1/4/5/6/7 to the newly-split TestComponent1/4/5/6/7 (see each
+//   file's own changelog). detail1 lost the onPrint/onInterpration/
+//   onGenereateFakeData/setModel props (moved to detail7, "ALLE Tests",
+//   which now holds the combined view). detail4/5/6 gained real
+//   measurements/callback wiring (5 and 6 also get the shared
+//   model/setModel for lactate-model selection). detail2/detail3
+//   (Muskel-Funktion/Körper-Haltung) were left unchanged — out of scope for
+//   this pass.
+// ============================================
+
 import React from 'react'
 import {
     View,
@@ -43,6 +75,8 @@ export default function Page8({ goTo }) {
     const [leftView, setLeftView] = useState('');
     const [dataPatient, setDataPatient] = useState({} as MDPatient);
     const [showInterpretationModal, setShowInterpretationModal] = useState(false);
+    const INTERPRETATION_ZOOM_DEFAULT = 1.45;
+    const [interpretationZoom, setInterpretationZoom] = useState(INTERPRETATION_ZOOM_DEFAULT);
 
 
 
@@ -99,6 +133,72 @@ export default function Page8({ goTo }) {
     }, [showInterpretationModal]);
 
 
+    // 🔹 Print-only CSS: hide everything except the Interpretation panel
+    // (#interpretation-print-area) and let it print in NORMAL document flow.
+    //
+    // Earlier version used the classic "visibility:hidden + position:absolute"
+    // trick — that breaks on content taller than one page: Chrome can't
+    // paginate an absolutely-positioned box, so past ~1 page it started
+    // overlapping sections on top of each other (confirmed via screenshot at
+    // 145% zoom — rows were printing stacked on top of each other on page 2).
+    // Fixed by explicitly hiding the two things we don't want printed
+    // (display:none, not visibility) and leaving the print target itself in
+    // normal flow (no position override), so the browser paginates it like
+    // any other long document — splitting cleanly across as many pages as
+    // needed instead of overlapping.
+    useEffect(() => {
+
+        if (typeof document === 'undefined') return;
+
+        const styleEl = document.createElement('style');
+
+        styleEl.id = 'magmed-interpretation-print-style';
+
+        styleEl.innerHTML = `
+            @media print {
+                html, body {
+                    height: auto !important;
+                    overflow: visible !important;
+                }
+                #magmed-app-root,
+                #interpretation-modal-header {
+                    display: none !important;
+                }
+                #interpretation-modal-container,
+                #interpretation-print-area,
+                #interpretation-print-area * {
+                    height: auto !important;
+                    max-height: none !important;
+                    overflow: visible !important;
+                }
+            }
+        `;
+
+        document.head.appendChild(styleEl);
+
+        return () => {
+            styleEl.remove();
+        };
+
+    }, []);
+
+    function zoomIn() {
+        setInterpretationZoom(z => Math.min(2, Number((z + 0.15).toFixed(2))));
+    }
+
+    function zoomOut() {
+        setInterpretationZoom(z => Math.max(0.7, Number((z - 0.15).toFixed(2))));
+    }
+
+    function zoomReset() {
+        setInterpretationZoom(INTERPRETATION_ZOOM_DEFAULT);
+    }
+
+    function printInterpretation() {
+        if (typeof window !== 'undefined') {
+            window.print();
+        }
+    }
 
     function updateHandler(updatedMeasurements) {
 
@@ -172,21 +272,61 @@ export default function Page8({ goTo }) {
 
     function renderTestView() {
 
+        // Screen split (2026-08-11): detail1 is now the dedicated
+        // "Körpermaße & Vitalparameter" screen (body measurements only).
+        // The combined "everything on one screen" view that used to live
+        // here moved to detail7 ("ALLE Tests"), which is where the Codex's
+        // 7-item menu actually puts it — so the utility buttons
+        // (Print/Generate Fake Data/Interpretation) and the model picker
+        // moved there with it.
         if (ergoView === 'detail1') return <TestComponent1
+            callback={updateHandler}
+            measurement={measurement}
+        />
+
+        if (ergoView === 'detail2') return <TestComponent2 />
+        if (ergoView === 'detail3') return <TestComponent3 />
+
+        // detail4 = "Ergometrie": body/vitals + device toggle + SOLL/IST
+        // Watt (bike) or Max Speed/Pace (treadmill) + Karvonen HR zones.
+        // No lactate model needed here (no IAS/IANS calculation on this
+        // screen).
+        if (ergoView === 'detail4') return <TestComponent4
+            measurements={measurement}
+            callback={updateHandler}
+        />
+
+        // detail5 = "Laktat-Ergometrie": Ergometrie screen's content plus
+        // the stage data-entry table + IAS/IANS results + %IANS HR zones.
+        // Shares the app-wide lactate model selection (`model`/`setModel`)
+        // with the Interpretation panel and the Spiro-Ergometrie screen.
+        if (ergoView === 'detail5') return <TestComponent5
+            measurements={measurement}
+            callback={updateHandler}
+            selectedModel={model}
+            setModel={setModel}
+        />
+
+        // detail6 = "Spiro-Ergometrie": body/vitals + VO2max/VT1/VT2 +
+        // %VO2max HR zones. No Watt table, no lactate fields.
+        if (ergoView === 'detail6') return <TestComponent6
+            measurements={measurement}
+            callback={updateHandler}
+            selectedModel={model}
+            setModel={setModel}
+        />
+
+        // detail7 = "ALLE Tests": the combined view (everything together),
+        // exactly what used to be at detail1 before the split.
+        if (ergoView === 'detail7') return <TestComponent7
             callback={updateHandler}
             measurement={measurement}
             onPrint={onPrint}
             onInterpration={onInterpration}
             onGenereateFakeData={onGenereateFakeData}
             setModel={setModel}
+            selectedModel={model}
         />
-
-        if (ergoView === 'detail2') return <TestComponent2 />
-        if (ergoView === 'detail3') return <TestComponent3 />
-        if (ergoView === 'detail4') return <TestComponent4 measurements={measurement} callback={updateHandler} />
-        if (ergoView === 'detail5') return <TestComponent5 />
-        if (ergoView === 'detail6') return <TestComponent6 />
-        if (ergoView === 'detail7') return <TestComponent7 />
     }
 
     let content;
@@ -194,9 +334,7 @@ export default function Page8({ goTo }) {
     if (leftView === 'print') {
         content = <PrintTestPanel />;
     } else if (leftView === 'interpratation') {
-        content = <Text>Interpretation here</Text>;
-
-        content = <InterprationPanel />;
+        content = <InterprationPanel selectedModel={model} />;
     } else {
         content = <TestPanel handlerButton={handlerButton} />;
     }
@@ -206,7 +344,7 @@ export default function Page8({ goTo }) {
 
     return (
 
-        <View style={styles.container}>
+        <View style={styles.container} nativeID="magmed-app-root">
 
             <View style={styles.leftPanel}>
 
@@ -250,19 +388,30 @@ export default function Page8({ goTo }) {
                 transparent={false}
                 onRequestClose={() => setShowInterpretationModal(false)}
             >
-                <View style={styles.modalContainer}>
+                <View style={styles.modalContainer} nativeID="interpretation-modal-container">
 
-                    <View style={styles.modalHeader}>
+                    <View style={styles.modalHeader} nativeID="interpretation-modal-header">
+
+                        <View style={styles.zoomGroup}>
+                            <Button title="A-" onPress={zoomOut} />
+                            <Text style={styles.zoomLabel}>{Math.round(interpretationZoom * 100)}%</Text>
+                            <Button title="A+" onPress={zoomIn} />
+                            <Button title="Reset" onPress={zoomReset} />
+                        </View>
+
+                        <Button
+                            title="Print"
+                            onPress={printInterpretation}
+                        />
+
                         <Button
                             title="Close"
                             onPress={() => setShowInterpretationModal(false)}
                         />
                     </View>
 
-                    <View style={styles.modalContent}>
-                        <View style={{ zoom: 1.5 } as any}>
-                            <InterprationPanel />
-                        </View>
+                    <View style={styles.modalContent} nativeID="interpretation-print-area">
+                        <InterprationPanel selectedModel={model} zoomLevel={interpretationZoom} />
                     </View>
                 </View>
             </Modal>
@@ -275,17 +424,35 @@ export default function Page8({ goTo }) {
 const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
+        height: '100%',
         backgroundColor: "white",
     },
 
     modalHeader: {
         padding: 10,
         borderBottomWidth: 1,
-        alignItems: "flex-end",
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+
+    zoomGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    zoomLabel: {
+        minWidth: 44,
+        textAlign: 'center',
+        fontSize: 13,
+        fontWeight: '600',
     },
 
     modalContent: {
         flex: 1,
+        minHeight: 0,
         padding: 15,
     },
 

@@ -1,3 +1,21 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Screen split (1:1 with 3.25CCC_Test_Ergometri_
+//   PROJEKT.pdf and Präsentation2.pptx): filled in the blank/placeholder
+//   button labels ("Button 1", "Button 2", "Button 7") to match the Codex's
+//   official 7-item "3.00 Test" menu order (Körpermaße/Vitalparameter,
+//   Muskel-Funktion, Körper-Haltung, Ergometrie, Laktat-Ergometrie,
+//   Spiro-Ergometrie, ALLE Tests) — the button→screen wiring in Page8.tsx
+//   already matched this order, only the visible labels were placeholders.
+//   No behavior changed, only the text on 3 buttons.
+// 2026-08-11 (Europe/Sofia) — Muskel-Funktion (detail2) and Körper-Haltung
+//   (detail3) are not built out yet, so per the user's request they
+//   temporarily don't navigate anywhere: their onPress no longer calls
+//   ergometryHandleClick (which both selects the button and switches
+//   Page8.tsx's ergoView), and they're dimmed (styles.disabledButton) so
+//   it's visually clear they're placeholders for now. Nothing else changed —
+//   re-enable by restoring the onPress once those two screens are built.
+// ============================================
+
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import LanguageUtil from '../utils/LanguageUtil'
@@ -35,49 +53,49 @@ export default function TestPanelComponent({ handlerButton }) {
                     style={[styles.button, selected === "detail1" && styles.active]}
                     onPress={() => ergometryHandleClick("detail1")}
                 >
-                    <Text>Button 1</Text>
+                    <Text>Körpermaße &amp; Vitalparameter</Text>
                 </TouchableOpacity>
 
+                {/* Not built yet — temporarily doesn't navigate anywhere. */}
                 <TouchableOpacity
-                    style={[styles.button, selected === "detail2" && styles.active]}
-                    onPress={() => ergometryHandleClick("detail2")}
+                    style={[styles.button, styles.disabledButton]}
                 >
-                    <Text>Button 2</Text>
+                    <Text>Muskel-Funktion</Text>
                 </TouchableOpacity>
 
+                {/* Not built yet — temporarily doesn't navigate anywhere. */}
                 <TouchableOpacity
-                    style={[styles.button, selected === "detail3" && styles.active]}
-                    onPress={() => ergometryHandleClick("detail3")}
+                    style={[styles.button, styles.disabledButton]}
                 >
-                    <Text>Button 3 Korper Houtung</Text>
+                    <Text>Körper-Haltung</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail4" && styles.active]}
                     onPress={() => ergometryHandleClick("detail4")}
                 >
-                    <Text>Button 4 Ergometrie</Text>
+                    <Text>Ergometrie</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail5" && styles.active]}
                     onPress={() => ergometryHandleClick("detail5")}
                 >
-                    <Text>Button 5 Laktat Ergometrie</Text>
+                    <Text>Laktat-Ergometrie</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail6" && styles.active]}
                     onPress={() => ergometryHandleClick("detail6")}
                 >
-                    <Text>Button 6 Spiro Ergometrie</Text>
+                    <Text>Spiro-Ergometrie</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail7" && styles.active]}
                     onPress={() => ergometryHandleClick("detail7")}
                 >
-                    <Text>Button 7</Text>
+                    <Text>ALLE Tests</Text>
                 </TouchableOpacity>
 
             </View>
@@ -123,6 +141,10 @@ const styles = StyleSheet.create({
 
     active: {
         backgroundColor: 'yellow'
+    },
+
+    disabledButton: {
+        opacity: 0.4
     }
 
 })

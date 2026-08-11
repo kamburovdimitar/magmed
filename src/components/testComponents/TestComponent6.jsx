@@ -1,241 +1,197 @@
-import React from 'react'
-import { View, Text, TextInput, StyleSheet, Button } from 'react-native'
-import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
-import LabelAndDobuleInputTextComponent from '../../components/LabelAndDoubleInputComponent'
-import TesMeasurmentComponent from '../TestMeasurementsComponent'
-import WattMeasurmentComponent from '../WattMeasurmentComponent'
-import PercentageComponent from '../PercentageComponent'
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Screen split (1:1 with 3.25CCC_Test_Ergometri_
+//   PROJEKT.pdf and Präsentation2.pptx): rebuilt as the dedicated
+//   "Spiro-Ergometrie" screen (button 6). Per the spec: body measurements/
+//   vitals + VO2max/VT1/VT2 fields (Watt or km/h, Liter/min, ml/min/kg,
+//   %VO2max, HF — #62-75 bike / #90-103 treadmill, already implemented by
+//   VO2MaxComponent) + a %-of-VO2max heart-rate-zone table (45%-95%,
+//   #76-86 bike / #104-114 treadmill). Explicitly NO SOLL/IST Watt table and
+//   NO lactate fields on this screen (that's the Ergometrie/Laktat-Ergometrie
+//   screens' job).
+//   VO2max is derived from the same underlying ergometry stage data
+//   (Stufe/Zeitpunkt/Watt/HF/Laktat) used by the Laktat-Ergometrie screen —
+//   that data entry table intentionally does NOT live here too (the
+//   presentation's Spiro-Ergometrie mockup doesn't show one either); it's
+//   entered once (Laktat-Ergometrie screen) and shared via the same
+//   `measurements.ergometryReports`, which is persisted on the patient record
+//   (Redux) rather than re-derived per-screen. If VO2max shows "-" here, that
+//   means no ergometry stage data has been entered yet for this patient.
+//   The %-of-VO2max HR table reuses KarvonenZoneTableComponent (see that
+//   file's changelog for the explicit assumption about which HR formula is
+//   used, since the codebase has no separate VO2max-based HR formula).
+// 2026-08-11 (Europe/Sofia) — Fixed the same layout bug as TestComponent4.jsx
+//   and TestComponent5.jsx (device-toggle buttons overlapping the last row
+//   of TestMeasurmentComponent): removed the leftover `flex: 1` wrapping
+//   `container` View around TestMeasurmentComponent — inside this screen's
+//   ScrollView (unbounded height), a `flex: 1` View collapses to ~0 height
+//   while its content still paints at full size. See TestComponent4.jsx's
+//   changelog for the full explanation.
+// 2026-08-11 (Europe/Sofia) — Added a per-screen "Generate Fake Data" button.
+//   This screen has no independently-editable fields of its own — VO2max/
+//   VT1/VT2 are entirely derived from the same underlying ergometry stage
+//   data as the Laktat-Ergometrie screen (see the file-level note above) —
+//   so "this screen's own object" is that shared ergometry data. Regenerates
+//   it the same way TestComponent5.jsx does (cloning localMeasurements
+//   first, preserving the current device-type selection), so VO2max actually
+//   has something to compute from. Flagging this as a judgment call: if the
+//   intent was for this button to do nothing when there's no Spiro-specific
+//   raw field to fake, that's easy to change.
+// ============================================
 
-export default function TestComponent4() {
+import React, { useEffect, useState } from 'react'
+import { View, StyleSheet, Text, Pressable, ScrollView, Button } from 'react-native'
+import TestMeasurmentComponent from '../TestMeasurementsComponent'
+import VO2MaxComponent from '../VO2MaxComponent'
+import KarvonenZoneTableComponent from '../KarvonenZoneTableComponent'
+import LactateModelPickerComponent from '../LactateModelPickerComponent'
+import { ErgometryUtil } from '../../utils/ErgometrieUtil'
+import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
+import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
+
+export default function TestComponent6({
+    measurements,
+    callback,
+    selectedModel: selectedModelProp,
+    setModel
+}) {
+
+    const [localMeasurements, setLocalMeasurements] = useState(
+        new MDPatientMeasurements(measurements)
+    );
+
+    const [selectedModel, setSelectedModel] = useState(
+        selectedModelProp ?? ERGOMETRY_MODELS.DICKHUTH
+    );
+
+    useEffect(() => {
+        if (!measurements) return;
+        setLocalMeasurements(new MDPatientMeasurements(measurements));
+    }, [measurements]);
+
+    useEffect(() => {
+        setModel && setModel(selectedModel);
+    }, [selectedModel]);
+
+    function onUpdateMeasurements(field, value) {
+
+        let updated = {
+            ...localMeasurements,
+            [field]: value === '' ? null : isNaN(Number(value)) ? value : Number(value)
+        };
+
+        updated = new MDPatientMeasurements(updated);
+
+        setLocalMeasurements(updated);
+
+        callback(updated);
+    }
+
+    function setDeviceType(type) {
+
+        let updated = new MDPatientMeasurements(localMeasurements);
+
+        updated.ergometry.type = type;
+
+        setLocalMeasurements(updated);
+
+        callback(updated);
+    }
+
+    function genereateFakeDataHandler() {
+
+        let updated = new MDPatientMeasurements(localMeasurements);
+
+        updated.ergometry = ErgometryUtil.generateFakeErgometry({
+            type: updated?.ergometry?.type
+        });
+
+        updated = new MDPatientMeasurements(updated);
+
+        updated.ergometryReports = ErgometryUtil.validateAllModels(updated.ergometry.data);
+
+        setLocalMeasurements(updated);
+
+        callback(updated);
+    }
+
+    const isRun = localMeasurements?.ergometry?.type === 'run';
 
     return (
-        <View style={styles.fullcontainer}>
-            <View style={styles.container}>
-                <TesMeasurmentComponent />
-            </View>
-            <View style={styles.container}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.fullcontainer}>
 
-                <View style={styles.row}>
-                    <View style={styles.half}>
+            {/* TEST DATA */}
+            <TestMeasurmentComponent
+                measurements={localMeasurements}
+                onUpdateMeasurements={onUpdateMeasurements}
+            />
 
+            {/* DEVICE TOGGLE + LACTATE MODEL (used for VO₂max threshold selection) */}
+            <View style={styles.topBar}>
+                <Pressable
+                    style={[styles.button, !isRun && styles.activeButton]}
+                    onPress={() => setDeviceType("bike")}
+                >
+                    <Text>🚴 Ergometrie</Text>
+                </Pressable>
 
-                        <View style={styles.rowSingle} >
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>SOLL WERT zzz</Text>
-                                </View>
+                <Pressable
+                    style={[styles.button, isRun && styles.activeButton]}
+                    onPress={() => setDeviceType("run")}
+                >
+                    <Text>🏃 Laufband</Text>
+                </Pressable>
 
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                            </View>
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>Watt</Text>
-                                </View>
-
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                            </View>
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>Watt</Text>
-                                </View>
-
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                            </View>
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>Watt</Text>
-                                </View>
-
-                            </View>
-
-                            < View style={styles.column} >
-                                <Text> </Text>
-                            </View>
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text></Text>
-                                </View>
-
-                            </View>
-
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                            </View>
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>S/min</Text>
-                                </View>
-
-                            </View>
-                        </View>
-
-
-                        <View style={styles.row} >
-
-                            < View style={styles.column}>
-                                <View style={styles.labelTop1}>
-                                    <Text>SOLL WERT zzz</Text>
-                                </View>
-
-                                < View style={styles.labelTop2} >
-                                    <Text>IST WERT </Text>
-                                </View>
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                                < TextInput style={styles.input} />
-                            </View>
-
-                            < View style={styles.unit} >
-                                <Text>Watt </Text>
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                                < TextInput style={styles.input} />
-                            </View>
-
-                            < View style={styles.unit} >
-                                <Text>Watt / kg </Text>
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                                < TextInput style={styles.input} />
-                            </View>
-
-                            < View style={styles.unit} >
-                                <Text>mi/min/kg </Text>
-                            </View>
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                                < TextInput style={styles.input} />
-                            </View>
-
-                            < View style={styles.unit} >
-                                <Text>% der VO2 max </Text>
-                            </View>
-
-
-                            < View style={styles.column} >
-                                <TextInput style={styles.input} />
-                                < TextInput style={styles.input} />
-                            </View>
-
-                            < View style={styles.unit} >
-                                <Text>s/min </Text>
-                            </View>
-
-                        </View >
-
-                    </View>
-
-
-
-                </View>
-
+                <LactateModelPickerComponent
+                    selectedModel={selectedModel}
+                    setSelectedModel={setSelectedModel}
+                />
             </View>
 
-            <View style={{ width: "100%", height: '10%' }}>
-                <PercentageComponent />
+            <VO2MaxComponent
+                measurements={localMeasurements}
+                selectedModel={selectedModel}
+            />
 
-            </View>
-        </View>
+            {/* %-OF-VO2MAX HR ZONES 45-95% — Codex #76-86 / #104-114 */}
+            <KarvonenZoneTableComponent
+                measurements={localMeasurements}
+                title="Heart Rate Zones (%VO₂max, 45-95%)"
+                minPercent={45}
+                maxPercent={95}
+            />
 
+            <Button
+                title="Generate Fake Data"
+                onPress={genereateFakeDataHandler}
+            />
+
+        </ScrollView>
     )
 }
 
 const styles = StyleSheet.create({
     fullcontainer: {
-        flex: 1,
-        width: '100%',
-        height: '100%'
-
+        gap: 10,
+        paddingBottom: 30,
     },
 
-    container: {
-        flex: 1,
+    topBar: {
         flexDirection: 'row',
-        width: '100%',
-        height: '50%'
-
-    },
-    row: {
-        paddingTop: "50",
-        height: '50%',
-        flex: 1,
-        flexDirection: 'row',
-        borderWidth: 1
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        padding: 10
     },
 
-    rowSingle: {
-        paddingTop: "50",
-        height: '10%',
-        flex: 1,
-        flexDirection: 'row',
-        borderWidth: 1
-    },
-
-    half: {
-        flex: 1,
+    button: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
         borderWidth: 1,
-    },
-    innerrow: {
-        flex: 1,
-        flexDirection: 'row',
-        gap: '10'
-
-    },
-    input: {
-        borderWidth: 1,
-        height: 40,
-    },
-    label: {
-        width: 120
-    },
-    percentrow: {
-        flexDirection: "row",
-        width: '100%',
-    },
-    cell: {
-        flex: 1,
-        borderWidth: 1,
-        textAlign: "center",
-        padding: 5,
-    },
-    input: {
-        borderWidth: 1,
-        height: 35,
-        paddingHorizontal: 6,
-
-    },
-    labelTop1: {
-        paddingTop: 10
-    },
-    labelTop2: {
-        paddingTop: 20
-    },
-    column: {
-        padding: 10,
-        flexDirection: 'column',
-        gap: 10
-    },
-    unit: {
-        paddingTop: 40
+        borderRadius: 6,
+        backgroundColor: '#eee'
     },
 
-
-
-})
+    activeButton: {
+        backgroundColor: '#cde5ff'
+    }
+});
