@@ -1,8 +1,23 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: the "Lactate" column header
+//   was hardcoded English text; Translations.js already has an exact
+//   matching key (`laktat`), so it now goes through
+//   LanguageUtil.getName('laktat'). Left "Time", "Load", "HF" and "LT"
+//   hardcoded — no exact-match keys exist for those in Translations.js, and
+//   the task was to wire existing translations, not invent new ones.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): added zeit_text
+//   and belastung_text keys to Translations.js for "Time"/"Load" and wired
+//   them here. Left "HF" and "LT" hardcoded — abbreviations identical in
+//   both languages.
+// ============================================
+
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import TitleWithInfoComponent from './TitleWithInfoComponent';
 import { openPopup } from '../services/PopupService';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function ErgometryTableComponent({
     measurements,
@@ -107,11 +122,11 @@ export default function ErgometryTableComponent({
                 </Text>
 
                 <Text style={styles.input}>
-                    Time
+                    {LanguageUtil.getName('zeit_text')}
                 </Text>
 
                 <Text style={styles.input}>
-                    Load
+                    {LanguageUtil.getName('belastung_text')}
                 </Text>
 
                 <Text style={styles.input}>
@@ -119,7 +134,7 @@ export default function ErgometryTableComponent({
                 </Text>
 
                 <Text style={styles.input}>
-                    Lactate
+                    {LanguageUtil.getName('laktat')}
                 </Text>
 
             </View>

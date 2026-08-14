@@ -16,6 +16,14 @@ export class MDPatientMeasurements {
     ergometry: MDErgometry = new MDErgometry();
     ergometryReports: MDErgometryReport[] = [];
 
+    // 🔹 id на archive записа (ergometryReports[]), който текущата
+    // `ergometry` в момента "представлява" — Page11.tsx's Archive бутон
+    // го ползва, за да реши save (нов запис) vs update (същия запис).
+    // Персистнато тук (не само в локален React state), за да преживява
+    // unmount/remount на Page11 при смяна на таб (виж Page11.tsx-ния
+    // mount-hydration ефект).
+    loadedReportId: string | null = null;
+
     // editable
     private _heightcm: number = 0;
     private _weightkg: number = 0;

@@ -1,4 +1,8 @@
 // ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): wired this
+//   screen's "Generate Fake Data" button to the new
+//   testdaten_generieren_text key in Translations.js.
 // 2026-08-11 (Europe/Sofia) — Screen split (1:1 with 3.25CCC_Test_Ergometri_
 //   PROJEKT.pdf and Präsentation2.pptx): this screen used to render EVERYTHING
 //   (body measurements + bike/run toggle + SOLL/IST Watt + HR reserve +
@@ -29,6 +33,7 @@
 import React from 'react'
 import { View, ScrollView, StyleSheet, Button } from 'react-native'
 import TestMeasurmentComponent from '../TestMeasurementsComponent'
+import LanguageUtil from '../../utils/LanguageUtil'
 import { useEffect, useState } from "react";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 
@@ -110,7 +115,7 @@ export default function TestComponent1({
             />
 
             <Button
-                title="Generate Fake Data"
+                title={LanguageUtil.getName('testdaten_generieren_text')}
                 onPress={genereateFakeDataHandler}
             />
 

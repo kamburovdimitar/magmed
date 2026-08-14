@@ -36,6 +36,13 @@
 //   has something to compute from. Flagging this as a judgment call: if the
 //   intent was for this button to do nothing when there's no Spiro-specific
 //   raw field to fake, that's easy to change.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 1: the "Ergometrie"
+//   word in the device-toggle button wired to LanguageUtil.getName
+//   ('ergometrie').
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings): added the missing keys to
+//   Translations.js — laufband_text, testdaten_generieren_text,
+//   herzfrequenzzonen_vo2max_text — and wired them here.
 // ============================================
 
 import React, { useEffect, useState } from 'react'
@@ -44,6 +51,7 @@ import TestMeasurmentComponent from '../TestMeasurementsComponent'
 import VO2MaxComponent from '../VO2MaxComponent'
 import KarvonenZoneTableComponent from '../KarvonenZoneTableComponent'
 import LactateModelPickerComponent from '../LactateModelPickerComponent'
+import LanguageUtil from '../../utils/LanguageUtil'
 import { ErgometryUtil } from '../../utils/ErgometrieUtil'
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
@@ -131,14 +139,14 @@ export default function TestComponent6({
                     style={[styles.button, !isRun && styles.activeButton]}
                     onPress={() => setDeviceType("bike")}
                 >
-                    <Text>🚴 Ergometrie</Text>
+                    <Text>🚴 {LanguageUtil.getName('ergometrie')}</Text>
                 </Pressable>
 
                 <Pressable
                     style={[styles.button, isRun && styles.activeButton]}
                     onPress={() => setDeviceType("run")}
                 >
-                    <Text>🏃 Laufband</Text>
+                    <Text>🏃 {LanguageUtil.getName('laufband_text')}</Text>
                 </Pressable>
 
                 <LactateModelPickerComponent
@@ -155,13 +163,13 @@ export default function TestComponent6({
             {/* %-OF-VO2MAX HR ZONES 45-95% — Codex #76-86 / #104-114 */}
             <KarvonenZoneTableComponent
                 measurements={localMeasurements}
-                title="Heart Rate Zones (%VO₂max, 45-95%)"
+                title={LanguageUtil.getName('herzfrequenzzonen_vo2max_text')}
                 minPercent={45}
                 maxPercent={95}
             />
 
             <Button
-                title="Generate Fake Data"
+                title={LanguageUtil.getName('testdaten_generieren_text')}
                 onPress={genereateFakeDataHandler}
             />
 

@@ -1,16 +1,37 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 3 (Page11.tsx screen):
+//   the "TRAINING ZONES" title already had a matching key
+//   (`trainingszonen`), so it now goes through LanguageUtil.getName
+//   ('trainingszonen'). Left the zone codes (REG/GA1/GA2/E1/E2) and their
+//   percentage ranges hardcoded — these are standardized sports-science
+//   training-zone abbreviations, not free text.
+// ============================================
+
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { ErgometryModelsUtil } from '../utils/ErgometryModelsUtil';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function TrainingZonesOverlayComponent({
     result,
-    data
+    data,
+
+    // 🔹 2026-08-14 — needed for the corrected HF-cascade calculation (see
+    // ErgometryModelsUtil.calculateTrainingZones) instead of the old
+    // %-of-load shortcut.
+    isRun = false,
+    model = null,
+    trainingZonePercents = null
 }: any) {
 
     const zones =
         ErgometryModelsUtil
             .calculateTrainingZones(
-                result
+                result,
+                data,
+                model ?? result?.model,
+                isRun,
+                trainingZonePercents
             );
 
     if (!zones) {
@@ -63,7 +84,7 @@ export default function TrainingZonesOverlayComponent({
         <View style={styles.container}>
 
             <Text style={styles.title}>
-                TRAINING ZONES
+                {LanguageUtil.getName('trainingszonen')}
             </Text>
 
             <View style={styles.row}>

@@ -1,3 +1,16 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings such as "Körperoberfläche
+//   bezogen" / "Laufband Leistung"): added a new block of ~28 keys for
+//   hardcoded static text across the Ergometrie/Laktat-Ergometrie/Spiro-
+//   Ergometrie Test screens and their shared components (titles, section
+//   headers, button labels) that had no existing matching key. See the
+//   "START OF ERGOMETRY/LAKTAT/SPIRO SCREENS" block below for the full
+//   list. Units and abbreviations that are identical in both languages
+//   (Watt, km/h, bpm, HF, %VO2max, etc.) and info-popup tooltip content
+//   were intentionally left out of scope.
+// ============================================
+
 class Translations {
 
     static translations = {
@@ -122,6 +135,129 @@ class Translations {
 
   //END OF TEST
 
+// START OF ERGOMETRY/LAKTAT/SPIRO SCREENS (added 2026-08-11 — localization
+// pass over the split Test screens; these cover hardcoded strings that had
+// no existing matching key yet)
+
+  koerperoberflaeche_bezogen_text: {
+    de: 'Körperoberfläche bezogen',
+    en: 'Body Surface Area Based'
+  },
+  koerpergewicht_bezogen_text: {
+    de: 'Körpergewicht bezogen',
+    en: 'Body Weight Based'
+  },
+  laufband_leistung_text: {
+    de: 'Laufband Leistung',
+    en: 'Treadmill Performance'
+  },
+  soll_wert_text: {
+    de: 'SOLL WERT',
+    en: 'TARGET VALUE'
+  },
+  ist_wert_text: {
+    de: 'IST WERT',
+    en: 'ACTUAL VALUE'
+  },
+  soll_text: {
+    de: 'SOLL',
+    en: 'TARGET'
+  },
+  ist_text: {
+    de: 'IST',
+    en: 'ACTUAL'
+  },
+  prozent_der_norm_text: {
+    de: '% der Norm',
+    en: '% of Norm'
+  },
+  max_speed_text: {
+    de: 'Maximale Geschwindigkeit',
+    en: 'Max Speed'
+  },
+  geschwindigkeit_text: {
+    de: 'Geschwindigkeit',
+    en: 'Speed'
+  },
+  fahrrad_text: {
+    de: 'Fahrrad',
+    en: 'Bike'
+  },
+  laufband_text: {
+    de: 'Laufband',
+    en: 'Treadmill'
+  },
+  testdaten_generieren_text: {
+    de: 'Testdaten generieren',
+    en: 'Generate Fake Data'
+  },
+  drucken_text: {
+    de: 'Drucken',
+    en: 'Print'
+  },
+  herzfrequenzreserve_text: {
+    de: 'Herzfrequenzreserve',
+    en: 'Heart Rate Reserve'
+  },
+  reserve_text: {
+    de: 'Reserve',
+    en: 'Reserve'
+  },
+  herzfrequenzzonen_text: {
+    de: 'Herzfrequenzzonen (%)',
+    en: 'Heart Rate Zones (%)'
+  },
+  maximale_sauerstoffaufnahme_text: {
+    de: 'Maximale Sauerstoffaufnahme (VO₂max)',
+    en: 'Maximum Oxygen Uptake (VO₂max)'
+  },
+  power_text: {
+    de: 'Leistung',
+    en: 'Power'
+  },
+  ergometrie_test_text: {
+    de: 'Ergometrie-Test',
+    en: 'Ergometry Test'
+  },
+  ergometrie_ergebnisse_text: {
+    de: 'Ergometrie-Ergebnisse',
+    en: 'Ergometry Results'
+  },
+  laktatschwelle_text: {
+    de: 'Laktatschwelle',
+    en: 'Lactate Threshold'
+  },
+  erste_schwelle_text: {
+    de: 'Erste Schwelle (LT1)',
+    en: 'First LT'
+  },
+  zweite_schwelle_text: {
+    de: 'Zweite Schwelle (LT2)',
+    en: 'Second LT'
+  },
+  zeit_text: {
+    de: 'Zeit',
+    en: 'Time'
+  },
+  belastung_text: {
+    de: 'Belastung',
+    en: 'Load'
+  },
+  zurueck_zur_startseite_text: {
+    de: 'Zurück zur Startseite',
+    en: 'Back to Home'
+  },
+  herzfrequenzzonen_karvonen_text: {
+    de: 'Herzfrequenzzonen (Karvonen, 45-95%)',
+    en: 'Heart Rate Zones (Karvonen, 45-95%)'
+  },
+  herzfrequenzzonen_vo2max_text: {
+    de: 'Herzfrequenzzonen (%VO₂max, 45-95%)',
+    en: 'Heart Rate Zones (%VO₂max, 45-95%)'
+  },
+
+// END OF ERGOMETRY/LAKTAT/SPIRO SCREENS
+
 // START OF LAKTAT CURVE - page 11
   leistung_text: {
       de: 'Leistung',
@@ -145,6 +281,140 @@ class Translations {
 
 
     // END OF OF LAKTAT CURVE
+
+    // START OF PAGE 11 (LAKTAT) SCREEN — added 2026-08-11 (Europe/Sofia),
+    // localization pass 3, after the user pointed out Page11.tsx (the
+    // separate "PAGE 11 - LAKTAT" screen, not part of the Test-screen family)
+    // was never wired to LanguageUtil at all.
+    auswertung_text: {
+      de: 'Auswertung',
+      en: 'Evaluation'
+    },
+
+    detail_analyse_text: {
+      de: 'DIALOG (Detail-Analyse)',
+      en: 'DIALOG (Detailed Analysis)'
+    },
+
+    threshold_summary_text: {
+      de: 'Schwellenwert-Zusammenfassung',
+      en: 'Threshold Summary'
+    },
+
+    no_archived_reports_text: {
+      de: 'Keine archivierten Berichte',
+      en: 'No archived reports'
+    },
+
+    modell_text: {
+      de: 'Modell',
+      en: 'Model'
+    },
+
+    zurueck_zum_bearbeiten_text: {
+      de: 'Zurück zum Bearbeiten',
+      en: 'Back To Edit'
+    },
+
+    bericht_oeffnen_text: {
+      de: 'Bericht öffnen',
+      en: 'Open Report'
+    },
+
+    speichern_generieren_text: {
+      de: 'Speichern/Generieren',
+      en: 'Save/Generate'
+    },
+
+    archivieren_text: {
+      de: 'Archivieren',
+      en: 'Archive'
+    },
+
+    // 🔹 2026-08-14 — UI redesign: Archive бутонът вече показва различен
+    // текст, когато текущите данни вече представляват съществуващ archive
+    // запис (loadedReportId сетнат) — тогава Archive прави UPDATE вместо
+    // да създава нов запис. Виж Page11.tsx saveIntoArchive_History().
+    archiv_aktualisieren_text: {
+      de: 'Archiv aktualisieren',
+      en: 'Update Archive'
+    },
+
+    alle_daten_loeschen_text: {
+      de: 'Alle Daten löschen',
+      en: 'Clear all data'
+    },
+
+    testdaten_aus_szenario_text: {
+      de: 'Testdaten aus Szenario generieren',
+      en: 'Generate Fake Data From Test Scenario'
+    },
+
+    hf_umschalten_text: {
+      de: 'HF umschalten',
+      en: 'Toggle HR'
+    },
+
+    schwellenwerte_umschalten_text: {
+      de: 'Schwellenwerte umschalten',
+      en: 'Toggle Thresholds'
+    },
+
+    zonen_umschalten_text: {
+      de: 'Zonen umschalten',
+      en: 'Toggle Zones'
+    },
+
+    bericht_drucken_text: {
+      de: 'Bericht drucken',
+      en: 'Print Report'
+    },
+
+    patienten_vorschau_text: {
+      de: 'Patientenvorschau',
+      en: 'Patient Preview'
+    },
+
+    ergebnis_vorschau_text: {
+      de: 'Ergebnisvorschau',
+      en: 'Result Preview'
+    },
+
+    // END OF PAGE 11 (LAKTAT) SCREEN
+
+    // START OF NEW TEST / EXISTING TESTS / SAVE FEATURE — added 2026-08-11
+    // (Europe/Sofia). Reused existing keys where possible: `speichern`
+    // (Save), `neuer_test_text` (New Test), `vorhandene_tests_test`
+    // (Existing Tests), `ja`/`nein` (confirm dialog buttons), `schliessen`
+    // (Close), `uebernehmen` (Apply), `datum` (Date). Only these two were
+    // genuinely new:
+    test_data_loss_warning_text: {
+      de: 'Ungespeicherte Änderungen gehen verloren. Fortfahren?',
+      en: 'Unsaved changes will be lost. Continue?'
+    },
+
+    keine_tests_text: {
+      de: 'Keine Tests vorhanden',
+      en: 'No tests yet'
+    },
+
+    // END OF NEW TEST / EXISTING TESTS / SAVE FEATURE
+
+    // 2026-08-13 (Europe/Sofia) — ErgometryHistoryComponent Delete button
+    // (Page11.tsx archive list): confirm before permanently removing an
+    // archived ergometry report.
+    delete_report_confirm_text: {
+      de: 'Dieser archivierte Bericht wird dauerhaft gelöscht. Fortfahren?',
+      en: 'This archived report will be permanently deleted. Continue?'
+    },
+
+    // 2026-08-14 (Europe/Sofia) — Plausibilitätsprüfung (save() in
+    // Page11.tsx): warning shown when Belastung (load) doesn't strictly
+    // increase stage-over-stage.
+    plausibility_load_error_text: {
+      de: 'Die Belastungswerte steigen nicht stufenweise an — Ergebnisse können unzuverlässig sein. Bitte prüfen oder ein anderes Rechenverfahren wählen.',
+      en: 'Load values do not increase stage-over-stage — results may be unreliable. Please check the data or choose a different model.'
+    },
 
 
 
@@ -252,6 +522,20 @@ class Translations {
   trainingszonen: {
     de: 'Trainingszonen',
     en: 'Training Zones'
+  },
+  // 🔹 2026-08-14 — Trainingsbereich table (per "3.34 CCC Laktatkurve und
+  // Trainingsbereich"): title + column headers for TrainingsbereichComponent.tsx
+  trainingsbereich_titel_text: {
+    de: 'TRAININGSBEREICH',
+    en: 'TRAINING ZONE'
+  },
+  prozent_der_ians_text: {
+    de: '% der IANS',
+    en: '% of IANS'
+  },
+  mmol_liter_text: {
+    de: 'mmol/Liter',
+    en: 'mmol/Liter'
   },
   belastungsbereiche: {
     de: 'Belastungsbereiche',

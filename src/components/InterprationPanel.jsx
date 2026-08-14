@@ -8,6 +8,19 @@
 //   instead of the old CSS `zoom` transform, so it no longer breaks ScrollView's
 //   scroll-height calculation. Controlled by the new zoomLevel prop (set from
 //   Page8's zoom buttons).
+// 2026-08-11 (Europe/Sofia) — Localization pass: the two hardcoded "Lactate"
+//   column headers (Lactate Threshold block, Training Zones block) now go
+//   through LanguageUtil.getName('laktat') (exact matching key already in
+//   Translations.js). Left the "Watt" header cells hardcoded — no
+//   exact-match key exists for that. Separately noticed but NOT changed
+//   (flagging for the user, since it's a different kind of bug than what was
+//   asked): the patient-info row above already calls LanguageUtil.getName
+//   with 'name_text', 'height_text', 'weight_text' and 'bsa_text' — none of
+//   those keys exist in Translations.js, so today they render literally as
+//   the strings "name_text"/"height_text"/"weight_text"/"bsa_text" instead
+//   of real labels (only 'gender_text' among that group actually exists).
+//   Worth a follow-up once it's clear which existing key each should map to
+//   (e.g. height_text vs. the existing koerpergroesse_text).
 // ============================================
 
 import React, { createContext, useContext } from 'react';
@@ -352,7 +365,7 @@ export default function InterpretationPanel({
                                 <Cell label="" value="Watt/kg" />
                                 <Cell label="" value="%HFmax" />
                                 <Cell label="" value="HF" />
-                                <Cell label="" value="Lactate" />
+                                <Cell label="" value={LanguageUtil.getName('laktat')} />
                             </Row>
                             <Row>
                                 <Cell
@@ -439,7 +452,7 @@ export default function InterpretationPanel({
                             <Row>
                                 <Cell label="" value="Zone" />
                                 <Cell label="" value="% IANS" />
-                                <Cell label="" value="Lactate" />
+                                <Cell label="" value={LanguageUtil.getName('laktat')} />
                                 <Cell label="" value="HF" />
                                 <Cell label="" value={isRun ? 'Pace' : 'Watt'} />
                             </Row>

@@ -1,5 +1,16 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: "SOLL WERT"/"IST WERT"/
+//   "% der norm" were hardcoded German-only text with no English fallback
+//   (they'd stay in German even when the app is switched to English). Added
+//   new keys to Translations.js (soll_wert_text, ist_wert_text,
+//   prozent_der_norm_text) and wired them here. Left "Watt" and "Watt / kg"
+//   hardcoded — those are physics units, identical in German and English, so
+//   translating them is a no-op.
+// ============================================
+
 import React from 'react'
 import { View, Text, TextInput, StyleSheet } from 'react-native'
+import LanguageUtil from '../utils/LanguageUtil'
 
 export default function WattMeasurementComponent({
     showlabel,
@@ -18,11 +29,11 @@ export default function WattMeasurementComponent({
             {showlabel && (
                 <View style={styles.column}>
                     <View style={styles.labelTop1}>
-                        <Text>SOLL WERT</Text>
+                        <Text>{LanguageUtil.getName('soll_wert_text')}</Text>
                     </View>
 
                     <View style={styles.labelTop2}>
-                        <Text>IST WERT</Text>
+                        <Text>{LanguageUtil.getName('ist_wert_text')}</Text>
                     </View>
                 </View>
             )}
@@ -98,7 +109,7 @@ export default function WattMeasurementComponent({
             </View>
 
             <View style={styles.unit}>
-                <Text>% der norm</Text>
+                <Text>{LanguageUtil.getName('prozent_der_norm_text')}</Text>
             </View>
 
         </View>

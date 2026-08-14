@@ -1,9 +1,20 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 3 (Page11.tsx screen):
+//   added threshold_summary_text to Translations.js for the "THRESHOLD
+//   SUMMARY (...)" title (model name interpolation kept as-is) and wired
+//   the two "Lactate:" labels to the existing `laktat` key, and
+//   "INTERPRETATION" to the existing `interpretation` key. Left "IAS",
+//   "IANS", "Watt:", "HF:", "% HFmax:", "% Pmax:" and "% HRR:" hardcoded —
+//   abbreviations/units identical in both languages.
+// ============================================
+
 import React from 'react'
 import {
     View,
     Text,
     StyleSheet
 } from 'react-native'
+import LanguageUtil from '../utils/LanguageUtil'
 
 export default function ErgometrySummaryComponent({
     result
@@ -18,7 +29,7 @@ export default function ErgometrySummaryComponent({
         <View style={styles.container}>
 
             <Text style={styles.title}>
-                THRESHOLD SUMMARY ({(result?.model || 'DICKHUTH').toUpperCase()})
+                {LanguageUtil.getName('threshold_summary_text')} ({(result?.model || 'DICKHUTH').toUpperCase()})
             </Text>
 
             {/* 🔹 IAS */}
@@ -29,7 +40,7 @@ export default function ErgometrySummaryComponent({
                 </Text>
 
                 <Text>
-                    Lactate:
+                    {LanguageUtil.getName('laktat')}:
                     {' '}
                     {result.IAS}
                 </Text>
@@ -74,7 +85,7 @@ export default function ErgometrySummaryComponent({
                 </Text>
 
                 <Text>
-                    Lactate:
+                    {LanguageUtil.getName('laktat')}:
                     {' '}
                     {result.IANS}
                 </Text>
@@ -115,7 +126,7 @@ export default function ErgometrySummaryComponent({
             <View style={styles.block}>
 
                 <Text style={styles.blockTitle}>
-                    INTERPRETATION
+                    {LanguageUtil.getName('interpretation')}
                 </Text>
 
                 {

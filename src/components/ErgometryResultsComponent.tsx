@@ -1,8 +1,21 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: the "Lactate" column header
+//   was hardcoded English text; Translations.js already has an exact
+//   matching key (`laktat`), so it now goes through
+//   LanguageUtil.getName('laktat'). Left "Watt", "Watt/kg" and "HF"
+//   hardcoded — no exact-match keys exist for those in Translations.js.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): added
+//   ergometrie_ergebnisse_text to Translations.js for the " Ergometry
+//   Results" title and wired it here.
+// ============================================
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { openPopup } from '../services/PopupService';
 import { CodexUtil } from '../utils/CodexUtil';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function ErgometryResultsComponent({
     measurements,
@@ -79,7 +92,7 @@ export default function ErgometryResultsComponent({
         <View style={styles.container}>
 
             <TitleWithInfoComponent
-                title=' Ergometry Results'
+                title={LanguageUtil.getName('ergometrie_ergebnisse_text')}
                 infoHandler={infoHandler}
             />
 
@@ -107,7 +120,7 @@ export default function ErgometryResultsComponent({
                     </Text>
 
                     <Text style={styles.value}>
-                        Lactate
+                        {LanguageUtil.getName('laktat')}
                     </Text>
 
                 </View>

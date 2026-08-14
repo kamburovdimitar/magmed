@@ -1,7 +1,15 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: the "Heart Rate Zones (%)"
+//   title now goes through LanguageUtil.getName('herzfrequenzzonen_text')
+//   (new key added to Translations.js). Left the info-popup content
+//   untouched — separate, larger task, out of scope here.
+// ============================================
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TableCellComponent from './TableCellComponent';
 import TitleWithInfoComponent from './TitleWithInfoComponent';
+import LanguageUtil from '../utils/LanguageUtil';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import { openPopup } from '../services/PopupService';
 
@@ -104,7 +112,7 @@ export default function HeartRateZonesComponent({
         <View style={styles.container}>
 
             <TitleWithInfoComponent
-                title='Heart Rate Zones (%)'
+                title={LanguageUtil.getName('herzfrequenzzonen_text')}
                 infoHandler={infoHandler}
             />
 

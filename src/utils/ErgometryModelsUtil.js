@@ -512,7 +512,14 @@ function calculateMaxSlopeMethodKeulLegacy(data) {
 
 }
 
-function calculateKeul(data) {
+// 🔹 type: 'bike' | 'run' — Keul-модел ползва различен tangent slope за
+// IANS/LPT2 според мерната единица на натоварването (виж PDF-a
+// "3.32CCC_Laktatkurve_Rechenverfahren_BEISPIELE_PROJEKT", стр. 5-6):
+//   - Watt (bike):  Tangentensteigung 0,055  (Steigungswinkel 3,14°)
+//   - km/h (run):   Tangentensteigung 1,26   (Steigungswinkel 51,34°)
+// По-рано тук стоеше hardcoded 0.055 за всички случаи — коректно само за
+// bike, грешно за run/km-h тестове (даваше грешен IANS load за бягане).
+function calculateKeul(data, type) {
 
     if (!data || data.length < 3) return null;
 
@@ -562,7 +569,7 @@ function calculateKeul(data) {
 
     if (a <= 0 || b === 0 || (a * b) <= 0) return null;
 
-    const targetSlope = 0.055;
+    const targetSlope = type === 'run' ? 1.26 : 0.055;
 
     let iansLoad = Math.log(targetSlope / (a * b)) / b;
 
@@ -598,6 +605,8 @@ function calculateKeul(data) {
         b: Number(b.toFixed(6)),
 
         iansLoad: Number(iansLoad.toFixed(1)),
+
+        targetSlope: targetSlope,
 
         exponentialFit: {
             a: a,
@@ -988,27 +997,6 @@ function interpolateByLoad(
 
 }
 
-function calculateTrainingZones(result) {
-
-    if (!result || !result.IANSPoint) return null;
-
-    const iansLoad = Number(result.IANSPoint.load);
-
-    const regEnd = Number((iansLoad * 0.75).toFixed(1));
-    const ga1End = Number((iansLoad * 0.85).toFixed(1));
-    const ga2End = Number((iansLoad * 0.95).toFixed(1));
-    const e1End = Number((iansLoad * 1.05).toFixed(1));
-
-    return {
-        REG: { from: 0, to: regEnd, percentFrom: 0, percentTo: 75, color: '#fff176' },
-        GA1: { from: regEnd, to: ga1End, percentFrom: 75, percentTo: 85, color: '#81c784' },
-        GA2: { from: ga1End, to: ga2End, percentFrom: 85, percentTo: 95, color: '#64b5f6' },
-        E1: { from: ga2End, to: e1End, percentFrom: 95, percentTo: 105, color: '#ef9a9a' },
-        E2: { from: e1End, to: Number.MAX_VALUE, percentFrom: 105, percentTo: null, color: '#e57373' }
-    };
-
-}
-
 // ------------------------------------------------
 // Training Zones — Codex/CCC-compliant cascade
 // ------------------------------------------------
@@ -1026,8 +1014,37 @@ function calculateTrainingZones(result) {
 // threshold load by a percentage — instead each HF boundary must be looked
 // up against the real measured stage curve. We reuse interpolateByHF for
 // that lookup (piecewise-linear over the actual test stages).
+//
+// 2026-08-14 (Europe/Sofia) — Trainingsbereich UI pass: calculateTrainingZones()
+// used to derive its boundaries by naively multiplying the IANS *load* by a
+// fixed percentage (0.75/0.85/0.95/1.05) — exactly the "einfache prozentuale
+// Multiplikation" the spec explicitly forbids, and inconsistent with
+// calculateTrainingZoneTable()'s correct HF-cascade method (the two could
+// disagree on the same test). Both now share computeZoneHFBoundaries() so
+// the chart's colored bands and the Trainingsbereich table always agree.
+// Also added `customPercents` (REG/GA1/GA2/E1 boundary %, editable in the UI
+// via TrainingsbereichComponent.tsx or by dragging the boundary directly on
+// the chart) — IAS(75%)/IANS(100%) stay fixed anchors per spec, everything
+// else defaults to the spec's standard percentages when no override is given.
 
 const PERCENT_IANS_MODELS = ['freiburg', 'keul'];
+
+const DEFAULT_ZONE_PERCENTS = {
+    REG: 75,
+    GA1: 85,
+    GA2: 95,
+    E1: 105
+};
+
+function resolveZonePercents(customPercents) {
+
+    return {
+        REG: customPercents?.REG ?? DEFAULT_ZONE_PERCENTS.REG,
+        GA1: customPercents?.GA1 ?? DEFAULT_ZONE_PERCENTS.GA1,
+        GA2: customPercents?.GA2 ?? DEFAULT_ZONE_PERCENTS.GA2,
+        E1: customPercents?.E1 ?? DEFAULT_ZONE_PERCENTS.E1
+    };
+}
 
 function formatPace(kmh) {
 
@@ -1056,47 +1073,124 @@ function lookupZonePoint(data, targetHF, isRun) {
     };
 }
 
-function calculateTrainingZoneTable(result, ergometryData, model, isRun = false) {
+// 🔹 shared by calculateTrainingZoneTable() and calculateTrainingZones() —
+// the single source of truth for where each zone boundary sits in HF terms,
+// so the table and the chart's colored bands can never disagree.
+function computeZoneHFBoundaries(result, model, customPercents) {
 
-    if (!result?.IASPoint || !result?.IANSPoint || !ergometryData?.length) {
-        return null;
-    }
+    if (!result?.IASPoint || !result?.IANSPoint) return null;
 
-    const iasHF = Number(result.IASPoint.hf);
+    const measuredIasHF = Number(result.IASPoint.hf);
     const iansHF = Number(result.IANSPoint.hf);
 
-    if (!iasHF || !iansHF) return null;
+    if (!measuredIasHF || !iansHF) return null;
 
     const usesPercentIANS = PERCENT_IANS_MODELS.includes(model);
+
+    const percents = resolveZonePercents(customPercents);
+
+    // 🔹 Per the spec table ("Schwellen und Markierungen", 3.34 CCC): for
+    // Freiburger/Keul the IAS/LTP1 anchor in the Trainingsbereich is a
+    // THEORETICAL point — 75% of IANS-HF — not whatever the chosen model
+    // happened to measure as "real" IAS (that's a different, physiological
+    // IAS used elsewhere in Auswertung/DetailAnalyse). For Dickhuth/
+    // Stückweise-linear/Linear/Keul-Legacy, the Trainingsbereich anchors to
+    // the actually measured IAS point instead. Without this split, REG/IAS
+    // could end up ABOVE GA1's boundary for percent models whenever the
+    // model's measured IAS sits above 75%-of-IANS-HF — an inverted zone.
+    // A custom REG% override always wins, for every model.
+    const iasHF = (customPercents?.REG != null || usesPercentIANS)
+        ? iansHF * percents.REG / 100
+        : measuredIasHF;
 
     // REG always tops out exactly at the IAS point in both methods.
     const regToHF = iasHF;
 
-    const ga2UpperHF = iansHF * 0.95;
+    const ga2UpperHF = iansHF * percents.GA2 / 100;
 
-    const ga1ToHF = usesPercentIANS
-        ? iansHF * 0.85
+    // GA1/GA2 split the IAS↔IANS band for "point" models (Dickhuth/Linear/
+    // LTP/Keul Legacy) UNLESS the user gave an explicit override — an
+    // explicit % always wins, for every model, so dragging/typing works
+    // everywhere.
+    const ga1ToHF = (customPercents?.GA1 != null || usesPercentIANS)
+        ? iansHF * percents.GA1 / 100
         : (iasHF + ga2UpperHF) / 2;
 
-    const ga2ToHF = usesPercentIANS
-        ? iansHF * 0.95
-        : ga2UpperHF;
+    const ga2ToHF = ga2UpperHF;
 
-    const e1ToHF = iansHF * 1.05;
+    const e1ToHF = iansHF * percents.E1 / 100;
+
+    return {
+        iasHF,
+        iansHF,
+        regToHF,
+        ga1ToHF,
+        ga2ToHF,
+        e1ToHF,
+        percents,
+        usesPercentIANS
+    };
+}
+
+// 🔹 defensive normalize — callers pass either raw Datenerfassung rows
+// (stage/time/load/hf/lactate as strings, may include an in-progress last
+// row with empty hf/lactate) or an already-filtered/sorted array (like
+// LactateChartComponent's own `chartData`). Number("") is 0, not NaN, so
+// without this an empty-but-present field would silently interpolate as a
+// bogus 0 instead of being skipped — filter + sort defensively either way.
+function normalizeChartData(data) {
+
+    if (!data?.length) return [];
+
+    const rows = [];
+
+    for (let i = 0; i < data.length; i++) {
+
+        const load = Number(data[i].load);
+        const lactate = Number(data[i].lactate);
+        const hf = Number(data[i].hf);
+
+        if (
+            data[i].hf === '' || data[i].hf == null ||
+            data[i].lactate === '' || data[i].lactate == null ||
+            isNaN(load) || isNaN(hf) || isNaN(lactate) || lactate <= 0
+        ) {
+            continue;
+        }
+
+        rows.push({ load, lactate, hf, stage: data[i].stage });
+    }
+
+    rows.sort((a, b) => a.load - b.load);
+
+    return rows;
+}
+
+function calculateTrainingZoneTable(result, ergometryData, model, isRun = false, customPercents = null) {
+
+    const normalized = normalizeChartData(ergometryData);
+
+    if (!normalized.length) return null;
+
+    const boundaries = computeZoneHFBoundaries(result, model, customPercents);
+
+    if (!boundaries) return null;
+
+    const { iasHF, iansHF, regToHF, ga1ToHF, ga2ToHF, e1ToHF, percents, usesPercentIANS } = boundaries;
 
     const rowDefs = [
-        { key: 'REG', label: 'REG', percent: 75, hfTarget: regToHF },
+        { key: 'REG', label: 'REG', percent: percents.REG, hfTarget: regToHF },
         { key: 'IAS', label: 'IAS/LTP1', percent: 75, hfTarget: iasHF },
-        { key: 'GA1', label: 'GA1', percent: usesPercentIANS ? 85 : null, hfTarget: ga1ToHF },
-        { key: 'GA2', label: 'GA2', percent: usesPercentIANS ? 95 : null, hfTarget: ga2ToHF },
+        { key: 'GA1', label: 'GA1', percent: usesPercentIANS || customPercents?.GA1 != null ? percents.GA1 : null, hfTarget: ga1ToHF },
+        { key: 'GA2', label: 'GA2', percent: usesPercentIANS || customPercents?.GA2 != null ? percents.GA2 : null, hfTarget: ga2ToHF },
         { key: 'IANS', label: 'IANS/LTP2', percent: 100, hfTarget: iansHF },
-        { key: 'E1', label: 'E1', percent: 105, hfTarget: e1ToHF },
-        { key: 'E2', label: 'E2', percent: 105, hfTarget: e1ToHF }
+        { key: 'E1', label: 'E1', percent: percents.E1, hfTarget: e1ToHF },
+        { key: 'E2', label: 'E2', percent: percents.E1, hfTarget: e1ToHF }
     ];
 
     const rows = rowDefs.map(row => {
 
-        const point = lookupZonePoint(ergometryData, row.hfTarget, isRun);
+        const point = lookupZonePoint(normalized, row.hfTarget, isRun);
 
         return {
             key: row.key,
@@ -1111,8 +1205,40 @@ function calculateTrainingZoneTable(result, ergometryData, model, isRun = false)
 
     return {
         method: usesPercentIANS ? 'percent' : 'point',
+        percents,
         rows
     };
+}
+
+function calculateTrainingZones(result, ergometryData, model, isRun = false, customPercents = null) {
+
+    const normalized = normalizeChartData(ergometryData);
+
+    if (!normalized.length) return null;
+
+    const boundaries = computeZoneHFBoundaries(result, model, customPercents);
+
+    if (!boundaries) return null;
+
+    const { regToHF, ga1ToHF, ga2ToHF, e1ToHF, percents } = boundaries;
+
+    const regTo = interpolateByHF(normalized, regToHF)?.load;
+    const ga1To = interpolateByHF(normalized, ga1ToHF)?.load;
+    const ga2To = interpolateByHF(normalized, ga2ToHF)?.load;
+    const e1To = interpolateByHF(normalized, e1ToHF)?.load;
+
+    if (regTo == null || ga1To == null || ga2To == null || e1To == null) {
+        return null;
+    }
+
+    return {
+        REG: { from: 0, to: regTo, percentFrom: 0, percentTo: percents.REG, color: '#fff176' },
+        GA1: { from: regTo, to: ga1To, percentFrom: percents.REG, percentTo: percents.GA1, color: '#81c784' },
+        GA2: { from: ga1To, to: ga2To, percentFrom: percents.GA1, percentTo: percents.GA2, color: '#64b5f6' },
+        E1: { from: ga2To, to: e1To, percentFrom: percents.GA2, percentTo: percents.E1, color: '#ef9a9a' },
+        E2: { from: e1To, to: Number.MAX_VALUE, percentFrom: percents.E1, percentTo: null, color: '#e57373' }
+    };
+
 }
 
 function generateLinePoints(
@@ -2078,6 +2204,8 @@ export const ErgometryModelsUtil = {
 
     calculateTrainingZones,
     calculateTrainingZoneTable,
+    normalizeChartData,
+    DEFAULT_ZONE_PERCENTS,
 
     calculateLTP,
 

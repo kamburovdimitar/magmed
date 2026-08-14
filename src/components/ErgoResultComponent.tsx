@@ -1,7 +1,23 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: "Laufband Leistung", "Max
+//   Speed", the "Körper Oberfläche/Gewicht bezogen" titles, and the "SOLL"/
+//   "IST"/"% Norm" row labels were hardcoded German/English text with no
+//   language-toggle support. Added new keys to Translations.js
+//   (laufband_leistung_text, max_speed_text, koerperoberflaeche_bezogen_text,
+//   koerpergewicht_bezogen_text, soll_text, ist_text, prozent_der_norm_text)
+//   and wired them here. The bike-mode titles now use the same keys as the
+//   ones in TestComponent4.jsx/TestComponent5.jsx's inline Watt-block titles
+//   (this file previously spelled them slightly differently — "Körper
+//   Oberfläche bezogen" with a space vs. "Körperoberfläche bezogen" without —
+//   both now render identically). Left "min/km", "Watt", "Watt/kg" and "%"
+//   hardcoded — those are units, identical in German and English.
+// ============================================
+
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import LabelAndInputTextComponent from './LabelAndInputComponent'
 import TitleWithInfoComponent from './TitleWithInfoComponent'
+import LanguageUtil from '../utils/LanguageUtil'
 import { openPopup } from '../services/PopupService';
 
 export default function ErgoResultComponent({
@@ -108,12 +124,12 @@ export default function ErgoResultComponent({
 
 
                     <TitleWithInfoComponent
-                        title='    Laufband Leistung'
+                        title={`    ${LanguageUtil.getName('laufband_leistung_text')}`}
                         infoHandler={laufbandInfoHandler}
                     />
 
                     <LabelAndInputTextComponent
-                        label="Max Speed"
+                        label={LanguageUtil.getName('max_speed_text')}
                         measure="km/h"
                         value={measurements?.maxspeed ?? 0}
                         isEditable={true}
@@ -144,12 +160,12 @@ export default function ErgoResultComponent({
             <View style={styles.block}>
 
                 <TitleWithInfoComponent
-                    title='    Körper Oberfläche bezogen'
+                    title={`    ${LanguageUtil.getName('koerperoberflaeche_bezogen_text')}`}
                     infoHandler={infoHandler}
                 />
 
                 <LabelAndInputTextComponent
-                    label="SOLL"
+                    label={LanguageUtil.getName('soll_text')}
                     measure="Watt"
 
                     // MAGMED #31
@@ -162,7 +178,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="SOLL"
+                    label={LanguageUtil.getName('soll_text')}
                     measure="Watt/kg"
 
                     // MAGMED #33
@@ -175,7 +191,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="IST"
+                    label={LanguageUtil.getName('ist_text')}
                     measure="Watt"
 
                     // MAGMED #32
@@ -199,7 +215,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="IST"
+                    label={LanguageUtil.getName('ist_text')}
                     measure="Watt/kg"
 
                     // MAGMED #34
@@ -211,7 +227,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="% Norm"
+                    label={LanguageUtil.getName('prozent_der_norm_text')}
                     measure="%"
 
                     // MAGMED #35
@@ -227,11 +243,11 @@ export default function ErgoResultComponent({
             <View style={styles.block}>
 
                 <Text style={styles.title}>
-                    Körper Gewicht bezogen
+                    {LanguageUtil.getName('koerpergewicht_bezogen_text')}
                 </Text>
 
                 <LabelAndInputTextComponent
-                    label="SOLL"
+                    label={LanguageUtil.getName('soll_text')}
                     measure="Watt"
 
                     // MAGMED #36
@@ -243,7 +259,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="SOLL"
+                    label={LanguageUtil.getName('soll_text')}
                     measure="Watt/kg"
 
                     // MAGMED #37
@@ -255,7 +271,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="IST"
+                    label={LanguageUtil.getName('ist_text')}
                     measure="Watt"
 
                     // MAGMED #32
@@ -266,7 +282,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="IST"
+                    label={LanguageUtil.getName('ist_text')}
                     measure="Watt/kg"
 
                     // MAGMED #38
@@ -279,7 +295,7 @@ export default function ErgoResultComponent({
                 />
 
                 <LabelAndInputTextComponent
-                    label="% Norm"
+                    label={LanguageUtil.getName('prozent_der_norm_text')}
                     measure="%"
 
                     // MAGMED #39

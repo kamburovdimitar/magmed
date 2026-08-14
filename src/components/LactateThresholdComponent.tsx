@@ -1,9 +1,20 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): wired the title
+//   ("Lactate Threshold" -> laktatschwelle_text), the "First LT"/"Second LT"
+//   row labels (-> erste_schwelle_text / zweite_schwelle_text) and the
+//   "Speed" header (-> geschwindigkeit_text) to newly-added Translations.js
+//   keys. Left "Watt", "Watt/kg", "%VO₂max", "%HFmax" and "HF" hardcoded —
+//   these are units/abbreviations, identical in both languages.
+// ============================================
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { openPopup } from '../services/PopupService';
 import { CodexUtil } from '../utils/CodexUtil';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function LactateThresholdComponent({
     measurements,
@@ -123,7 +134,7 @@ export default function LactateThresholdComponent({
         <View style={styles.container}>
 
             <TitleWithInfoComponent
-                title='  Lactate Threshold'
+                title={LanguageUtil.getName('laktatschwelle_text')}
                 infoHandler={infoHandler}
             />
 
@@ -135,7 +146,7 @@ export default function LactateThresholdComponent({
                     {
                         measurements?.isBike
                             ? "Watt"
-                            : "Speed"
+                            : LanguageUtil.getName('geschwindigkeit_text')
                     }
                 </Text>
 
@@ -152,7 +163,7 @@ export default function LactateThresholdComponent({
                 </Text>
 
                 <Text style={styles.cell}>
-                    Speed
+                    {LanguageUtil.getName('geschwindigkeit_text')}
                 </Text>
 
                 <Text style={styles.cell}>
@@ -168,7 +179,7 @@ export default function LactateThresholdComponent({
             <View style={styles.row}>
 
                 <Text style={styles.label}>
-                    First LT
+                    {LanguageUtil.getName('erste_schwelle_text')}
                 </Text>
 
                 {/* #45 / #53 */}
@@ -222,7 +233,7 @@ export default function LactateThresholdComponent({
             <View style={styles.row}>
 
                 <Text style={styles.label}>
-                    Second LT
+                    {LanguageUtil.getName('zweite_schwelle_text')}
                 </Text>
 
                 {/* #46 / #54 */}

@@ -1,9 +1,20 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): wired the title
+//   ("Maximum Oxygen Uptake (VO₂max)" -> maximale_sauerstoffaufnahme_text),
+//   the "Power" header (-> power_text) and the "First LT"/"Second LT" row
+//   labels (-> erste_schwelle_text / zweite_schwelle_text) to newly-added
+//   Translations.js keys. Left "VO₂ max", "ml/kg/min" and "HF" hardcoded —
+//   these are units/abbreviations, identical in both languages.
+// ============================================
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TableCellComponent from './TableCellComponent';
 import { ErgometryUtil } from '../utils/ErgometrieUtil';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
 import { openPopup } from '../services/PopupService';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function VO2MaxComponent({
     measurements,
@@ -88,7 +99,7 @@ export default function VO2MaxComponent({
         <View style={styles.container}>
 
 
-            <TitleWithInfoComponent title='  Maximum Oxygen Uptake (VO₂max)' infoHandler={infoHandler} />
+            <TitleWithInfoComponent title={LanguageUtil.getName('maximale_sauerstoffaufnahme_text')} infoHandler={infoHandler} />
 
             <View style={styles.header}>
 
@@ -104,7 +115,7 @@ export default function VO2MaxComponent({
                 </Text>
 
                 <Text style={styles.label}>
-                    Power
+                    {LanguageUtil.getName('power_text')}
                 </Text>
 
                 <Text style={styles.label}>
@@ -116,7 +127,7 @@ export default function VO2MaxComponent({
             <View style={styles.row}>
 
                 <Text style={styles.name}>
-                    First LT
+                    {LanguageUtil.getName('erste_schwelle_text')}
 
                 </Text>
 
@@ -133,7 +144,7 @@ export default function VO2MaxComponent({
             <View style={styles.row}>
 
                 <Text style={styles.name}>
-                    Second LT
+                    {LanguageUtil.getName('zweite_schwelle_text')}
                 </Text>
 
                 <TableCellComponent value={secondVO2} />

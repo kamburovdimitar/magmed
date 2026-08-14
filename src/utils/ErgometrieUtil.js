@@ -207,7 +207,7 @@ function generateFakeErgometry(options = {}) {
     };
 }
 
-function validateAllModels(rows) {
+function validateAllModels(rows, type) {
 
     const results = [];
 
@@ -238,7 +238,7 @@ function validateAllModels(rows) {
 
         if (models[i] === ERGOMETRY_MODELS.LTP) result = ErgometryModelsUtil.calculateLTP(rows);
 
-        if (models[i] === ERGOMETRY_MODELS.KEUL) result = ErgometryModelsUtil.calculateKeul(rows);
+        if (models[i] === ERGOMETRY_MODELS.KEUL) result = ErgometryModelsUtil.calculateKeul(rows, type);
 
         if (models[i] === ERGOMETRY_MODELS.KEUL_LEGACY) result = ErgometryModelsUtil.calculateMaxSlopeMethodKeulLegacy(rows);
 
@@ -310,6 +310,9 @@ function createReport(
     const rows =
         measurements?.ergometry?.data;
 
+    const type =
+        measurements?.ergometry?.type;
+
     console.log("===== CREATE REPORT =====");
     console.log("model:", model);
     console.table(rows);
@@ -337,7 +340,7 @@ function createReport(
 
     if (model === ERGOMETRY_MODELS.KEUL)
         result =
-            ErgometryModelsUtil.calculateKeul(rows);
+            ErgometryModelsUtil.calculateKeul(rows, type);
 
     if (model === ERGOMETRY_MODELS.KEUL_LEGACY)
         result =

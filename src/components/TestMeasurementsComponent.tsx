@@ -1,3 +1,11 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): the info-panel
+//   title "  Ergometry Test" was hardcoded English text even though this
+//   file already imports LanguageUtil for its field labels; added the
+//   missing ergometrie_test_text key to Translations.js and wired it here.
+// ============================================
+
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import LabelAndInputTextComponent from './LabelAndInputComponent'
@@ -87,7 +95,7 @@ export default function TestMeasurmentComponent({
 
             <View style={styles.colsection}>
                 <TitleWithInfoComponent
-                    title="  Ergometry Test"
+                    title={LanguageUtil.getName('ergometrie_test_text')}
                     infoHandler={infoHandler}
                 />
 

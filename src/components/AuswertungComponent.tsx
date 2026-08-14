@@ -1,5 +1,14 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 3 (Page11.tsx screen):
+//   added auswertung_text to Translations.js for the "AUSWERTUNG" title and
+//   wired the "Laktat" header cell to the existing `laktat` key. Left
+//   "IANS %", "HF", "Watt", "% Pmax", "% HRR", "% VO2max" and "% HFmax"
+//   hardcoded — units/abbreviations identical in both languages.
+// ============================================
+
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import LanguageUtil from '../utils/LanguageUtil'
 
 export default function AuswertungComponent({
     data,
@@ -81,14 +90,14 @@ export default function AuswertungComponent({
         <View style={styles.container}>
 
             <Text style={styles.title}>
-                AUSWERTUNG
+                {LanguageUtil.getName('auswertung_text')}
             </Text>
 
             {/* HEADER */}
             <View style={styles.header}>
 
                 <Text style={styles.cell}>
-                    Laktat
+                    {LanguageUtil.getName('laktat')}
                 </Text>
 
                 <Text style={styles.cell}>

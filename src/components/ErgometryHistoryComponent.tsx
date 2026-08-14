@@ -1,9 +1,20 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 3 (Page11.tsx screen):
+//   added no_archived_reports_text and modell_text to Translations.js for
+//   "No archived reports" and the "Model:" label; wired "Date:" to the
+//   existing `datum` key and the "Apply" button to the existing
+//   `uebernehmen` key. Left "IAS:"/"IANS:" hardcoded — abbreviations
+//   identical in both languages.
+// ============================================
+
 import React from 'react';
 import { View, Text, Button } from 'react-native';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function ErgometryHistoryComponent({
     reports,
-    onApply
+    onApply,
+    onDelete
 }: any) {
 
     if (!reports || reports.length === 0) {
@@ -11,7 +22,7 @@ export default function ErgometryHistoryComponent({
         return (
             <View>
                 <Text>
-                    No archived reports
+                    {LanguageUtil.getName('no_archived_reports_text')}
                 </Text>
             </View>
         );
@@ -34,13 +45,13 @@ export default function ErgometryHistoryComponent({
                     >
 
                         <Text>
-                            Date:
+                            {LanguageUtil.getName('datum')}:
                             {' '}
                             {item.createdAt}
                         </Text>
 
                         <Text>
-                            Model:
+                            {LanguageUtil.getName('modell_text')}:
                             {' '}
                             {item?.ergometry?.model}
                         </Text>
@@ -57,13 +68,39 @@ export default function ErgometryHistoryComponent({
                             {item?.result?.IANS}
                         </Text>
 
-                        <Button
-                            title="Apply"
-                            onPress={() => {
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
 
-                                onApply(item);
-                            }}
-                        />
+                            <View style={{ flex: 1 }}>
+                                <Button
+                                    title={LanguageUtil.getName('uebernehmen')}
+                                    onPress={() => {
+
+                                        onApply(item);
+                                    }}
+                                />
+                            </View>
+
+                            {onDelete && (
+                                <View style={{ flex: 1 }}>
+                                    <Button
+                                        title={LanguageUtil.getName('loeschen')}
+                                        color="#c0392b"
+                                        onPress={() => {
+
+                                            // 🔹 index, не item.id — по-стари/
+                                            // сийдвани records може да нямат
+                                            // валидно/уникално id (виждаме
+                                            // празни Date/Model полета за
+                                            // някои от тях), а филтриране по
+                                            // id='' маха всички съвпадащи
+                                            // наведнъж вместо само този запис.
+                                            onDelete(item, index);
+                                        }}
+                                    />
+                                </View>
+                            )}
+
+                        </View>
 
                     </View>
                 ))

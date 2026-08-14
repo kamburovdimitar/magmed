@@ -1,5 +1,15 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 3 (Page11.tsx screen):
+//   added detail_analyse_text to Translations.js for the title and wired
+//   "Zeitpunkt"/"Leistung"/"Laktat" headers to the existing
+//   `zeitpunkt`/`leistung`/`laktat` keys. Left "HF", "% HFmax", "% Pmax",
+//   "% HRR", "% HF (IANS)" and "% VO2max" hardcoded — abbreviations
+//   identical in both languages.
+// ============================================
+
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import LanguageUtil from '../utils/LanguageUtil'
 
 export default function DetailAnalyseComponent({
     data,
@@ -19,14 +29,14 @@ export default function DetailAnalyseComponent({
         <View style={styles.container}>
 
             <Text style={styles.title}>
-                DIALOG (Detail-Analyse)
+                {LanguageUtil.getName('detail_analyse_text')}
             </Text>
 
             {/* HEADER */}
             <View style={styles.header}>
 
                 <Text style={styles.cell}>
-                    Zeitpunkt
+                    {LanguageUtil.getName('zeitpunkt')}
                 </Text>
 
                 <Text style={styles.cell}>
@@ -38,7 +48,7 @@ export default function DetailAnalyseComponent({
                 </Text>
 
                 <Text style={styles.cell}>
-                    Leistung
+                    {LanguageUtil.getName('leistung')}
                 </Text>
 
                 <Text style={styles.cell}>
@@ -50,7 +60,7 @@ export default function DetailAnalyseComponent({
                 </Text>
 
                 <Text style={styles.cell}>
-                    Laktat
+                    {LanguageUtil.getName('laktat')}
                 </Text>
 
                 <Text style={styles.cell}>

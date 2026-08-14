@@ -34,6 +34,16 @@
 //   measurements) and regenerating via ErgometryUtil.generateFakeErgometry(),
 //   passing the CURRENTLY selected device type so it doesn't silently flip
 //   the bike/treadmill toggle.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 1: the "Ergometrie"
+//   word in the device-toggle button wired to LanguageUtil.getName
+//   ('ergometrie'). (The shared ErgometryTableComponent.tsx/
+//   ErgometryResultsComponent.tsx this screen renders got their own
+//   "Lactate" -> laktat fix directly in those files — see their changelogs.)
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out "Körperoberfläche bezogen" was still untranslated): added
+//   the missing keys to Translations.js — laufband_text,
+//   koerperoberflaeche_bezogen_text, koerpergewicht_bezogen_text,
+//   testdaten_generieren_text — and wired them here.
 // ============================================
 
 import React, { useEffect, useState } from 'react'
@@ -46,6 +56,7 @@ import ErgometryResultsComponent from '../ErgometryResultsComponent'
 import LactateThresholdComponent from '../LactateThresholdComponent'
 import HeartRateZonesComponent from '../HeartRateZonesComponent'
 import LactateModelPickerComponent from '../LactateModelPickerComponent'
+import LanguageUtil from '../../utils/LanguageUtil'
 import { ErgometryUtil } from '../../utils/ErgometrieUtil'
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
@@ -153,14 +164,14 @@ export default function TestComponent5({
                     style={[styles.button, !isRun && styles.activeButton]}
                     onPress={() => setDeviceType("bike")}
                 >
-                    <Text>🚴 Ergometrie</Text>
+                    <Text>🚴 {LanguageUtil.getName('ergometrie')}</Text>
                 </Pressable>
 
                 <Pressable
                     style={[styles.button, isRun && styles.activeButton]}
                     onPress={() => setDeviceType("run")}
                 >
-                    <Text>🏃 Laufband</Text>
+                    <Text>🏃 {LanguageUtil.getName('laufband_text')}</Text>
                 </Pressable>
 
                 <LactateModelPickerComponent
@@ -183,7 +194,7 @@ export default function TestComponent5({
 
                         <View style={styles.half}>
                             <Text style={styles.title}>
-                                Körperoberfläche bezogen
+                                {LanguageUtil.getName('koerperoberflaeche_bezogen_text')}
                             </Text>
 
                             <WattMeasurmentComponent
@@ -196,7 +207,7 @@ export default function TestComponent5({
 
                         <View style={styles.half}>
                             <Text style={styles.title}>
-                                Körpergewicht bezogen
+                                {LanguageUtil.getName('koerpergewicht_bezogen_text')}
                             </Text>
 
                             <WattMeasurmentComponent
@@ -236,7 +247,7 @@ export default function TestComponent5({
             />
 
             <Button
-                title="Generate Fake Data"
+                title={LanguageUtil.getName('testdaten_generieren_text')}
                 onPress={genereateFakeDataHandler}
             />
 

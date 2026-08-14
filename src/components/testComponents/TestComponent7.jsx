@@ -10,10 +10,21 @@
 //   Page8.tsx's renderTestView() was updated to pass this component the
 //   onPrint/onInterpration/onGenereateFakeData/setModel props that used to go
 //   to TestComponent1.
+// 2026-08-11 (Europe/Sofia) — Localization pass: the last button was labeled
+//   "Interpration" (a typo — missing the "e"), which happens to be an exact
+//   textual match for the existing `interpretation` translation key once
+//   spelled correctly — wired it through LanguageUtil.getName('interpretation'),
+//   which also fixes the typo as a side effect.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings): added new keys to
+//   Translations.js for "Bike"/"Laufband"/"Print"/"Generate Fake Data" —
+//   fahrrad_text, laufband_text, drucken_text, testdaten_generieren_text —
+//   and wired them here.
 // ============================================
 
 import React from 'react'
 import { View, ScrollView, StyleSheet, Button, TouchableOpacity, Text } from 'react-native'
+import LanguageUtil from '../../utils/LanguageUtil'
 import TestMeasurmentComponent from '../TestMeasurementsComponent'
 import { useEffect, useState } from "react";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
@@ -167,7 +178,7 @@ export default function TestComponent7({
                     }}
                 >
                     <Text>
-                        🚴 Bike
+                        🚴 {LanguageUtil.getName('fahrrad_text')}
                     </Text>
 
                 </TouchableOpacity>
@@ -199,7 +210,7 @@ export default function TestComponent7({
                     }}
                 >
                     <Text>
-                        🏃 Laufband
+                        🏃 {LanguageUtil.getName('laufband_text')}
                     </Text>
 
                 </TouchableOpacity>
@@ -259,21 +270,21 @@ export default function TestComponent7({
             />
 
             <Button
-                title="Print"
+                title={LanguageUtil.getName('drucken_text')}
                 onPress={
                     onPrintHandler
                 }
             />
 
             <Button
-                title="Generate Fake Data"
+                title={LanguageUtil.getName('testdaten_generieren_text')}
                 onPress={
                     genereateFakeDataHandler
                 }
             />
 
             <Button
-                title="Interpration"
+                title={LanguageUtil.getName('interpretation')}
                 onPress={
                     onInterprationHandler
                 }

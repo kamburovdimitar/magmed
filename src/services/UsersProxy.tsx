@@ -1,10 +1,18 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — New Test / Existing Tests / Save feature:
+//   `measurements` on MDPatient is now MDTestRecord[] (see MDPatient.tsx's
+//   changelog), so the mock/dummy patients here start with an empty test
+//   list (`measurements: []`) instead of a single blank
+//   MDPatientMeasurements — matches the new shape; each patient just has no
+//   tests yet until they click "New Test".
+// ============================================
+
 import { MDPatient } from "../model/MDPatient";
-import { MDPatientMeasurements } from "../model/MDPatientMeasurements";
 
 class UsersProxy {
 
 
-    // тази дейта трябва да отиде в редукс , която ще идва 
+    // тази дейта трябва да отиде в редукс , която ще идва
     static data: MDPatient[] = [
         {
             lastname: "Müller",
@@ -13,7 +21,8 @@ class UsersProxy {
             birthdate: "01.01.1980",
             gender: "",
             patientid: "12345",
-            measurements: new MDPatientMeasurements()
+            measurements: [],
+            activeTestId: ""
         },
         {
             lastname: "vasileva",
@@ -22,7 +31,8 @@ class UsersProxy {
             birthdate: "02.02.1990",
             gender: "",
             patientid: "67890",
-            measurements: new MDPatientMeasurements()
+            measurements: [],
+            activeTestId: ""
         },
         {
             lastname: "dimitrova",
@@ -31,7 +41,8 @@ class UsersProxy {
             birthdate: "02.02.1991",
             gender: "",
             patientid: "67891",
-            measurements: new MDPatientMeasurements()
+            measurements: [],
+            activeTestId: ""
         },
         {
             lastname: "Becker",
@@ -40,7 +51,8 @@ class UsersProxy {
             birthdate: "03.03.1975",
             gender: "",
             patientid: "99887",
-            measurements: new MDPatientMeasurements()
+            measurements: [],
+            activeTestId: ""
         }
     ];
 
@@ -48,7 +60,7 @@ class UsersProxy {
         return UsersProxy.data;
     }
 
-    static async addUser(firstName: string, lastName: string, title: string, gender: string, birthdate: string, patientId: string, measurements: MDPatientMeasurements) {
+    static async addUser(firstName: string, lastName: string, title: string, gender: string, birthdate: string, patientId: string) {
         const newPatient: MDPatient = {
             firstname: firstName,
             lastname: lastName,
@@ -56,7 +68,8 @@ class UsersProxy {
             gender: gender,
             birthdate: birthdate,
             patientid: patientId,
-            measurements: new MDPatientMeasurements()
+            measurements: [],
+            activeTestId: ""
         };
 
         this.data.push(newPatient);

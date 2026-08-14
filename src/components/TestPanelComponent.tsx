@@ -14,13 +14,24 @@
 //   Page8.tsx's ergoView), and they're dimmed (styles.disabledButton) so
 //   it's visually clear they're placeholders for now. Nothing else changed —
 //   re-enable by restoring the onPress once those two screens are built.
+// 2026-08-11 (Europe/Sofia) — Localization pass: the 7 button labels below
+//   were hardcoded German/English text; Translations.js already has exact
+//   matching keys for all 7 (koerpermassen_vitalparametern, muskel_funktion,
+//   koerper_haltung, ergometrie, laktat_ergometrie, spiro_ergometrie,
+//   alle_tests), so they now go through LanguageUtil.getName() like the
+//   Test/New Test/Existing Tests buttons above already did. No new keys
+//   added, no text changed for the current language — just wired.
+// 2026-08-11 (Europe/Sofia) — New Test / Existing Tests / Save feature:
+//   these two buttons had no onPress at all before (pure decoration) —
+//   wired them to the onNewTest/onExistingTests callbacks Page8.tsx now
+//   passes down, which run the unsaved-changes confirm gate before acting.
 // ============================================
 
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import LanguageUtil from '../utils/LanguageUtil'
 
-export default function TestPanelComponent({ handlerButton }) {
+export default function TestPanelComponent({ handlerButton, onNewTest, onExistingTests }) {
 
     const [selected, setSelected] = useState(null)
 
@@ -39,10 +50,10 @@ export default function TestPanelComponent({ handlerButton }) {
             </View>
 
             <View style={styles.midle}>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={onNewTest}>
                     <Text>{LanguageUtil.getName('neuer_test_text')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={onExistingTests}>
                     <Text>{LanguageUtil.getName('vorhandene_tests_test')}</Text>
                 </TouchableOpacity>
             </View>
@@ -53,49 +64,49 @@ export default function TestPanelComponent({ handlerButton }) {
                     style={[styles.button, selected === "detail1" && styles.active]}
                     onPress={() => ergometryHandleClick("detail1")}
                 >
-                    <Text>Körpermaße &amp; Vitalparameter</Text>
+                    <Text>{LanguageUtil.getName('koerpermassen_vitalparametern')}</Text>
                 </TouchableOpacity>
 
                 {/* Not built yet — temporarily doesn't navigate anywhere. */}
                 <TouchableOpacity
                     style={[styles.button, styles.disabledButton]}
                 >
-                    <Text>Muskel-Funktion</Text>
+                    <Text>{LanguageUtil.getName('muskel_funktion')}</Text>
                 </TouchableOpacity>
 
                 {/* Not built yet — temporarily doesn't navigate anywhere. */}
                 <TouchableOpacity
                     style={[styles.button, styles.disabledButton]}
                 >
-                    <Text>Körper-Haltung</Text>
+                    <Text>{LanguageUtil.getName('koerper_haltung')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail4" && styles.active]}
                     onPress={() => ergometryHandleClick("detail4")}
                 >
-                    <Text>Ergometrie</Text>
+                    <Text>{LanguageUtil.getName('ergometrie')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail5" && styles.active]}
                     onPress={() => ergometryHandleClick("detail5")}
                 >
-                    <Text>Laktat-Ergometrie</Text>
+                    <Text>{LanguageUtil.getName('laktat_ergometrie')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail6" && styles.active]}
                     onPress={() => ergometryHandleClick("detail6")}
                 >
-                    <Text>Spiro-Ergometrie</Text>
+                    <Text>{LanguageUtil.getName('spiro_ergometrie')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, selected === "detail7" && styles.active]}
                     onPress={() => ergometryHandleClick("detail7")}
                 >
-                    <Text>ALLE Tests</Text>
+                    <Text>{LanguageUtil.getName('alle_tests')}</Text>
                 </TouchableOpacity>
 
             </View>

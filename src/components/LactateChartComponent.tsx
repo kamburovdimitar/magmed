@@ -1,4 +1,28 @@
-import React from 'react';
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-14 (Europe/Sofia) — Trainingsbereich UI pass (part 2 — chart drag):
+//   1) calculateTrainingZones() now needs data/model/isRun/customPercents —
+//      wired through from Page11.tsx (see props below) so the chart's
+//      colored zone bands use the corrected HF-cascade method and honor the
+//      same editable percent overrides as TrainingsbereichComponent's table.
+//   2) Added draggable zone-boundary handles directly on the chart (per
+//      "3.34 CCC": "Es soll möglich sein mit Cursor die Bereiche ... zu
+//      verschieben"). Implementation note: recharts doesn't expose its
+//      internal pixel<->data scale in a way we can hook into cleanly, so
+//      this uses an explicit fixed chart margin + fixed YAxis widths (so the
+//      plot rectangle's pixel bounds are deterministic) plus an absolutely
+//      positioned HTML/RNW overlay of 4 thin drag handles (REG/GA1/GA2/E1
+//      boundaries — E2 is open-ended, nothing to drag) that convert mouse
+//      X back to a load value, look up the HF at that load, and re-express
+//      it as a %-of-IANS-HF via the existing onZonePercentChange callback.
+//      This is an approximation (recharts' actual rendered margins can
+//      differ slightly from the nominal prop in edge cases) — expect to
+//      true this up against real screenshots rather than pixel-perfect math.
+//   3) Removed the verbose per-render console.log block that used to dump
+//      zone boundaries on every paint — it was debug scaffolding, not
+//      something a user should see in the browser console.
+// ============================================
+
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
     View,
@@ -19,6 +43,14 @@ import {
 } from 'recharts';
 import { ErgometryModelsUtil } from '../utils/ErgometryModelsUtil';
 
+// 🔹 fixed chart geometry — keeping these explicit (instead of letting
+// recharts auto-size axes from tick-label width) is what makes the drag
+// overlay's pixel math below possible.
+const CHART_MARGIN = { top: 10, right: 15, bottom: 20, left: 15 };
+const Y_AXIS_WIDTH = 42;
+
+const DRAGGABLE_ZONE_KEYS = ['REG', 'GA1', 'GA2', 'E1'];
+
 export default function LactateChartComponent({
 
     data,
@@ -29,9 +61,24 @@ export default function LactateChartComponent({
     showTrainingZones,
     showThresholdLines,
     showThresholdLabels,
-    showHeartRateCurve
+    showHeartRateCurve,
+
+    // 🔹 2026-08-14 — Trainingsbereich pass: needed so the chart's colored
+    // zone bands use the same correct HF-cascade method (and the same
+    // customPercents overrides) as the Trainingsbereich table, instead of
+    // the old (spec-violating) simple %-of-load multiplication.
+    isRun = false,
+    model = null,
+    trainingZonePercents = null,
+    onZonePercentChange = null
 
 }: any) {
+
+    const containerRef = useRef<any>(null);
+
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    const [draggingKey, setDraggingKey] = useState<string | null>(null);
 
     const maxLoad = ErgometryModelsUtil.calculateChartMaxLoad(data);
 
@@ -79,6 +126,83 @@ export default function LactateChartComponent({
 
     const zoneChartMaxLoad = realChartMaxLoad;
 
+    const domainMin = chartData[0]?.load || 0;
+    const domainMax = showTrainingZones ? zoneChartMaxLoad : realChartMaxLoad;
+
+    // 🔹 hoisted out of the render tree (used by both the ReferenceArea
+    // bands below AND the drag-handle overlay, so they always agree)
+    const zones = showTrainingZones
+        ? ErgometryModelsUtil.calculateTrainingZones(
+            result,
+            chartData,
+            model ?? result?.model,
+            isRun,
+            trainingZonePercents
+        )
+        : null;
+
+    // 🔹 plot rectangle in pixels, given the fixed margin/axis-width above —
+    // one YAxis on the left (hf), one on the right (lactate)
+    const plotLeft = CHART_MARGIN.left + Y_AXIS_WIDTH;
+    const plotRight = containerWidth - CHART_MARGIN.right - Y_AXIS_WIDTH;
+    const plotWidth = Math.max(0, plotRight - plotLeft);
+
+    function loadToPixel(load: number) {
+        if (domainMax <= domainMin) return plotLeft;
+        const ratio = (load - domainMin) / (domainMax - domainMin);
+        return plotLeft + ratio * plotWidth;
+    }
+
+    function pixelToLoad(px: number) {
+        const clamped = Math.max(plotLeft, Math.min(plotRight, px));
+        const ratio = plotWidth > 0 ? (clamped - plotLeft) / plotWidth : 0;
+        return domainMin + ratio * (domainMax - domainMin);
+    }
+
+    // 🔹 drag tracking — plain mouse events (this app runs web-only via
+    // react-native-web/Next.js, same assumption Page11.tsx already makes
+    // elsewhere, e.g. window.print() for the report view)
+    useEffect(() => {
+
+        if (!draggingKey || !onZonePercentChange) {
+            return;
+        }
+
+        function handleMove(e: any) {
+
+            const rect = containerRef.current?.getBoundingClientRect?.();
+
+            if (!rect) return;
+
+            const load = pixelToLoad(e.clientX - rect.left);
+
+            const point = ErgometryModelsUtil.interpolateByLoad(chartData, load);
+
+            const iansHF = Number(result?.IANSPoint?.hf);
+
+            if (!point || !iansHF) return;
+
+            const percent = Math.round((point.hf / iansHF) * 100);
+
+            onZonePercentChange(draggingKey, percent);
+
+        }
+
+        function handleUp() {
+            setDraggingKey(null);
+        }
+
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+        };
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [draggingKey, containerWidth, domainMin, domainMax]);
+
     return (
 
         <View
@@ -101,6 +225,8 @@ export default function LactateChartComponent({
             </Text>
 
             <View
+                ref={containerRef}
+                onLayout={(e: any) => setContainerWidth(e?.nativeEvent?.layout?.width || 0)}
                 style={{
                     width: '100%',
                     height: 320
@@ -109,7 +235,7 @@ export default function LactateChartComponent({
 
                 <ResponsiveContainer>
 
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={CHART_MARGIN}>
 
                         <CartesianGrid strokeDasharray="3 3" />
 
@@ -117,12 +243,7 @@ export default function LactateChartComponent({
                             type="number"
                             dataKey="load"
 
-                            domain={[
-                                chartData[0]?.load || 0,
-                                showTrainingZones
-                                    ? zoneChartMaxLoad
-                                    : realChartMaxLoad
-                            ]}
+                            domain={[domainMin, domainMax]}
 
                             allowDataOverflow={true}
 
@@ -136,6 +257,7 @@ export default function LactateChartComponent({
                         <YAxis
                             yAxisId="hf"
                             type="number"
+                            width={Y_AXIS_WIDTH}
                             domain={[60, 220]}
                         />
 
@@ -143,6 +265,7 @@ export default function LactateChartComponent({
                             yAxisId="lactate"
                             orientation="right"
                             type="number"
+                            width={Y_AXIS_WIDTH}
                             domain={[0, maxLactate]}
                         />
 
@@ -179,81 +302,12 @@ export default function LactateChartComponent({
                         }
 
                         {
-                            showTrainingZones &&
-                            (() => {
+                            showTrainingZones && zones && (() => {
 
-                                const zones =
-                                    ErgometryModelsUtil
-                                        .calculateTrainingZones(
-                                            result
-                                        );
-
-                                if (!zones) {
-                                    return null;
-                                }
-
-
-                                const chartStart = chartData[0]?.load || 0;
-
-
-                                const chartEnd =
-                                    chartData[
-                                        chartData.length - 1
-                                    ]?.load || 0;
-
+                                const chartStart = domainMin;
+                                const chartEnd = chartData[chartData.length - 1]?.load || 0;
                                 const zonesStart = chartStart;
 
-                                const visualMinWidth =
-                                    (chartEnd - chartStart) * 0.03;
-
-                                const e2Start =
-                                    Math.max(
-                                        zonesStart,
-                                        zones.E2.from
-                                    );
-
-                                const visualE2Start =
-                                    chartEnd - e2Start < visualMinWidth
-                                        ? chartEnd - visualMinWidth
-                                        : e2Start;
-
-                                console.log('\n========== TRAINING ZONES ==========');
-
-                                console.log('chartStart=', chartStart);
-
-                                console.log('zonesStart=', zonesStart);
-
-                                console.log('chartEnd=', chartEnd);
-
-                                console.log('IANS=', result?.IANSPoint?.load);
-
-                                console.log('REG', '#fff176', '0→75%', 'from=', zones.REG.from, 'to=', zones.REG.to, 'width=', (zones.REG.to - zones.REG.from).toFixed(1));
-
-                                console.log('GA1', '#81c784', '75→85%', 'from=', zones.GA1.from, 'to=', zones.GA1.to, 'width=', (zones.GA1.to - zones.GA1.from).toFixed(1));
-
-                                console.log('GA2', '#64b5f6', '85→95%', 'from=', zones.GA2.from, 'to=', zones.GA2.to, 'width=', (zones.GA2.to - zones.GA2.from).toFixed(1));
-
-                                console.log('E1', '#ef9a9a', '95→105%', 'from=', zones.E1.from, 'to=', zones.E1.to, 'width=', (zones.E1.to - zones.E1.from).toFixed(1));
-
-                                console.log('E2', '#e57373', '105→INF', 'from=', zones.E2.from, 'to=', zones.E2.to);
-
-                                console.log(
-                                    'VISIBLE',
-
-                                    'REG=', Math.max(0, Math.min(zones.REG.to, chartEnd) - Math.max(zones.REG.from, zonesStart)),
-
-                                    'GA1=', Math.max(0, Math.min(zones.GA1.to, chartEnd) - Math.max(zones.GA1.from, zonesStart)),
-
-                                    'GA2=', Math.max(0, Math.min(zones.GA2.to, chartEnd) - Math.max(zones.GA2.from, zonesStart)),
-
-                                    'E1=', Math.max(0, Math.min(zones.E1.to, chartEnd) - Math.max(zones.E1.from, zonesStart)),
-
-                                    'E2=', Math.max(0, chartEnd - Math.max(zones.E2.from, zonesStart))
-                                );
-
-                                console.log('visualE2Start=', visualE2Start);
-
-                                console.log('==============================');
                                 return (
                                     <>
                                         {zones.REG.to > zonesStart && <ReferenceArea yAxisId="lactate" x1={Math.max(zones.REG.from, zonesStart)} x2={Math.min(zones.REG.to, chartEnd)} y1={0} y2={maxLactate} fill={zones.REG.color} fillOpacity={0.15} />}
@@ -323,6 +377,50 @@ export default function LactateChartComponent({
                     </LineChart>
 
                 </ResponsiveContainer>
+
+                {/* 🔹 draggable zone-boundary handles — absolutely positioned
+                    over the chart, one per movable boundary (REG/GA1/GA2/E1;
+                    E2 has no "to" to drag). Only rendered once we know the
+                    container's actual pixel width (onLayout) and only while
+                    zones are shown/computable. */}
+                {
+                    showTrainingZones && zones && containerWidth > 0 && onZonePercentChange &&
+                    DRAGGABLE_ZONE_KEYS.map((key) => {
+
+                        const boundaryLoad = zones[key]?.to;
+
+                        if (boundaryLoad == null || !isFinite(boundaryLoad)) {
+                            return null;
+                        }
+
+                        const px = loadToPixel(boundaryLoad);
+
+                        return (
+                            <View
+                                key={key}
+                                onMouseDown={(e: any) => {
+                                    e?.preventDefault?.();
+                                    setDraggingKey(key);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    left: px - 5,
+                                    top: CHART_MARGIN.top,
+                                    width: 10,
+                                    height: 320 - CHART_MARGIN.top - CHART_MARGIN.bottom,
+                                    cursor: 'ew-resize',
+                                    backgroundColor: draggingKey === key
+                                        ? 'rgba(47,111,237,0.35)'
+                                        : 'rgba(47,111,237,0.12)',
+                                    borderLeftWidth: 1,
+                                    borderRightWidth: 1,
+                                    borderColor: 'rgba(47,111,237,0.5)'
+                                }}
+                            />
+                        );
+
+                    })
+                }
 
             </View>
 

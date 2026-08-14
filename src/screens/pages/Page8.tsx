@@ -28,6 +28,37 @@
 //   model/setModel for lactate-model selection). detail2/detail3
 //   (Muskel-Funktion/Körper-Haltung) were left unchanged — out of scope for
 //   this pass.
+// 2026-08-11 (Europe/Sofia) — Localization pass: the Interpretation modal's
+//   "Reset" zoom button now goes through LanguageUtil.getName
+//   ('zuruecksetzen') (exact matching key already in Translations.js). Left
+//   "A-"/"A+"/"Print"/"Back to Home" hardcoded — no exact-match keys exist
+//   for those in Translations.js.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out remaining untranslated strings elsewhere): added
+//   zurueck_zur_startseite_text to Translations.js for the "Back to Home"
+//   button and wired it here. Left "A-"/"A+"/"Print"/"Close" in the
+//   Interpretation modal header hardcoded — out of scope for this pass
+//   (no matching keys added yet for those).
+// 2026-08-11 (Europe/Sofia) — New Test / Existing Tests / Save feature.
+//   Redux's `selectedUser.measurements` changed from a single object to
+//   MDTestRecord[] (see MDPatient.tsx's changelog for the full shape).
+//   This file now keeps a LOCAL draft of the active test's data — every
+//   field edit across TestComponent1-7 only updates `draft` here, it is
+//   NOT dispatched to Redux on every keystroke anymore (that was the old
+//   `updateMeasurements` behavior). Redux is only touched at three
+//   explicit moments:
+//     - Save button       -> dispatch(saveActiveTest(draft))
+//     - New Test button    -> dispatch(createTest()) (after a confirm gate
+//                             if there are unsaved changes)
+//     - Existing Tests ->
+//       Apply               -> dispatch(setActiveTest(id)) (also behind the
+//                             confirm gate), which loads that test's data
+//                             into `draft` via the activeTestId effect below
+//   `isDirty` tracks whether `draft` differs from what's saved; the confirm
+//   popup (ConfirmDialogComponent) only appears when isDirty is true — a
+//   deliberate judgment call (showing "you'll lose data" when there's
+//   nothing to lose felt like noise); easy to change to "always show" if
+//   that's not the intent.
 // ============================================
 
 import React from 'react'
@@ -46,6 +77,8 @@ import UsersProxy from '../../services/UsersProxy'
 import SelectedUserProxy from '../../services//SelectedUserProxy'
 import { useEffect, useState } from "react";
 import TestPanel from '../../components/TestPanelComponent'
+import TestsListComponent from '../../components/TestsListComponent'
+import ConfirmDialogComponent from '../../components/ConfirmDialogComponent'
 import TestComponent1 from '../../components/testComponents/TestComponent1'
 import TestComponent2 from '../../components/testComponents/TestComponent2'
 import TestComponent3 from '../../components/testComponents/TestComponent3'
@@ -58,7 +91,7 @@ import InterprationPanel from '../../components/InterprationPanel'
 import { MDPatient } from '../../model/MDPatient'
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { updateMeasurements } from "../../store/userSlice";
+import { createTest, setActiveTest, saveActiveTest, renameActiveTest } from "../../store/userSlice";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
@@ -82,11 +115,55 @@ export default function Page8({ goTo }) {
 
 
 
-    const rawMeasurements = useSelector(
+    // 🔹 New Test / Existing Tests / Save
+    const tests = useSelector(
         (state) => state.user.selectedUser?.measurements
+    ) ?? [];
+
+    const activeTestId = useSelector(
+        (state) => state.user.selectedUser?.activeTestId
     );
 
-    const measurement = new MDPatientMeasurements(rawMeasurements);
+    const activeTest = tests.find((t) => t.id === activeTestId);
+
+    const [draft, setDraft] = useState(() => new MDPatientMeasurements());
+    const [isDirty, setIsDirty] = useState(false);
+    const [showTestsList, setShowTestsList] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null as 'new' | 'existing' | null);
+
+    // 🔹 name shown/editable in the header (see JSX below) — hydrated
+    // alongside `draft` in the same effect, so it always matches whichever
+    // test is actually active.
+    const [nameDraft, setNameDraft] = useState('');
+
+    // 🔹 whenever the active test changes (New Test / Apply), reload the
+    // local draft from its data and clear the dirty flag. Depends only on
+    // activeTestId, not on `tests` itself — Save doesn't change
+    // activeTestId, so it correctly does NOT re-trigger this.
+    useEffect(() => {
+
+        if (activeTest) {
+            setDraft(new MDPatientMeasurements(activeTest.data));
+            setNameDraft(activeTest.name ?? '');
+        } else {
+            setDraft(new MDPatientMeasurements());
+            setNameDraft('');
+        }
+
+        setIsDirty(false);
+
+    }, [activeTestId]);
+
+    // 🔹 commit the header name edit to Redux (on blur, not per keystroke)
+    function handleRenameTest() {
+
+        if (!activeTestId) return;
+
+        dispatch(renameActiveTest(nameDraft));
+
+    }
+
+    const measurement = draft;
 
     console.log(
         "PAGE8 render",
@@ -202,18 +279,76 @@ export default function Page8({ goTo }) {
 
     function updateHandler(updatedMeasurements) {
 
-        console.log("UPDATE HANDLER");
+        // 🔹 local draft only — Redux is untouched until Save
+        setDraft(updatedMeasurements);
+        setIsDirty(true);
 
-        console.log(updatedMeasurements);
+    }
 
-        console.table(updatedMeasurements?.ergometry?.data);
+    function handleSaveTest() {
 
-        dispatch(
-            updateMeasurements({
-                ...updatedMeasurements
-            })
-        );
+        // 🔹 first save ever for this patient: create the row first, then
+        // save into it (dispatches are synchronous, so activeTestId is
+        // already fresh in the store by the second dispatch)
+        if (!activeTestId) {
+            dispatch(createTest());
+        }
 
+        dispatch(saveActiveTest(draft));
+
+        setIsDirty(false);
+    }
+
+    function doNewTest() {
+        dispatch(createTest());
+        setConfirmAction(null);
+    }
+
+    function requestNewTest() {
+
+        if (isDirty) {
+            setConfirmAction('new');
+        } else {
+            doNewTest();
+        }
+
+    }
+
+    function requestExistingTests() {
+
+        if (isDirty) {
+            setConfirmAction('existing');
+        } else {
+            setShowTestsList(true);
+        }
+
+    }
+
+    function handleConfirmDiscard() {
+
+        if (confirmAction === 'new') {
+            doNewTest();
+        }
+
+        if (confirmAction === 'existing') {
+            setShowTestsList(true);
+            setConfirmAction(null);
+        }
+
+    }
+
+    function handleCancelDiscard() {
+        setConfirmAction(null);
+    }
+
+    function handleApplyTest(id) {
+        dispatch(setActiveTest(id));
+        setShowTestsList(false);
+
+        // 🔹 при Apply от Existing Tests винаги отваряме "ALLE Tests"
+        // (detail7), за да се вижда целият тест наведнъж, а не последния
+        // отворен detail-изглед отпреди
+        setErgoView('detail7');
     }
 
     useEffect(() => {
@@ -331,12 +466,23 @@ export default function Page8({ goTo }) {
 
     let content;
 
-    if (leftView === 'print') {
+    if (showTestsList) {
+        content = <TestsListComponent
+            tests={tests}
+            activeTestId={activeTestId}
+            onApply={handleApplyTest}
+            onClose={() => setShowTestsList(false)}
+        />;
+    } else if (leftView === 'print') {
         content = <PrintTestPanel />;
     } else if (leftView === 'interpratation') {
         content = <InterprationPanel selectedModel={model} />;
     } else {
-        content = <TestPanel handlerButton={handlerButton} />;
+        content = <TestPanel
+            handlerButton={handlerButton}
+            onNewTest={requestNewTest}
+            onExistingTests={requestExistingTests}
+        />;
     }
 
 
@@ -361,18 +507,49 @@ export default function Page8({ goTo }) {
                     />
                 </View>
 
+                {/* 🔹 Active test name/id — so it's always visible which
+                    MDTestRecord is currently being edited (esp. useful
+                    while testing that Save/navigation actually keeps the
+                    same object across Page8 <-> Page11). */}
+                <View style={styles.activeTestBar}>
+
+                    <Text style={styles.activeTestLabel}>
+                        {LanguageUtil.getName('name')}:
+                    </Text>
+
+                    <TextInput
+                        style={styles.activeTestNameInput}
+                        value={nameDraft}
+                        editable={!!activeTestId}
+                        onChangeText={setNameDraft}
+                        onEndEditing={handleRenameTest}
+                        onBlur={handleRenameTest}
+                    />
+
+                    <Text style={styles.activeTestId}>
+                        ID: {activeTestId || '—'}
+                    </Text>
+
+                </View>
+
                 {/* BOTTOM LIST */}
 
                 {/* Ergometry LIST */}
                 <View style={styles.listSection}>
                     {renderTestView()}
                 </View>
+
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('speichern')}
+                    onPress={handleSaveTest}
+                />
+
+                <Button
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
                 <TextInput
-                    value={rawMeasurements?.heightcm?.toString()}
+                    value={draft?.heightcm?.toString()}
                 />
 
             </View>
@@ -396,7 +573,7 @@ export default function Page8({ goTo }) {
                             <Button title="A-" onPress={zoomOut} />
                             <Text style={styles.zoomLabel}>{Math.round(interpretationZoom * 100)}%</Text>
                             <Button title="A+" onPress={zoomIn} />
-                            <Button title="Reset" onPress={zoomReset} />
+                            <Button title={LanguageUtil.getName('zuruecksetzen')} onPress={zoomReset} />
                         </View>
 
                         <Button
@@ -415,6 +592,13 @@ export default function Page8({ goTo }) {
                     </View>
                 </View>
             </Modal>
+
+            <ConfirmDialogComponent
+                visible={confirmAction !== null}
+                message={LanguageUtil.getName('test_data_loss_warning_text')}
+                onConfirm={handleConfirmDiscard}
+                onCancel={handleCancelDiscard}
+            />
 
         </View>
 
@@ -478,6 +662,31 @@ const styles = StyleSheet.create({
     formSection: {
         padding: 10,
         borderBottomWidth: 1
+    },
+
+    activeTestBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        padding: 8,
+        borderBottomWidth: 1,
+        backgroundColor: '#fafafa'
+    },
+
+    activeTestLabel: {
+        fontWeight: 'bold'
+    },
+
+    activeTestNameInput: {
+        borderWidth: 1,
+        padding: 4,
+        flex: 1,
+        minWidth: 100
+    },
+
+    activeTestId: {
+        color: '#666',
+        fontSize: 12
     },
 
     row: {

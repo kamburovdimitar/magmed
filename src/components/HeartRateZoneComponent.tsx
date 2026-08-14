@@ -1,7 +1,18 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-11 (Europe/Sofia) — Localization pass: the "Heart Rate Reserve"
+//   section title and the "Reserve" row label now go through
+//   LanguageUtil.getName (new keys herzfrequenzreserve_text, reserve_text —
+//   added to Translations.js). Left the info-popup content (infoHandler's
+//   title/description/formula/fields) untouched — that's a much larger,
+//   separate localization task (every component's "i" tooltip), out of
+//   scope here. Also left "70%"/"80%"/"90%" — those are numbers, not words.
+// ============================================
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import LabelAndInputTextComponent from './LabelAndInputComponent';
 import TitleWithInfoComponent from './TitleWithInfoComponent'
+import LanguageUtil from '../utils/LanguageUtil';
 import { openPopup } from '../services/PopupService';
 
 
@@ -47,10 +58,10 @@ export default function HeartRateZoneComponent({ measurements }) {
 
 
 
-            <TitleWithInfoComponent title='  Heart Rate Reserve' infoHandler={infoHandler} />
+            <TitleWithInfoComponent title={`  ${LanguageUtil.getName('herzfrequenzreserve_text')}`} infoHandler={infoHandler} />
 
             <LabelAndInputTextComponent
-                label="Reserve"
+                label={LanguageUtil.getName('reserve_text')}
                 measure="bpm"
                 value={measurements?.heartrateReserve}
                 isEditable={false}

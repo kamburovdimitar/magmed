@@ -44,6 +44,15 @@
 //   (#27, treadmill), whichever is currently relevant per the device toggle —
 //   by cloning the current localMeasurements first, so it never wipes body
 //   measurements or lactate/VO2max data entered on the other screens.
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 1: the "Ergometrie"
+//   word in the device-toggle button wired to LanguageUtil.getName
+//   ('ergometrie') (exact matching key already in Translations.js).
+// 2026-08-11 (Europe/Sofia) — Localization pass, part 2 (after the user
+//   pointed out "Körperoberfläche bezogen" and other strings were still
+//   untranslated): added the missing keys to Translations.js instead of
+//   leaving them hardcoded — laufband_text, koerperoberflaeche_bezogen_text,
+//   koerpergewicht_bezogen_text, testdaten_generieren_text,
+//   herzfrequenzzonen_karvonen_text — and wired all of them here.
 // ============================================
 
 import React, { useEffect, useState } from 'react'
@@ -52,6 +61,7 @@ import TestMeasurmentComponent from '../TestMeasurementsComponent'
 import WattMeasurmentComponent from '../WattMeasurmentComponent'
 import ErgoResultComponent from '../ErgoResultComponent'
 import KarvonenZoneTableComponent from '../KarvonenZoneTableComponent'
+import LanguageUtil from '../../utils/LanguageUtil'
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 
 export default function TestComponent4({ measurements, callback }) {
@@ -126,14 +136,14 @@ export default function TestComponent4({ measurements, callback }) {
                     style={[styles.button, !isRun && styles.activeButton]}
                     onPress={() => setDeviceType("bike")}
                 >
-                    <Text>🚴 Ergometrie</Text>
+                    <Text>🚴 {LanguageUtil.getName('ergometrie')}</Text>
                 </Pressable>
 
                 <Pressable
                     style={[styles.button, isRun && styles.activeButton]}
                     onPress={() => setDeviceType("run")}
                 >
-                    <Text>🏃 Laufband</Text>
+                    <Text>🏃 {LanguageUtil.getName('laufband_text')}</Text>
                 </Pressable>
             </View>
 
@@ -155,7 +165,7 @@ export default function TestComponent4({ measurements, callback }) {
 
                         <View style={styles.half}>
                             <Text style={styles.title}>
-                                Körperoberfläche bezogen
+                                {LanguageUtil.getName('koerperoberflaeche_bezogen_text')}
                             </Text>
 
                             <WattMeasurmentComponent
@@ -168,7 +178,7 @@ export default function TestComponent4({ measurements, callback }) {
 
                         <View style={styles.half}>
                             <Text style={styles.title}>
-                                Körpergewicht bezogen
+                                {LanguageUtil.getName('koerpergewicht_bezogen_text')}
                             </Text>
 
                             <WattMeasurmentComponent
@@ -187,13 +197,13 @@ export default function TestComponent4({ measurements, callback }) {
             {/* KARVONEN HR ZONES 45-95% — Codex #40, same for bike + treadmill */}
             <KarvonenZoneTableComponent
                 measurements={localMeasurements}
-                title="Heart Rate Zones (Karvonen, 45-95%)"
+                title={LanguageUtil.getName('herzfrequenzzonen_karvonen_text')}
                 minPercent={45}
                 maxPercent={95}
             />
 
             <Button
-                title="Generate Fake Data"
+                title={LanguageUtil.getName('testdaten_generieren_text')}
                 onPress={genereateFakeDataHandler}
             />
 
