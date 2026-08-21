@@ -12,6 +12,12 @@ import { MDPatient } from "../model/MDPatient";
 class UsersProxy {
 
 
+    // 🔹 2026-08-21 (Claude) — DK: "gender ... още когато създаваме обект
+    // patient, мисля че не се попълва ... това го ъпдейтни, така че да е
+    // попълнено правилно, защото аз ползвам хардкоднати стойности, все
+    // още нямам бд." Всичките 4 демо пациента имаха `gender: ""` — сега
+    // истински "male"/"female" (същите точни низове, които dropdown-ът в
+    // HeaderComponent.tsx вече записва, и които ErgometrieUtil.js очаква).
     // тази дейта трябва да отиде в редукс , която ще идва
     static data: MDPatient[] = [
         {
@@ -19,7 +25,7 @@ class UsersProxy {
             firstname: "Hans",
             title: "Dr.",
             birthdate: "01.01.1980",
-            gender: "",
+            gender: "male",
             patientid: "12345",
             measurements: [],
             activeTestId: ""
@@ -29,7 +35,7 @@ class UsersProxy {
             firstname: "Anna",
             title: "mrs",
             birthdate: "02.02.1990",
-            gender: "",
+            gender: "female",
             patientid: "67890",
             measurements: [],
             activeTestId: ""
@@ -39,7 +45,7 @@ class UsersProxy {
             firstname: "Anna",
             title: "mrs",
             birthdate: "02.02.1991",
-            gender: "",
+            gender: "female",
             patientid: "67891",
             measurements: [],
             activeTestId: ""
@@ -49,7 +55,7 @@ class UsersProxy {
             firstname: "Peter",
             title: "Prof.",
             birthdate: "03.03.1975",
-            gender: "",
+            gender: "male",
             patientid: "99887",
             measurements: [],
             activeTestId: ""

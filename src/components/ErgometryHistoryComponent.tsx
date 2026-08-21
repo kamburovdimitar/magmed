@@ -8,13 +8,38 @@
 // ============================================
 
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, TouchableOpacity } from 'react-native';
 import LanguageUtil from '../utils/LanguageUtil';
+
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-19 (Europe/Sofia) — DK: след "Add" (нов archive запис) или
+//   "Apply" (зареден стар запис), съответният елемент в тоя списък трябва
+//   видимо да изглежда селектнат — досега нямаше никакъв визуален
+//   индикатор кой запис "представляват" текущите данни. selectedReportId
+//   идва от Page11.tsx (loadedReportId) и просто оцветява реда, чийто
+//   item.id съвпада.
+// 2026-08-19 (2) — DK: "delete от листа е изчезнал" — Page11.tsx винаги е
+//   подавал onDelete={requestDeleteArchiveReport} на тоя компонент, но
+//   компонентът никога не го е ползвал/дестрактурал и никога не е
+//   рендервал Delete бутон — самата delete логика (ConfirmDialogComponent
+//   модал, requestDeleteArchiveReport/confirmDeleteArchiveReport в
+//   Page11.tsx) винаги си е била наред, просто нямаше как да се задейства
+//   оттук. Добавен Delete бутон до Apply, ползва съществуващия 'loeschen'
+//   ключ (Löschen/Delete), подава (item, index) на onDelete.
+// 2026-08-19 (3) — DK: "когато селектна нещата от списъка, искам да ми
+//   зарежда нещата избрани от него в компонента" — досега трябваше изрично
+//   да цъкнеш "Apply", отделно от избора/селекцията на реда. Сега цялата
+//   картичка е цъкаема — селектирането Е зареждането (onApply(item)),
+//   отделният "Apply" бутон отпадна (същия принцип като сливането на
+//   Save/Generate+Add в Page11.tsx). Delete спира propagation, за да не
+//   тригерне и apply при цъкване върху него.
+// ============================================
 
 export default function ErgometryHistoryComponent({
     reports,
     onApply,
-    onDelete
+    onDelete,
+    selectedReportId
 }: any) {
 
     if (!reports || reports.length === 0) {
@@ -33,12 +58,23 @@ export default function ErgometryHistoryComponent({
         <View>
 
             {
-                reports.map((item: any, index: number) => (
+                reports.map((item: any, index: number) => {
 
-                    <View
+                    const isSelected = selectedReportId != null && item?.id === selectedReportId;
+
+                    return (
+
+                    <TouchableOpacity
                         key={index}
+                        activeOpacity={0.7}
+                        onPress={() => {
+
+                            onApply(item);
+                        }}
                         style={{
-                            borderWidth: 1,
+                            borderWidth: isSelected ? 2 : 1,
+                            borderColor: isSelected ? '#2f6fed' : '#000',
+                            backgroundColor: isSelected ? '#eaf1ff' : 'transparent',
                             padding: 10,
                             marginBottom: 10
                         }}
@@ -68,42 +104,30 @@ export default function ErgometryHistoryComponent({
                             {item?.result?.IANS}
                         </Text>
 
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {
+                            onDelete &&
 
-                            <View style={{ flex: 1 }}>
+                            <View style={{ alignItems: 'flex-start', marginTop: 6 }}>
+
                                 <Button
-                                    title={LanguageUtil.getName('uebernehmen')}
-                                    onPress={() => {
+                                    title={LanguageUtil.getName('loeschen')}
+                                    onPress={(e: any) => {
 
-                                        onApply(item);
+                                        // 🔹 спираме propagation-а, за да не
+                                        // тригерне и onApply на родителската
+                                        // картичка (уеб/RN-web nested touchables)
+                                        e?.stopPropagation?.();
+
+                                        onDelete(item, index);
                                     }}
                                 />
+
                             </View>
+                        }
 
-                            {onDelete && (
-                                <View style={{ flex: 1 }}>
-                                    <Button
-                                        title={LanguageUtil.getName('loeschen')}
-                                        color="#c0392b"
-                                        onPress={() => {
-
-                                            // 🔹 index, не item.id — по-стари/
-                                            // сийдвани records може да нямат
-                                            // валидно/уникално id (виждаме
-                                            // празни Date/Model полета за
-                                            // някои от тях), а филтриране по
-                                            // id='' маха всички съвпадащи
-                                            // наведнъж вместо само този запис.
-                                            onDelete(item, index);
-                                        }}
-                                    />
-                                </View>
-                            )}
-
-                        </View>
-
-                    </View>
-                ))
+                    </TouchableOpacity>
+                    );
+                })
             }
 
         </View>

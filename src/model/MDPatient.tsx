@@ -56,4 +56,14 @@ export class MDPatient {
     measurements: MDTestRecord[] = [];
 
     activeTestId: string = "";
+
+    // 🔹 2026-08-20 — DK: "Training – Gesundheit" модул (5 нови PDF-а, план
+    // обсъден с DK преди имплементация) — Personenspezifische Standardwerte
+    // (запазени лични подразбирания за планиране на тренировки) живеят тук
+    // (на пациента), НЕ в MDPatientMeasurements/MDTestRecord.data — за
+    // разлика от 8-степенната прогресия (виж MDPatientMeasurements.tsx),
+    // презетите стойности трябва да преживяват отделния тест и да са едни
+    // и същи за всички тестове на този пациент. Форма ще се уточни при
+    // строене на Kein Test таба.
+    trainingsplanStandardwerte: any = {};
 }

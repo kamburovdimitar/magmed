@@ -54,7 +54,7 @@
 // ============================================
 
 import { useEffect, useState } from "react";
-import { View, StyleSheet, Button, ScrollView, Text, TextInput, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, Button, ScrollView, Text, TextInput, TouchableOpacity, Modal } from 'react-native'
 import LanguageUtil from '../../utils/LanguageUtil'
 import HeaderComponent from '../../components/HeaderComponent'
 import WorkloadRow from '../../components/WorkloadRowComponent'
@@ -77,11 +77,44 @@ import ErgometrySummaryComponent from '../../components/ErgometrySummaryComponen
 import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponent'
 import TrainingsbereichComponent from '../../components/TrainingsbereichComponent'
 import ConfirmDialogComponent from '../../components/ConfirmDialogComponent'
+// 🔹 2026-08-19 — DK: съобщението "не е добавена/запазена" трябва да е
+// popup, не inline банер (виж archiv_kein_ergebnis_title_text по-долу) —
+// същия глобален popup, който InfoPopUpComponent/App.tsx вече рендерват
+// за инфо-иконките на другите Test компоненти.
+import { openPopup } from '../../services/PopupService';
 import { ErgometryModel } from "../../constants/ergometryModels"
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels';
 import { trainingZonesScenarios } from '../../tests/utils/trainingZonesScenarios'
 import { getVisibleZones } from '../../tests/utils/trainingZonesScenarios'
 import { generateFromScenario } from '../../utils/ErgometrieScenarioUtil';
+// 🔹 2026-08-18 — LaktatkurveRechenverfahrenComponent (3.32-placeholder)
+// вече не се рендира тук (DK поиска таб 2 да показва точно 3.32
+// Datenerfassung/Auswertung) — файлът остава на диска, само вносът е
+// премахнат, за да няма мъртъв внос. Виж LaktatkurveAuswertungComponent.
+import LaktatkurveAuswertungComponent from '../../components/LaktatkurveAuswertungComponent';
+// 🔹 2026-08-18 (2) — DK качи "3.34 CCC Laktatkurve und Trainingsbereich" и
+// поиска таб 3 ("Trainingsbereich") да показва точно тази спецификация.
+// Не преоткриваме логика тук — LaktatkurveTrainingsbereichComponent вече
+// съществуваше (композира TrainingZonesOverlayComponent + вече тествания
+// TrainingsbereichComponent/calculateTrainingZoneTable, който изчислява
+// точно каскадата от PDF-а: % от IANS-HF → HF граница → lookup по реалната
+// крива → Watt/pace, НЕ проста % от Watt), само беше изключен от таба.
+import LaktatkurveTrainingsbereichComponent from '../../components/LaktatkurveTrainingsbereichComponent';
+// 🔹 2026-08-18 (3) — DK качи "3.36 CCC Laktatkurve überlagern" и поиска
+// таб 4 ("Rechenverfahren" слотът) да показва тази спецификация вече (PDF-а
+// на самия него е озаглавен "überlagern", не "Rechenverfahren" — но табовете
+// са само провизорни placeholder етикети, DK пълни следващия свободен слот
+// с всяка нова PDF спецификация, методично, една по една).
+// V1 обхват (вече изграден по-рано тази сесия, само не беше окачен на таб):
+// чек-лист archive записи на ТОЗИ пациент (най-нов пръв), absolute/normierte
+// (%IANS) превключвател, цвят по хронология + по-дебела активна крива при
+// hover, пълна IAS/IANS таблица (Watt|S-min|mmol·l за двете точки — виж
+// разширението в самия компонент). НЕ включено още (следващи стъпки):
+// Herzfrequenzkurven/Trainingszonen/TestDatum/Schwellenwerte/Schwellenlinien
+// toggle бутоните от дясно, ZURÜCK/Dialog/Auswertung/DatenErfassung
+// навигацията, крос-пациентско наслагване, outlier "Glühwürmchen" маркери,
+// hover-fade на другите криви и tooltip-ите на IAS/IANS точките.
+import LaktatkurveUeberlagernComponent from '../../components/LaktatkurveUeberlagernComponent';
 
 
 
@@ -97,7 +130,15 @@ type RowType = {
     lactate: string     // Laktat = лактат (string в UI)
 }
 
-export default function Page11({ goTo }: any) {
+// 🔹 2026-08-18 (Europe/Sofia) — DK уточни: 4-те бутона (Current/Überlagern/
+// Trainingsbereich/Rechenverfahren) трябва да са на HEADER ниво (в
+// HomeScreen.js, под главните 14 икон-бутона), НЕ заровени долу вътре в
+// Page11-ния scroll. HomeScreen вече рендира тези 4 бутона (виж
+// LACTATE_SUB_NAV_ITEMS там) само докато page === 'page11', и подава
+// избрания под-изглед тук като `activeChartView` prop. Page11 вече НЕ
+// управлява това състояние сам — просто чете пропа (с fallback 'current',
+// ако някой го рендира без него).
+export default function Page11({ goTo, activeChartView: propActiveChartView, onChartViewChange }: any) {
 
     const [showTrainingZones, setShowTrainingZones] = useState(true);
 
@@ -109,6 +150,10 @@ export default function Page11({ goTo }: any) {
 
     const [reportMode, setReportMode] =
         useState(false);
+
+    // 'current' | 'ueberlagern' | 'trainingsbereich' | 'rechenverfahren' —
+    // подадено отвън (HomeScreen.js); fallback за безопасност.
+    const activeChartView = propActiveChartView || 'current';
 
     // 🔹 Взимаме избрания пациент от Redux
     const selectedUser = useSelector((state) => state.user.selectedUser);
@@ -143,8 +188,16 @@ export default function Page11({ goTo }: any) {
     // 🔥 Result Preview
     const [resultPreview, setResultPreview] = useState<any>(null);
 
+    // 🔹 2026-08-19 — DK: "Patient Preview" и "Result Preview" вече не са
+    // постоянно видими inline JSON-дървета долу в десния panel — вместо
+    // това 2 бутона, всеки отваря fullscreen popup (Modal), само когато е
+    // нужно да се погледне. 'patient' | 'result' | null.
+    const [previewModalType, setPreviewModalType] =
+        useState<'patient' | 'result' | null>(null);
+
     // 🔹 Plausibilitätsprüfung съобщение (виж checkLoadPlausibility по-долу)
     const [plausibilityWarning, setPlausibilityWarning] = useState<string | null>(null);
+
 
     // 🔹 Save vs Update семантика за Archive бутона: id-то на archive
     // записа, който текущите данни в момента "представляват" — сетва се
@@ -153,6 +206,15 @@ export default function Page11({ goTo }: any) {
     // Archive UPDATE-ва СЪЩИЯ запис вместо да трупа дубликати. Нулира се
     // при clearData()/нов fake сценарий — тогава Archive пак прави НОВ.
     const [loadedReportId, setLoadedReportId] = useState<string | null>(null);
+
+    // 🔹 2026-08-18 — "3.32 CCC Laktat Datenerfassung und Auswertung": нужно
+    // за Watt/kg колоната в новата AUSWERTUNG таблица
+    // (LaktatkurveAuswertungComponent.tsx). За разлика от
+    // trainingZonePercents по-долу, това Е реални пациентски данни, не
+    // "what-if" — затова СЕ персистира в MDPatientMeasurements.weightkg
+    // (виж save() по-долу, явно писано, по същия принцип като
+    // loadedReportId), хидратира се от Redux в useEffect-а по-долу.
+    const [weightKg, setWeightKg] = useState<number | null>(null);
 
     // 🔹 Trainingsbereich (Phase 3, "3.34 CCC Laktatkurve und
     // Trainingsbereich"): override % thresholds за REG/GA1/GA2/E1 —
@@ -239,6 +301,14 @@ export default function Page11({ goTo }: any) {
         // unmount (tab switch) — хидратираме го от персистнатото в Redux
         // (виж полето в MDPatientMeasurements.tsx)
         setLoadedReportId(reduxActiveTest?.data?.loadedReportId ?? null);
+
+        // 🔹 same reason — weightKg е реални пациентски данни, не бива да
+        // се губи при tab switch (виж коментара при декларацията му).
+        setWeightKg(
+            reduxActiveTest?.data?.weightkg
+                ? Number(reduxActiveTest.data.weightkg)
+                : null
+        );
 
     }, [reduxActiveTestId]);
 
@@ -634,49 +704,17 @@ export default function Page11({ goTo }: any) {
         return rows;
     }
 
-    // 🔹 Eingabelogik (PDF "3.32CCC_Laktat_Datenerfassung_und_Auswertung"):
-    // "Eine Stufe gilt als unvollständig, wenn HF und Laktatwert fehlen" +
-    // "Wird der Button 'Laktatkurve'/'Auswertung' betätigt: wird eine
-    // unvollständige letzte Stufe automatisch gelöscht". save() e тук
-    // еквивалентът на този Auswertung-тригер.
+    // 🔹 Eingabelogik (PDF "3.32CCC_Laktat_Datenerfassung_und_Auswertung") и
+    // Plausibilitätsprüfung — 2026-08-14: извадени в ErgometrieUtil.js
+    // (ErgometryUtil.stripIncompleteLastRow/checkLoadPlausibility) за да
+    // могат да се unit-тестват директно, без да се рендира цялата страница.
+    // Тънки wrapper-и тук само за да не се пипа всяко извикване по-долу.
     function stripIncompleteLastRow(sourceData: RowType[]): RowType[] {
-
-        if (!sourceData?.length) return sourceData;
-
-        const last = sourceData[sourceData.length - 1];
-
-        const hfEmpty =
-            last.hf === '' ||
-            last.hf === undefined ||
-            last.hf === null;
-
-        const lactateEmpty =
-            last.lactate === '' ||
-            last.lactate === undefined ||
-            last.lactate === null;
-
-        if (hfEmpty && lactateEmpty) {
-            return sourceData.slice(0, -1);
-        }
-
-        return sourceData;
+        return ErgometryUtil.stripIncompleteLastRow(sourceData);
     }
 
-    // 🔹 Plausibilitätsprüfung: "Die Belastungswerte müssen stufenweise
-    // ansteigen. Abfallende oder identische Belastungswerte sind nicht
-    // zulässig." Не блокира изчислението (спецификацията иска
-    // предупреждение/насочване към друг модел, не твърд stop), само
-    // връща съобщение за показване в UI-то.
     function checkLoadPlausibility(rows: MDErgometryRow[]): string | null {
-
-        for (let i = 1; i < rows.length; i++) {
-
-            if (Number(rows[i].load) <= Number(rows[i - 1].load)) {
-                return LanguageUtil.getName('plausibility_load_error_text');
-            }
-        }
-
-        return null;
+        return ErgometryUtil.checkLoadPlausibility(rows, LanguageUtil.getName);
     }
 
     // 🔹 Returns {measurements, activeTestId, idx} — the active test's index
@@ -794,7 +832,11 @@ export default function Page11({ goTo }: any) {
                     // Redux щеше да "оцелее" тук и да се появи пак при
                     // следващ remount (виж коментара на полето в
                     // MDPatientMeasurements.tsx)
-                    loadedReportId
+                    loadedReportId,
+                    // 🔹 2026-08-18 — същия принцип: явно пишем текущия
+                    // local weightKg state, за да се запази в модела (DK:
+                    // "когато пишем по обекта, да го сейваме в него").
+                    weightkg: weightKg ?? 0
                 })
             )
         );
@@ -876,6 +918,17 @@ export default function Page11({ goTo }: any) {
 
         // 🔥 update result preview
         setResultPreview(result);
+
+        // 🔹 2026-08-19 — DK: "Save/Generate" и "Add"/"Archive" бяха 2
+        // отделни бутона/стъпки — точно това причиняваше "цъкам Add, не се
+        // сейва в листа": ако редактираш данните СЛЕД Save/Generate (или
+        // изобщо пропуснеш да го цъкнеш), Add archive-ваше стар/липсващ
+        // resultPreview state (React state е асинхронен, а resultPreview
+        // тук горе тепърва се сетва). Вече няма отделен Archive бутон —
+        // едно цъкване computва СВЕЖ result (тук, локална променлива, не
+        // state) И директно го подава на persistArchiveEntry, което го
+        // персистира веднага, без да минава през resultPreview state race.
+        persistArchiveEntry(result, ergometry, rows);
 
         const validation = ErgometryUtil.validateResult(result);
         console.log(
@@ -1118,93 +1171,90 @@ export default function Page11({ goTo }: any) {
         save();
     }
 
-    function saveIntoArchive_History() {
+    // 🔹 2026-08-19 — DK: попада ли резултатът извън изискванията на
+    // избрания метод (напр. LTP изисква поне 6 реда, Linear/Keul поне 3),
+    // popup-ът вече казва КОНКРЕТНО защо, не просто generic текст. Ако
+    // моделът няма изрично минимално изискване тук (Dickhuth/Freiburg —
+    // и двата само проверяват за празен масив), пада се на общата причина.
+    function buildArchiveFailureReason(rows: any[]) {
 
-        if (!resultPreview) {
+        const minRowsByModel: any = {
+            [ERGOMETRY_MODELS.LINEAR]: 3,
+            [ERGOMETRY_MODELS.KEUL]: 3,
+            [ERGOMETRY_MODELS.LTP]: 6,
+            [ERGOMETRY_MODELS.KEUL_LEGACY]: 2
+        };
+
+        const minRows = minRowsByModel[model];
+
+        const validRowsCount =
+            (rows || []).filter(
+                (r: any) =>
+                    !isNaN(Number(r?.load)) &&
+                    !isNaN(Number(r?.lactate)) &&
+                    Number(r?.lactate) > 0
+            ).length;
+
+        if (minRows && validRowsCount < minRows) {
+            return (
+                LanguageUtil.getName('archiv_grund_zu_wenig_daten_text') +
+                ` (${validRowsCount}/${minRows})`
+            );
+        }
+
+        return LanguageUtil.getName('archiv_grund_allgemein_text');
+    }
+
+    // 🔹 2026-08-19 — DK: "Save/Generate" и отделния "Archive"/"Add" бутон
+    // се сляха в едно цъкване (виж save() по-горе) — вече не отделна
+    // функция, викана от собствен бутон, а помощна функция, викана В КРАЯ
+    // на save(), със СВЕЖО изчисления `result`/`ergometry`/`rows` (подадени
+    // директно като параметри, не през resultPreview state — избягва race-а
+    // с React-ния асинхронен setState, който причиняваше "Add archive-ва
+    // стар/липсващ резултат"). Ако result е невалиден — popup с конкретна
+    // причина (DK: "съобщението да бъде поп ъп, с причината"), вместо
+    // тихо да не прави нищо.
+    function persistArchiveEntry(result: any, ergometry: any, rows: any) {
+
+        if (!result) {
+            openPopup({
+                title: LanguageUtil.getName('archiv_kein_ergebnis_title_text'),
+                description: buildArchiveFailureReason(rows)
+            });
             return;
         }
 
-        // 🔹 rows
-        const rows = buildRows();
-
-        // 🔹 fresh ergometry snapshot
-        const ergometry =
-            new MDErgometry({
-
-                type,
-
-                startLoad:
-                    Number(
-                        type === 'bike'
-                            ? startLoad
-                            : runStartLoad
-                    ),
-
-                increment:
-                    Number(
-                        type === 'bike'
-                            ? powerIncrement
-                            : runPowerIncrement
-                    ),
-
-                timeStep:
-                    Number(
-                        type === 'bike'
-                            ? powerTimeStep
-                            : runPowerTimeStep
-                    ),
-
-                model,
-
-                data: rows
-            });
-
-        // 🔹 Save vs Update: ако текущите данни идват от вече архивиран
-        // report (loadedReportId, сетнат от applyHistoryReport или от
-        // предишен Archive) И той все още съществува в списъка —
-        // UPDATE-ваме СЪЩИЯ запис (пази id, освежава ergometry/result/
-        // createdAt) вместо да трупаме дубликат при всяко цъкване на
-        // Archive. Ако няма такъв (нов тест/сценарий, или clearData() го
-        // е нулирал) — създаваме нов запис, точно както преди.
+        // 🔹 Save vs Update: извадено в ErgometryUtil.resolveArchiveSaveOrUpdate
+        // (2026-08-14, за unit-тестваемост) — ако текущите данни идват от
+        // вече архивиран report (loadedReportId, сетнат от
+        // applyHistoryReport или от предишен Add) И той все още съществува
+        // в списъка, UPDATE-ва СЪЩИЯ запис (пази id, освежава
+        // ergometry/result/createdAt) вместо да трупа дубликат при всяко
+        // цъкване. Ако няма такъв (нов тест/сценарий, или clearData() го е
+        // нулирал) — създава нов запис, точно както преди.
         const reduxCurrentData =
             reduxActiveTest?.data ?? new MDPatientMeasurements();
 
         const existingReports = reduxCurrentData.ergometryReports ?? [];
 
-        const existingIndex = loadedReportId
-            ? existingReports.findIndex((r: any) => r.id === loadedReportId)
-            : -1;
+        const nowIso = new Date().toISOString();
 
-        let updatedReports: any[];
-        let reportId: string;
-
-        if (existingIndex !== -1) {
-
-            reportId = loadedReportId as string;
-
-            const updatedReport = new MDErgometryReport({
-                ...existingReports[existingIndex],
+        const { reportId, updatedReports } = ErgometryUtil.resolveArchiveSaveOrUpdate({
+            existingReports,
+            loadedReportId,
+            buildUpdatedReport: (existing: any) => new MDErgometryReport({
+                ...existing,
                 ergometry,
-                result: resultPreview,
-                createdAt: new Date().toISOString()
-            });
-
-            updatedReports = [...existingReports];
-            updatedReports[existingIndex] = updatedReport;
-
-        } else {
-
-            reportId = Date.now().toString();
-
-            const newReport = new MDErgometryReport({
-                id: reportId,
-                createdAt: new Date().toISOString(),
+                result,
+                createdAt: nowIso
+            }),
+            buildNewReport: () => new MDErgometryReport({
+                id: Date.now().toString(),
+                createdAt: nowIso,
                 ergometry,
-                result: resultPreview
-            });
-
-            updatedReports = [...existingReports, newReport];
-        }
+                result
+            })
+        });
 
         // 🔹 measurements е масив (MDTestRecord[]) — вкарваме report-а в
         // ergometryReports[] на активния тест (findOrCreate + immutable
@@ -1221,6 +1271,8 @@ export default function Page11({ goTo }: any) {
 
         const updatedData = new MDPatientMeasurements({
             ...currentData,
+            ergometry,
+            weightkg: weightKg ?? 0,
             ergometryReports: updatedReports,
             loadedReportId: reportId
         });
@@ -1241,7 +1293,13 @@ export default function Page11({ goTo }: any) {
         setDataPatient(updatedPatient);
 
         // 🔹 Commit в Redux — иначе архивираният report изчезва при
-        // навигация настрани (setDataPatient по-горе е само локално copy)
+        // навигация настрани (setDataPatient по-горе е само локално copy).
+        // 🔹 явно пишем и ergometry/weightkg тук (не само чрез spread-а на
+        // reduxCurrentData) — reduxCurrentData е "замразен" отпреди това
+        // цъкване (React state hooks не се обновяват в средата на един
+        // синхронен onPress), затова само spread-vaйки го щеше да върне
+        // ergometry-то към старата стойност и да изгуби това, което save()
+        // тъкмо изчисли в СЪЩОТО цъкване.
         if (!reduxActiveTestId) {
             dispatch(createTest());
         }
@@ -1250,6 +1308,8 @@ export default function Page11({ goTo }: any) {
             saveActiveTest(
                 new MDPatientMeasurements({
                     ...reduxCurrentData,
+                    ergometry,
+                    weightkg: weightKg ?? 0,
                     ergometryReports: updatedReports,
                     loadedReportId: reportId
                 })
@@ -1257,10 +1317,8 @@ export default function Page11({ goTo }: any) {
         );
 
         // 🔹 запомняме кой archive запис точно представляват текущите
-        // данни — следващ Archive ще го update-не пак, вместо да създава нов
+        // данни — следващо Add/Save ще го update-не пак, вместо да създава нов
         setLoadedReportId(reportId);
-
-
     }
 
     // 🔹 Изтрива архивиран report от ergometryReports[] на активния тест.
@@ -1417,6 +1475,20 @@ export default function Page11({ goTo }: any) {
                         contentContainerStyle={{ paddingBottom: 20 }}
                     >
 
+                        {/* 🔹 2026-08-18 — DK: "изобщо не е това от пдф-а" —
+                            досега само toggle-редът+графиката бяха условни
+                            на activeChartView === 'current'; всичко друго
+                            (Belastungsprotokoll/Datenerfassung/Rechenverfahren
+                            /action бутони/старата Auswertung+Summary таблица)
+                            си оставаше видимо на ВСИЧКИ табове, затова
+                            "Overlay" изглеждаше идентичен на "Aktuell". Сега
+                            ЦЯЛОТО старо съдържание на "Aktuell" е в един-
+                            единствен {'{activeChartView === \'current\' && (...)}'}
+                            блок — на другите табове НЕ се вижда нищо от
+                            него, само съответния нов компонент. */}
+                        {activeChartView === 'current' && (
+                            <>
+
                         {/* 🔹 Belastungsprotokoll = настройки на натоварване */}
 
                         {/* 🚴 Ergometer / Bike */}
@@ -1477,24 +1549,23 @@ export default function Page11({ goTo }: any) {
                             текстът е динамичен: "Archive" докато няма
                             зареден archive запис, "Update Archive" щом
                             loadedReportId е сетнат (виж
-                            saveIntoArchive_History() по-горе — save-vs-update
+                            persistArchiveEntry() по-горе — save-vs-update
                             семантика). */}
+                        {/* 🔹 2026-08-19 — DK: "Save/Generate" и Archive/Add
+                            бяха 2 отделни бутона — точно 2-те стъпки бяха
+                            причината "цъкам Add, не се сейва в листа" (Add
+                            archive-ваше resultPreview от МИНАЛ Save/Generate
+                            клик, или изобщо липсващ, ако потребителят
+                            директно цъкнеше Add). Слети в ЕДИН бутон
+                            (save() вече прави и двете, виж таме) — "единия
+                            бутон archive да отпадне изобщо". */}
                         <View style={styles.actionButtonsContainer}>
 
                             <View style={styles.actionRow}>
 
                                 <TouchableOpacity
-                                    style={[styles.actionButton, styles.actionButtonPrimary]}
+                                    style={[styles.actionButton, styles.actionButtonPrimary, { flex: 1 }]}
                                     onPress={() => save()}
-                                >
-                                    <Text style={styles.actionButtonTextLight}>
-                                        {LanguageUtil.getName('speichern_generieren_text')}
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.actionButton, styles.actionButtonSecondary]}
-                                    onPress={() => saveIntoArchive_History()}
                                 >
                                     <Text style={styles.actionButtonTextLight}>
                                         {
@@ -1559,93 +1630,186 @@ export default function Page11({ goTo }: any) {
                             причина — преместен е под графиката (виж
                             scenarioButtonContainer по-долу), центриран и
                             по-малко обемен, per заявката на потребителя. */}
-                        <View style={styles.toggleRow}>
+                        {/* 🔹 2026-08-18 — DK уточни: 4-те бутона (Aktuell/
+                            Überlagern/Trainingsbereich/Rechenverfahren) не
+                            трябва да са тук долу във scroll-а — местени са
+                            на HEADER ниво в HomeScreen.js (под главните 14
+                            икон-бутона), откъдето вече идва activeChartView
+                            prop-а по-горе. Тук само четем стойността му.
+                            (Външният {'{activeChartView === current}'}
+                            wrapper вече е горе, над Belastungsprotokoll —
+                            виж коментара там; тук само продължава
+                            съдържанието му, без нов условен блок.) */}
 
-                            <TouchableOpacity
-                                style={[styles.toggleChip, showHeartRateCurve && styles.toggleChipActive]}
-                                onPress={() => setShowHeartRateCurve(!showHeartRateCurve)}
-                            >
-                                <Text style={[styles.toggleChipText, showHeartRateCurve && styles.toggleChipTextActive]}>
-                                    {LanguageUtil.getName('hf_umschalten_text')}
-                                </Text>
-                            </TouchableOpacity>
+                                <View style={styles.toggleRow}>
 
-                            <TouchableOpacity
-                                style={[styles.toggleChip, showThresholdLines && styles.toggleChipActive]}
-                                onPress={() => setShowThresholdLines(!showThresholdLines)}
-                            >
-                                <Text style={[styles.toggleChipText, showThresholdLines && styles.toggleChipTextActive]}>
-                                    {LanguageUtil.getName('schwellenwerte_umschalten_text')}
-                                </Text>
-                            </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.toggleChip, showHeartRateCurve && styles.toggleChipActive]}
+                                        onPress={() => setShowHeartRateCurve(!showHeartRateCurve)}
+                                    >
+                                        <Text style={[styles.toggleChipText, showHeartRateCurve && styles.toggleChipTextActive]}>
+                                            {LanguageUtil.getName('hf_umschalten_text')}
+                                        </Text>
+                                    </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.toggleChip, showTrainingZones && styles.toggleChipActive]}
-                                onPress={() => setShowTrainingZones(!showTrainingZones)}
-                            >
-                                <Text style={[styles.toggleChipText, showTrainingZones && styles.toggleChipTextActive]}>
-                                    {LanguageUtil.getName('zonen_umschalten_text')}
-                                </Text>
-                            </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.toggleChip, showThresholdLines && styles.toggleChipActive]}
+                                        onPress={() => setShowThresholdLines(!showThresholdLines)}
+                                    >
+                                        <Text style={[styles.toggleChipText, showThresholdLines && styles.toggleChipTextActive]}>
+                                            {LanguageUtil.getName('schwellenwerte_umschalten_text')}
+                                        </Text>
+                                    </TouchableOpacity>
 
-                        </View>
+                                    <TouchableOpacity
+                                        style={[styles.toggleChip, showTrainingZones && styles.toggleChipActive]}
+                                        onPress={() => setShowTrainingZones(!showTrainingZones)}
+                                    >
+                                        <Text style={[styles.toggleChipText, showTrainingZones && styles.toggleChipTextActive]}>
+                                            {LanguageUtil.getName('zonen_umschalten_text')}
+                                        </Text>
+                                    </TouchableOpacity>
 
-                        <LactateChartComponent
+                                </View>
 
-                            data={data}
+                                <LactateChartComponent
 
-                            result={resultPreview}
-
-                            chartStart={250}
-
-                            showTrainingZones={showTrainingZones}
-
-                            showThresholdLines={showThresholdLines}
-
-                            showThresholdLabels={showThresholdLabels}
-
-                            showHeartRateCurve={showHeartRateCurve}
-
-                            isRun={type === 'run'}
-
-                            model={model}
-
-                            trainingZonePercents={trainingZonePercents}
-
-                            onZonePercentChange={handleZonePercentChange}
-                        />
-
-                        {/* 🔹 преместен тук от блока над toggle-ите (виж
-                            коментара по-горе) — компактен, центриран pill */}
-                        <View style={styles.scenarioButtonContainer}>
-                            <TouchableOpacity
-                                style={styles.scenarioButton}
-                                onPress={() => generateFakeDataFromTestScenario()}
-                            >
-                                <Text style={styles.scenarioButtonText}>
-                                    {LanguageUtil.getName('testdaten_aus_szenario_text')}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {
-                            showTrainingZones && (
-
-                                <TrainingZonesOverlayComponent
-                                    result={resultPreview}
                                     data={data}
-                                    isRun={type === 'run'}
-                                    model={model}
-                                    trainingZonePercents={trainingZonePercents}
-                                />
-                            )
-                        }
 
-                        {/* 🔹 DetailAnalyse = детайлен анализ */}
-                        <DetailAnalyseComponent
-                            data={data}
-                            result={resultPreview}
-                        />
+                                    result={resultPreview}
+
+                                    chartStart={250}
+
+                                    showTrainingZones={showTrainingZones}
+
+                                    showThresholdLines={showThresholdLines}
+
+                                    showThresholdLabels={showThresholdLabels}
+
+                                    showHeartRateCurve={showHeartRateCurve}
+
+                                    isRun={type === 'run'}
+
+                                    model={model}
+
+                                    trainingZonePercents={trainingZonePercents}
+
+                                    onZonePercentChange={handleZonePercentChange}
+                                />
+                                {/* 🔹 преместен тук от блока над toggle-ите
+                                    (виж коментара по-горе) — компактен,
+                                    центриран pill. 2026-08-14: добавен втори
+                                    pill до него, който отваря
+                                    самостоятелния "Business-Logic-Tracer"
+                                    (public/tools/business_logic_tracer.html)
+                                    в нов таб — пресмята стъпка по стъпка
+                                    същите формули, без да се чете код. Само
+                                    web (window.open) — няма ефект/грешка на
+                                    native builds. */}
+                                <View style={styles.scenarioButtonContainer}>
+                                    <TouchableOpacity
+                                        style={styles.scenarioButton}
+                                        onPress={() => generateFakeDataFromTestScenario()}
+                                    >
+                                        <Text style={styles.scenarioButtonText}>
+                                            {LanguageUtil.getName('testdaten_aus_szenario_text')}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.logicTracerButton}
+                                        onPress={() => {
+                                            if (typeof window !== 'undefined' && window.open) {
+                                                window.open('/tools/business_logic_tracer.html', '_blank')
+                                            }
+                                        }}
+                                    >
+                                        <Text style={styles.logicTracerButtonText}>
+                                            🔍 {LanguageUtil.getName('logik_pruefen_text')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {
+                                    showTrainingZones && (
+
+                                        <TrainingZonesOverlayComponent
+                                            result={resultPreview}
+                                            data={data}
+                                            isRun={type === 'run'}
+                                            model={model}
+                                            trainingZonePercents={trainingZonePercents}
+                                        />
+                                    )
+                                }
+
+                                {/* 🔹 DetailAnalyse = детайлен анализ */}
+                                <DetailAnalyseComponent
+                                    data={data}
+                                    result={resultPreview}
+                                />
+
+                            </>
+                        )}
+
+                        {/* 🔹 2026-08-18 — DK: качи "3.32 CCC Laktat
+                            Datenerfassung und Auswertung" и поиска този таб
+                            да показва ТОЧНО и САМО тази спецификация (виж
+                            пълния коментар в
+                            LaktatkurveAuswertungComponent.tsx). Замества
+                            старата LaktatkurveUeberlagernComponent (3.36
+                            überlagern) тук — файлът/тестовете ѝ остават на
+                            диска непокътнати, само не се рендира вече на
+                            този таб, докато не стигнем методично до 3.36.
+                            Извън {'{activeChartView === current}'} блока
+                            по-горе — на този таб НЕ се вижда нищо от
+                            Belastungsprotokoll/Datenerfassung/Rechenverfahren
+                            /action бутони/старата Auswertung, само това. */}
+                        {activeChartView === 'ueberlagern' && (
+                            <LaktatkurveAuswertungComponent
+                                data={data}
+                                result={resultPreview}
+                                model={model}
+                                isRun={type === 'run'}
+                                weightKg={weightKg}
+                                onWeightKgChange={setWeightKg}
+                            />
+                        )}
+
+                        {/* 🔹 2026-08-18 (2) — "3.34 CCC Laktatkurve und
+                            Trainingsbereich": TRAININGSBEREICH таблица
+                            (% der IANS / mmol Liter / S/min / Watt-или-min·km)
+                            + графичното наслагване на зоните. Същия
+                            trainingZonePercents state, който вече се
+                            споделя с чарта на "Aktuell" таба — влаченето на
+                            границите там и editable % полетата тук остават
+                            синхронизирани, защото са едно и също state. */}
+                        {activeChartView === 'trainingsbereich' && (
+                            <LaktatkurveTrainingsbereichComponent
+                                result={resultPreview}
+                                data={data}
+                                isRun={type === 'run'}
+                                model={model}
+                                trainingZonePercents={trainingZonePercents}
+                                onPercentsChange={setTrainingZonePercents}
+                                onReset={resetTrainingZonePercents}
+                            />
+                        )}
+
+                        {/* 🔹 2026-08-18 (3) — "3.36 CCC Laktatkurve
+                            überlagern" V1: чек-лист + absolute/normiert
+                            превключвател + IAS/IANS таблица, върху вече
+                            тествания OverlayUtil (18 теста). Виж коментара
+                            на импорта по-горе за какво остава като следваща
+                            стъпка. */}
+                        {activeChartView === 'rechenverfahren' && (
+                            <LaktatkurveUeberlagernComponent
+                                reports={reduxActiveTest?.data?.ergometryReports}
+                                isRun={type === 'run'}
+                                onLoadReport={applyHistoryReport}
+                                onGoToView={onChartViewChange}
+                            />
+                        )}
 
                     </ScrollView>
                 )}
@@ -1745,6 +1909,12 @@ export default function Page11({ goTo }: any) {
 
                                 onApply={applyHistoryReport}
                                 onDelete={requestDeleteArchiveReport}
+                                // 🔹 2026-08-19 — DK: след успешен "Add" новият
+                                // запис трябва да изглежда селектнат в листа
+                                // (и след "Apply" на стар запис — същия
+                                // индикатор). loadedReportId вече е id-то на
+                                // "текущо представения" archive запис.
+                                selectedReportId={loadedReportId}
                             />
 
                             {/* 🔹 Trainingsbereich (Phase 3, "3.34 CCC
@@ -1755,9 +1925,19 @@ export default function Page11({ goTo }: any) {
                                 и влаченето на границите директно на
                                 графиката (LactateChartComponent) споделят
                                 същия trainingZonePercents state, така че
-                                винаги остават синхронизирани. */}
+                                винаги остават синхронизирани.
+                                🔹 2026-08-18 (2) — тази дясна панелна версия
+                                е СТАРАТА функционалност (виждаше се на всеки
+                                таб, защото десният panel е извън
+                                activeChartView switch-а). Сега таб
+                                "Trainingsbereich" вече показва собствено,
+                                по-пълно копие (LaktatkurveTrainingsbereichComponent,
+                                виж по-горе) — затова тук я ограничаваме само
+                                до "Aktuell" таба, за да не се дублира едно и
+                                също нещо на два таба едновременно (същия бъг
+                                клас, който DK докладва за Overlay таба). */}
                             {
-                                showTrainingZones && (
+                                showTrainingZones && activeChartView === 'current' && (
 
                                     <TrainingsbereichComponent
                                         result={resultPreview}
@@ -1771,44 +1951,33 @@ export default function Page11({ goTo }: any) {
                                 )
                             }
 
-                            {/* 🔹 Patient Preview */}
-                            <Text
-                                style={{
-                                    fontSize: 18,
-                                    fontWeight: 'bold',
-                                    marginBottom: 10
-                                }}
-                            >
-                                {LanguageUtil.getName('patienten_vorschau_text')}
-                            </Text>
+                            {/* 🔹 2026-08-19 — DK: "премахни patient
+                                preview-то отдолу, сложи го като бутон, да
+                                го имаме и да ми го показва на цял екран в
+                                поп ъп" — и същото после и за Result Preview.
+                                И двете вече не са постоянно видими JSON-
+                                дървета в scroll-а, а по един бутон, който
+                                отваря fullscreen Modal (виж previewModalType
+                                state и Modal-а долу, до ConfirmDialogComponent). */}
+                            <View style={styles.previewButtonsRow}>
 
-                            {previewPatient &&
-                                renderObject(previewPatient)
-                            }
-
-                            {/* 🔥 Result Preview */}
-                            <View
-                                style={{
-                                    marginTop: 20,
-                                    borderTopWidth: 1,
-                                    borderColor: '#999',
-                                    paddingTop: 10
-                                }}
-                            >
-
-                                <Text
-                                    style={{
-                                        fontSize: 18,
-                                        fontWeight: 'bold',
-                                        marginBottom: 10
-                                    }}
+                                <TouchableOpacity
+                                    style={styles.previewButton}
+                                    onPress={() => setPreviewModalType('patient')}
                                 >
-                                    {LanguageUtil.getName('ergebnis_vorschau_text')}
-                                </Text>
+                                    <Text style={styles.previewButtonText}>
+                                        {LanguageUtil.getName('patienten_vorschau_text')}
+                                    </Text>
+                                </TouchableOpacity>
 
-                                {resultPreview &&
-                                    renderObject(resultPreview)
-                                }
+                                <TouchableOpacity
+                                    style={styles.previewButton}
+                                    onPress={() => setPreviewModalType('result')}
+                                >
+                                    <Text style={styles.previewButtonText}>
+                                        {LanguageUtil.getName('ergebnis_vorschau_text')}
+                                    </Text>
+                                </TouchableOpacity>
 
                             </View>
 
@@ -1823,6 +1992,64 @@ export default function Page11({ goTo }: any) {
                 onConfirm={confirmDeleteArchiveReport}
                 onCancel={cancelDeleteArchiveReport}
             />
+
+            {/* 🔹 2026-08-19 — fullscreen Patient/Result Preview popup, виж
+                previewButtonsRow по-горе. Едно и също Modal-обвивка за
+                двата бутона, съдържанието се решава от previewModalType. */}
+            <Modal
+                visible={previewModalType !== null}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setPreviewModalType(null)}
+            >
+
+                <View style={styles.previewModalOverlay}>
+
+                    <View style={styles.previewModalBox}>
+
+                        <View style={styles.previewModalHeader}>
+
+                            <Text style={styles.previewModalTitle}>
+                                {
+                                    previewModalType === 'patient'
+                                        ? LanguageUtil.getName('patienten_vorschau_text')
+                                        : LanguageUtil.getName('ergebnis_vorschau_text')
+                                }
+                            </Text>
+
+                            <TouchableOpacity
+                                onPress={() => setPreviewModalType(null)}
+                            >
+                                <Text style={styles.previewModalClose}>
+                                    ✕ {LanguageUtil.getName('schliessen')}
+                                </Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+                        <ScrollView style={styles.previewModalScroll}>
+
+                            {
+                                previewModalType === 'patient' &&
+                                (previewPatient
+                                    ? renderObject(previewPatient)
+                                    : <Text>—</Text>)
+                            }
+
+                            {
+                                previewModalType === 'result' &&
+                                (resultPreview
+                                    ? renderObject(resultPreview)
+                                    : <Text>—</Text>)
+                            }
+
+                        </ScrollView>
+
+                    </View>
+
+                </View>
+
+            </Modal>
 
         </View>
     )
@@ -1843,6 +2070,75 @@ const styles = StyleSheet.create({
     rightPanel: {
         flex: 1,
         backgroundColor: '#f5f5f5'
+    },
+
+    // 🔹 2026-08-19 — Patient/Result Preview бутони (заместват старите
+    // постоянно видими inline JSON-дървета) + fullscreen popup стилове.
+    previewButtonsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 16
+    },
+
+    previewButton: {
+        flex: 1,
+        minWidth: 120,
+        borderWidth: 1,
+        borderColor: '#9fb3c8',
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: '#ffffff',
+        alignItems: 'center'
+    },
+
+    previewButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#333'
+    },
+
+    previewModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+
+    previewModalBox: {
+        width: '94%',
+        height: '92%',
+        backgroundColor: 'white',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#999',
+        padding: 16
+    },
+
+    previewModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderColor: '#ddd',
+        paddingBottom: 10,
+        marginBottom: 10
+    },
+
+    previewModalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold'
+    },
+
+    previewModalClose: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#c0392b'
+    },
+
+    previewModalScroll: {
+        flex: 1
     },
 
     formSection: {
@@ -2020,10 +2316,67 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
 
+    // 🔹 2026-08-17 — под-бутон "Ansicht wechseln" + 2-та скрити chip-а
+    // ("Aktuell" / "Überlagern"), виж коментара в render-а по-горе.
+    viewSwitcherContainer: {
+        alignItems: 'center',
+        marginTop: 8
+    },
+
+    viewSwitcherToggle: {
+        borderWidth: 1,
+        borderColor: '#9fb3c8',
+        borderRadius: 14,
+        paddingVertical: 5,
+        paddingHorizontal: 14,
+        backgroundColor: '#f5f7fa'
+    },
+
+    viewSwitcherToggleText: {
+        fontSize: 12,
+        color: '#555',
+        fontWeight: '600'
+    },
+
+    viewSwitcherOptions: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 6
+    },
+
+    viewSwitcherChip: {
+        borderWidth: 1,
+        borderColor: '#9fb3c8',
+        borderRadius: 14,
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        backgroundColor: '#fff'
+    },
+
+    viewSwitcherChipActive: {
+        backgroundColor: '#8a5bc8',
+        borderColor: '#8a5bc8'
+    },
+
+    viewSwitcherChipText: {
+        fontSize: 12.5,
+        color: '#333',
+        fontWeight: '600'
+    },
+
+    viewSwitcherChipTextActive: {
+        color: '#fff'
+    },
+
     // 🔹 "Generate Fake Data From Test Scenario" — компактен, центриран
     // pill бутон под графиката (вместо обемен full-width Button над нея).
+    // 2026-08-14: контейнерът вече е ред (flexDirection: 'row'), за да
+    // побере и втория pill (logicTracerButton) до него.
     scenarioButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
+        gap: 10,
         marginTop: 10,
         marginBottom: 6
     },
@@ -2038,6 +2391,25 @@ const styles = StyleSheet.create({
     },
 
     scenarioButtonText: {
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '600'
+    },
+
+    // 🔹 2026-08-14: pill бутон, който отваря business_logic_tracer.html
+    // (public/tools/) в нов таб — самостоятелен инструмент за проследяване
+    // на формулите зад Dickhuth/Freiburger/Linear/LTP/Keul/Keul Legacy и
+    // Trainingsbereich каскадата, без да се чете код.
+    logicTracerButton: {
+        borderWidth: 1,
+        borderColor: '#8a7bc8',
+        borderRadius: 18,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        backgroundColor: '#f0ecfc'
+    },
+
+    logicTracerButtonText: {
         fontSize: 13,
         color: '#333',
         fontWeight: '600'

@@ -7,21 +7,31 @@ import UsersProxy from '../../services/UsersProxy'
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { measure } from 'react-native-reanimated'
-import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 
 
-export default function Page1({ goTo }) {
+export default function Page1({ goTo, onValidityChange }) {
 
     const [data, setData] = useState([]);
     const [buttonState, setButtonState] = useState(1);
     const [clearFieldFlag, setClearFieldFlag] = useState(0);
 
-
-    function addButton(firstName: string, lastName: string, title: string, birthdate: string, patientId: string) {
+    // 🔹 2026-08-21 (Claude) — DK: "нека се захванем с полето gender ...
+    // когато създаваме обект трябва да имаме дроп даун с gender". Тук
+    // имаше 2 отделни бъга:
+    //   1) HeaderComponent.tsx извиква callback-а с ред
+    //      (firstName, lastName, birthday, title, gender, patientid) — виж
+    //      неговия onPressButton — но тази функция очакваше съвсем друг
+    //      ред (firstName, lastName, title, birthdate, patientId), без
+    //      gender изобщо! Резултат: заглавието/рождената дата се разменяха
+    //      местно, а стойността от Gender полето кацаше в patientId.
+    //   2) `gender` тук беше hardcode-нат на "" ("not added for the
+    //      momemnt") — сега идва истински от новия dropdown.
+    // Поправено да съответства на реалния ред, в който HeaderComponent го
+    // вика, и на реалната (по-нова) сигнатура на UsersProxy.addUser
+    // (вече не приема `measurements` — виж UsersProxy.tsx).
+    function addButton(firstName: string, lastName: string, birthday: string, title: string, gender: string, patientId: string) {
         const id = uuidv4();
-        const measurements = new MDPatientMeasurements()
-        const gender = ""; // not added for the momemnt
-        UsersProxy.addUser(firstName, lastName, title, gender, birthdate, id, measurements)
+        UsersProxy.addUser(firstName, lastName, title, gender, birthday, id)
     }
 
     return (
@@ -39,6 +49,7 @@ export default function Page1({ goTo }) {
                         clearFieldFlag={clearFieldFlag}
                         setClearFieldFlag={setClearFieldFlag}
                         dataPatient={null}
+                        onValidityChange={onValidityChange}
                     />
                 </View>
 
@@ -56,6 +67,7 @@ export default function Page1({ goTo }) {
                         <Text style={styles.col} >{LanguageUtil.getName('firstname_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('title_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('birthdate_text')}</Text>
+                        <Text style={styles.col} >{LanguageUtil.getName('gender_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('patientid_text')}</Text>
                     </View>
 

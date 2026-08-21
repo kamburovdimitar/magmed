@@ -1,12 +1,57 @@
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-19 (Europe/Sofia) — MUFU Körper-Haltung (WIRBELSÄULE): преди
+//   компонентът пазеше избора само в локален useState — не преживяваше
+//   navigate away/back и никога не се записваше в теста. Сега приема
+//   контролирани `value`/`onChange` (със fallback на локален state, ако
+//   не са подадени — обратно съвместимо), за да мине през същия
+//   draft/callback механизъм като останалите MUFU/Ergometrie полета (виж
+//   KoerperHaltungComponent.tsx). Header етикетите вече минават през
+//   LanguageUtil (schwer/mittelschwer/leicht/normal ключовете вече
+//   съществуваха, само не бяха свързани тук).
+//
+// 2026-08-20 — DK: KOPF/SCHULTER/BECKEN/KNIE/FUSS липсваха от Körper-
+//   Haltung (само WIRBELSÄULE имаше реална таблица). Вместо да
+//   копирам-паст-вам цялата таблица 5 пъти с различни редове, добавен е
+//   optional `sections` prop: {rows:[{label,key}]}[] (виж
+//   constants/koerperHaltungSections.js). Когато е подаден, таблицата се
+//   рендерва динамично от него; когато НЕ е подаден (както при
+//   WIRBELSÄULE — KoerperHaltungComponent.tsx не го подава там), поведе-
+//   нието остава ТОЧНО както преди (хардкоднатите HWS/BWS/LWS секции по-
+//   долу) — нулев риск за вече работещата WIRBELSÄULE таблица.
+//
+// 2026-08-20 (2) — DK поиска AUSWERTUNG (обобщен изглед на всички Körper-
+//   Haltung оценки, виж KoerperHaltungAuswertungComponent.tsx) — за да
+//   може той да look-up-ва label-ите на WIRBELSÄULE редовете (за да ги
+//   покаже в обобщението), изнесох HWS/BWS/LWS секциите в
+//   constants/koerperHaltungSections.js (WIRBELSAEULE_SECTIONS, СЪЩИТЕ
+//   keys като преди — данните на съществуващи тестове не се засягат).
+//   Вече винаги минаваме през ЕДИН рендер-път (sections ?? default), без
+//   дублиран JSX — WIRBELSÄULE поведението остава идентично.
+// ============================================
+
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useState } from "react";
+import LanguageUtil from '../utils/LanguageUtil';
+import { WIRBELSAEULE_SECTIONS } from '../constants/koerperHaltungSections';
 
-export default function BeuterlungTable() {
+export default function BeuterlungTable({ value, onChange, sections }: any) {
 
-    const [selected, setSelected] = useState({});
+    const [localSelected, setLocalSelected] = useState({});
+
+    const selected = value ?? localSelected;
 
     function handlePress(row, col) {
-        setSelected({ ...selected, [row]: col });
+
+        const updated = {
+            ...selected,
+            [row]: selected[row] === col ? null : col
+        };
+
+        if (onChange) {
+            onChange(updated);
+        } else {
+            setLocalSelected(updated);
+        }
     }
 
     return (
@@ -15,40 +60,30 @@ export default function BeuterlungTable() {
             {/* HEADER */}
             <View style={styles.headerRow}>
                 <Text style={styles.headerEmpty}></Text>
-                <Text style={styles.header}>schwer</Text>
-                <Text style={styles.header}>mittelschwer</Text>
-                <Text style={styles.header}>leicht</Text>
-                <Text style={styles.header}>normal</Text>
+                <Text style={styles.header}>{LanguageUtil.getName('schwer')}</Text>
+                <Text style={styles.header}>{LanguageUtil.getName('mittelschwer')}</Text>
+                <Text style={styles.header}>{LanguageUtil.getName('leicht')}</Text>
+                <Text style={styles.header}>{LanguageUtil.getName('normal')}</Text>
             </View>
 
-            {/* HWS */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>HWS</Text>
+            {
+                // 🔹 подаден `sections` prop (KOPF/SCHULTER/BECKEN/KNIE/FUSS) ->
+                // ползваме него; иначе -> WIRBELSAEULE_SECTIONS (default,
+                // идентичен на старото хардкоднато HWS/BWS/LWS поведение).
+                (sections ?? WIRBELSAEULE_SECTIONS).map((section: any, sectionIndex: number) => (
+                    <View key={section.title ?? sectionIndex} style={styles.section}>
+                        {
+                            section.title
+                                ? <Text style={styles.sectionTitle}>{section.title}</Text>
+                                : null
+                        }
 
-                {row("Lordose", "lordose", selected, handlePress)}
-                {row("Skoliose", "skoliose", selected, handlePress)}
-                {row("Kyphose", "kyphose", selected, handlePress)}
-                {row("Schiefhals", "schiefhals", selected, handlePress)}
-                {row("Steilstellung", "steilstellung", selected, handlePress)}
-            </View>
-
-            {/* BWS */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>BWS</Text>
-
-                {row("Kyphose", "bws_kyphose", selected, handlePress)}
-                {row("Skoliose", "bws_skoliose", selected, handlePress)}
-                {row("Steilstellung", "bws_steil", selected, handlePress)}
-            </View>
-
-            {/* LWS */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>LWS</Text>
-
-                {row("Lordose", "lws_lordose", selected, handlePress)}
-                {row("Skoliose", "lws_skoliose", selected, handlePress)}
-                {row("Steilstellung", "lws_steil", selected, handlePress)}
-            </View>
+                        {
+                            section.rows.map((r: any) => row(r.label, r.key, selected, handlePress))
+                        }
+                    </View>
+                ))
+            }
 
         </View>
     );

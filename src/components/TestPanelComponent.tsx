@@ -67,16 +67,24 @@ export default function TestPanelComponent({ handlerButton, onNewTest, onExistin
                     <Text>{LanguageUtil.getName('koerpermassen_vitalparametern')}</Text>
                 </TouchableOpacity>
 
-                {/* Not built yet — temporarily doesn't navigate anywhere. */}
+                {/* 🔹 2026-08-19 — Muskel-Funktion (KRAFT таблица +
+                    селектабилна диаграма) вече е построена
+                    (MuskelFunktionComponent.tsx) — премахнат disabledButton
+                    и wired-нат onPress, същия принцип като другите бутони. */}
                 <TouchableOpacity
-                    style={[styles.button, styles.disabledButton]}
+                    style={[styles.button, selected === "detail2" && styles.active]}
+                    onPress={() => ergometryHandleClick("detail2")}
                 >
                     <Text>{LanguageUtil.getName('muskel_funktion')}</Text>
                 </TouchableOpacity>
 
-                {/* Not built yet — temporarily doesn't navigate anywhere. */}
+                {/* 🔹 2026-08-19 — Körper-Haltung (WIRBELSÄULE таблица +
+                    референтна снимка) вече е построена
+                    (KoerperHaltungComponent.tsx) — премахнат disabledButton
+                    и wired-нат onPress. */}
                 <TouchableOpacity
-                    style={[styles.button, styles.disabledButton]}
+                    style={[styles.button, selected === "detail3" && styles.active]}
+                    onPress={() => ergometryHandleClick("detail3")}
                 >
                     <Text>{LanguageUtil.getName('koerper_haltung')}</Text>
                 </TouchableOpacity>

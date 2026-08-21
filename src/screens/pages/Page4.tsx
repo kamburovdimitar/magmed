@@ -7,13 +7,12 @@ import UsersProxy from '../../services/UsersProxy'
 import { useEffect, useState } from "react";
 import SelectedUserProxy from '../../services/SelectedUserProxy'
 import { MDPatient } from "../../model/MDPatient";
-import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import { useDispatch } from "react-redux";
 import { setSelectedUser } from "../../store/userSlice";
 
 
 
-export default function Page4({ goTo }) {
+export default function Page4({ goTo, onValidityChange }) {
 
     const [data, setData] = useState<MDPatient[]>([]);
     const [dataPatient, setDataPatient] = useState<MDPatient | null>(null);
@@ -46,16 +45,32 @@ export default function Page4({ goTo }) {
         setData(result);
     }
 
-    async function updateButton(firstName: string, lastName: string, birthday: string, title: string, gender: string, patientId: string, measurements: MDPatientMeasurements) {
+    // 🔹 2026-08-21 (Claude) — DK: "нека се захванем с полето gender".
+    // Докато преглеждах тази функция за gender-a, открих отделен, доста
+    // по-сериозен бъг: HeaderComponent.tsx реално вика този callback само
+    // с 6 аргумента (firstName, lastName, birthday, title, gender,
+    // patientid) — виж неговия onPressButton — НИКОГА не подава 7-и
+    // аргумент `measurements`. Затова тук `measurements` винаги беше
+    // `undefined`, и всеки път при натискане на "Update Client" реално
+    // ИЗТРИВАШЕ историята от тестове (`measurements`/тестове) на пациента
+    // (UsersProxy.updateUser презаписваше с undefined). Поправено — вече
+    // тръгваме от вече заредения `dataPatient` (спред-нат в новия обект),
+    // за да останат `measurements`/`activeTestId`/
+    // `trainingsplanStandardwerte` непокътнати; само идентификационните
+    // полета (име/дата/пол/титла/ID) се презаписват от формата.
+    async function updateButton(firstName: string, lastName: string, birthday: string, title: string, gender: string, patientId: string) {
 
-        let patient: MDPatient = new MDPatient()
-        patient.firstname = firstName;
-        patient.lastname = lastName;
-        patient.birthdate = birthday;
-        patient.gender = gender;
-        patient.title = title;
-        patient.patientid = patientId;
-        patient.measurements = measurements;
+        if (!dataPatient) return;
+
+        let patient: MDPatient = new MDPatient({
+            ...dataPatient,
+            firstname: firstName,
+            lastname: lastName,
+            birthdate: birthday,
+            gender: gender,
+            title: title,
+            patientid: patientId
+        });
 
         let result = await UsersProxy.updateUser(patient);
         const users = UsersProxy.getAllUsers();
@@ -85,6 +100,7 @@ export default function Page4({ goTo }) {
                         clearFieldFlag={clearFieldFlag}
                         setClearFieldFlag={setClearFieldFlag}
                         dataPatient={dataPatient}
+                        onValidityChange={onValidityChange}
                     />
                 </View>
 
@@ -117,6 +133,7 @@ export default function Page4({ goTo }) {
                         <Text style={styles.col} >{LanguageUtil.getName('firstname_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('title_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('birthdate_text')}</Text>
+                        <Text style={styles.col} >{LanguageUtil.getName('gender_text')}</Text>
                         <Text style={styles.col} >{LanguageUtil.getName('patientid_text')}</Text>
                     </View>
 

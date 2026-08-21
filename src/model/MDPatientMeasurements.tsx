@@ -16,6 +16,65 @@ export class MDPatientMeasurements {
     ergometry: MDErgometry = new MDErgometry();
     ergometryReports: MDErgometryReport[] = [];
 
+    // 🔹 2026-08-19 — MUFU (Muskel-Funktion/Körper-Haltung, "3.05 Neuer Test
+    // - MUFU" мокъп). Плоски обекти (не отделен модел клас) — същия подход
+    // като ergometryReports по-горе, персистват през Object.assign(this,
+    // data) в конструктора, без нужда от собствени getter/setter-и.
+    //
+    // muskelFunktionKraft: { [muscleKey]: { r: number|null, l: number|null } }
+    // — виж MUSCLE_LIST в constants/muskelFunktionKraftPunkte.js за ключовете.
+    muskelFunktionKraft: any = {};
+
+    // 🔹 2026-08-20 — DK: "следващите стъпки от плана" -> DEHNBARKEIT
+    // (разтегливост) и BEWEGLICHKEIT (подвижност) под Muskel-Funktion.
+    // Същата форма/структура като muskelFunktionKraft по-горе (10-те
+    // мускула x R/L x 1-5 оценка + същата точкова диаграма върху тялото),
+    // само различен смисъл на оценката — виж MuskelFunktionComponent.tsx.
+    muskelFunktionDehnbarkeit: any = {};
+    muskelFunktionBeweglichkeit: any = {};
+
+    // koerperHaltungWirbelsaeule: { [rowKey]: number|null } — колонен индекс
+    // 0=schwer/1=mittelschwer/2=leicht/3=normal, виж BeuterlungTable.tsx.
+    koerperHaltungWirbelsaeule: any = {};
+
+    // 🔹 2026-08-20 — DK: "тези неща, които са от плана в тази страница ...
+    // и които не са имплементирани" -> KOPF/SCHULTER/BECKEN/KNIE/FUSS под
+    // Körper-Haltung (бяха placeholder "Not implemented yet."). Същата
+    // форма като koerperHaltungWirbelsaeule по-горе ({rowKey: colIndex}),
+    // редовете идват от constants/koerperHaltungSections.js.
+    koerperHaltungKopf: any = {};
+    koerperHaltungSchulter: any = {};
+    koerperHaltungBecken: any = {};
+    koerperHaltungKnie: any = {};
+    koerperHaltungFuss: any = {};
+
+    // 🔹 2026-08-20 (3) — DK: новите 5 PDF-а "Training – Gesundheit" (план +
+    // предложение за модела, обсъдено с DK преди имплементация). 3 таба,
+    // всеки едно плоско поле тук (per-тест, същия подход като
+    // muskelFunktionKraft/koerperHaltung* по-горе):
+    //   trainingsplanKeinTest / trainingsplanErgometrie /
+    //   trainingsplanLaktatErgometrie
+    // Очаквано вътрешно съдържание на всяко (форма ще се уточни при
+    // строене на конкретния таб): Grundeinstellung входове (спорт вид,
+    // избран intensität%, HFmax/HFruhe override), 8-те стадия на
+    // прогресията ([{weeks:number, active:boolean}, ...] — DK потвърди:
+    // редактируеми per-тест, НЕ статична таблица), избран Ratschlag
+    // (template key + свободен текст override), automatikEnabled:boolean
+    // (EIN/AUS — самата decision-tree логика е placeholder, зависи от
+    // все още непредоставен "Einstellungen" документ).
+    //
+    // ЗАБЕЛЕЖКА: Personenspezifische Standardwerte (запазени лични
+    // подразбирания) НЕ живеят тук — те трябва да преживяват отделния
+    // тест, затова са предложени като поле на MDPatient.tsx
+    // (trainingsplanStandardwerte), не тук.
+    //
+    // #XZ# (Fahrrad↔Laufband HF корекция) също НЕ живее тук — DK
+    // потвърди, че е глобална настройка на приложението, не per-тест —
+    // виж новия store/settingsSlice.ts.
+    trainingsplanKeinTest: any = {};
+    trainingsplanErgometrie: any = {};
+    trainingsplanLaktatErgometrie: any = {};
+
     // 🔹 id на archive записа (ergometryReports[]), който текущата
     // `ergometry` в момента "представлява" — Page11.tsx's Archive бутон
     // го ползва, за да реши save (нов запис) vs update (същия запис).
@@ -41,6 +100,17 @@ export class MDPatientMeasurements {
     private _heartratemax: number = 0;
 
     private _age: number = 0;
+
+    // 🔹 2026-08-21 (Claude) — DK: "нека се захванем с полето gender ...
+    // то се ползва на различни места" — досега `sollLeistungNorm`/
+    // `sollLeistungWeight` по-долу викаха ErgometryUtil с hardcode-нато
+    // "male", независимо какво реално е записано за пациента (полето
+    // Gender никъде не се подаваше). Сега пазим реалния пол тук (същия
+    // patern като `_age` по-горе), с fallback "male" САМО за да не се
+    // чупят стойности за стари/недовършени записи, където gender още не е
+    // синхронизиран (виж Page10.tsx промяната, аналогична на
+    // age-синхронизацията от MDPatient.birthdate).
+    private _gender: string = "";
 
     private _istLeistungMax: number = 0; // #32
 
@@ -80,6 +150,9 @@ export class MDPatientMeasurements {
 
     get age() { return this._age; }
     set age(value: number) { this._age = value; }
+
+    get gender() { return this._gender; }
+    set gender(value: string) { this._gender = value; }
 
     get istLeistungMax() { return this._istLeistungMax; }
     set istLeistungMax(value: number) { this._istLeistungMax = value; }
@@ -149,7 +222,7 @@ export class MDPatientMeasurements {
     get sollLeistungNorm(): number {
         return ErgometryUtil.getSollLeistungNorm(
             this._age,
-            "male"
+            this._gender || "male"
         );
     }
 
@@ -190,7 +263,7 @@ export class MDPatientMeasurements {
 
         return ErgometryUtil.getSollLeistungWeight(
             this._age,
-            "male"
+            this._gender || "male"
         );
 
     }

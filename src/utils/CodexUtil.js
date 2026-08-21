@@ -75,6 +75,23 @@ function calculatePatientId(
  * ------------------------------------------------
  * MAGMED Codex:
  * Current Date - Birth Date
+ *
+ * 🔹 2026-08-21 (Claude) — DK: "аз какво трябва да въвеждам, за да получа
+ * резултат?" / "нищо не разбирам от нея" (Training-Kein Test страницата
+ * показваше HF max=220, Watt max=300 - чисти defaults). Причина: тази
+ * функция вече съществуваше и беше exported, но НИКЪДЕ в приложението не
+ * се извикваше - `_age` в MDPatientMeasurements си стоеше на 0 по default
+ * (виж `expectedheartrate`/`sollLeistungNorm` getter-ите - 220-0=220,
+ * ErgometrieUtil fallback 220). Codex #7# изрично казва type "A" =
+ * Automatisch (не се въвежда ръчно никъде) - затова свързването е тук,
+ * от MDPatient.birthdate, а не нов input.
+ *
+ * Освен това `new Date(birthDate)` беше счупено за формàта, който
+ * приложението реално пази ("DD.MM.YYYY", виж HeaderComponent.tsx/
+ * UsersProxy.tsx примерни пациенти "02.02.1991" и т.н.) - JS парсва това
+ * като невалидна/непредвидима дата (различно в различните браузъри), а не
+ * ден.месец.година. Сега парсваме изрично по формата, вместо да разчитаме
+ * на Date() auto-detect.
  */
 function calculateAge(
     birthDate
@@ -84,11 +101,28 @@ function calculateAge(
         return null;
     }
 
+    const parts = String(birthDate).split('.');
+
+    if (parts.length !== 3) {
+        return null;
+    }
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    if (!day || !month || !year) {
+        return null;
+    }
+
+    const dob = new Date(year, month - 1, day);
+
+    if (isNaN(dob.getTime())) {
+        return null;
+    }
+
     const today =
         new Date();
-
-    const dob =
-        new Date(birthDate);
 
     let age =
         today.getFullYear() -

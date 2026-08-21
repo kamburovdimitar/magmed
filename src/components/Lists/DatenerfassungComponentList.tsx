@@ -17,11 +17,17 @@
 //   Auto-delete of an incomplete last row and the load-must-increase
 //   plausibility check live in Page11.tsx's save() (they need the full
 //   Belastungsprotokoll/model context, not just this table).
+// 2026-08-14 (Europe/Sofia) — Testability pass: the HF/Laktat sanitizing
+//   itself (the interesting business logic — the digit/separator format
+//   rules from the spec) moved to ErgometrieUtil.js as pure string->string
+//   functions (sanitizeHfInput/sanitizeLactateInput) so they're
+//   unit-testable directly. This component now just calls them.
 // ============================================
 
 import React from 'react'
 import { View, Text, TextInput, StyleSheet, FlatList } from 'react-native'
 import LanguageUtil from '../../utils/LanguageUtil'
+import { ErgometryUtil } from '../../utils/ErgometrieUtil'
 
 export default function DatenerfassungComponentList({ data, setData }: any) {
 
@@ -43,33 +49,13 @@ export default function DatenerfassungComponentList({ data, setData }: any) {
 
     // 🔹 HF: "nur in Format 0" — цели числа, без десетични/букви
     function updateHf(index: number, value: string) {
-        const digitsOnly = value.replace(/[^0-9]/g, '')
-        updateValue(index, 'hf', digitsOnly)
+        updateValue(index, 'hf', ErgometryUtil.sanitizeHfInput(value))
     }
 
     // 🔹 Laktat: "0 / 0,0 / 0,00 / 0.0 / 0.00" — цифри + максимум ЕДИН
     // разделител (запетая или точка), до 2 цифри след него
     function updateLactate(index: number, value: string) {
-
-        let cleaned = value.replace(/[^0-9.,]/g, '')
-
-        const firstSeparatorMatch = cleaned.match(/[.,]/)
-
-        if (firstSeparatorMatch) {
-
-            const sepIndex = firstSeparatorMatch.index as number
-
-            const integerPart = cleaned.slice(0, sepIndex).replace(/[.,]/g, '')
-
-            const decimalPart = cleaned
-                .slice(sepIndex + 1)
-                .replace(/[.,]/g, '')
-                .slice(0, 2)
-
-            cleaned = `${integerPart}${cleaned[sepIndex]}${decimalPart}`
-        }
-
-        updateValue(index, 'lactate', cleaned)
+        updateValue(index, 'lactate', ErgometryUtil.sanitizeLactateInput(value))
     }
 
     // 🔹 последен ред: Zeitpunkt/Watt стават редактируеми ("Besonderheit:

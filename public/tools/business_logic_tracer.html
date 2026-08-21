@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laktatkurve — проследяване на бизнес логиката</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #dde3ea;
+    --text: #223;
+    --muted: #6b7789;
+    --accent: #2f6fed;
+    --good: #2e8b57;
+    --bad: #c0392b;
+    --warn: #b8860b;
+    --reg: #fff176;
+    --ga1: #81c784;
+    --ga2: #64b5f6;
+    --e1: #ef9a9a;
+    --e2: #e57373;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  .subtitle { color: var(--muted); margin: 0 0 20px; max-width: 900px; }
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 5px 6px; text-align: center; }
+  th { background: #eef2f7; font-weight: 600; }
+  input[type=number], input[type=text] {
+    width: 100%; border: 1px solid var(--border); border-radius: 5px;
+    padding: 4px 5px; font-size: 13px; text-align: center;
+  }
+  button {
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    padding: 7px 12px; font-size: 13px; cursor: pointer; margin: 2px 4px 2px 0;
+  }
+  button.secondary { background: #7a8699; }
+  button.danger { background: #c0392b; }
+  button:hover { opacity: .9; }
+  .row-actions { text-align: center; }
+  .row-actions button { padding: 2px 7px; font-size: 12px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .type-toggle { display: flex; gap: 10px; align-items: center; margin: 8px 0 14px; font-size: 13px; }
+  .model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .model-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: #fcfdfe; }
+  .model-card.ok { border-left: 4px solid var(--good); }
+  .model-card.null { border-left: 4px solid var(--muted); opacity: .8; }
+  .model-card.invalid { border-left: 4px solid var(--bad); }
+  .model-name { font-weight: 700; font-size: 14px; }
+  .model-formula { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+  .step { font-size: 12.5px; margin: 3px 0; }
+  .step .label { color: var(--muted); }
+  .result-points { display: flex; gap: 10px; margin-top: 8px; }
+  .point-box { flex: 1; border: 1px dashed var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; }
+  .point-box .title { font-weight: 600; margin-bottom: 3px; }
+  .errors { margin-top: 8px; color: var(--bad); font-size: 12.5px; }
+  .errors ul { margin: 4px 0 0 18px; padding: 0; }
+  .null-msg { color: var(--muted); font-size: 12.5px; font-style: italic; }
+  .zones-picker { margin-bottom: 12px; font-size: 13px; }
+  .zones-table td, .zones-table th { text-align: center; }
+  .zone-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .flow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
+  .flow b { color: var(--text); }
+  .flow .arrow { color: var(--accent); font-weight: 700; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.ok { background: #e5f4ea; color: var(--good); }
+  .badge.null { background: #eee; color: var(--muted); }
+  .badge.invalid { background: #fdecea; color: var(--bad); }
+  footer { margin-top: 30px; color: var(--muted); font-size: 12px; }
+  code { background: #eef2f7; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Laktatkurve — проследяване на бизнес логиката</h1>
+<p class="subtitle">
+  Този инструмент преизчислява стъпка по стъпка същите формули, които стоят зад
+  резултатите в приложението (Dickhuth, Freiburger, Linear, Stückweise-linear/LTP,
+  Keul, Keul Legacy) и Trainingsbereich каскадата — така че да виждаш: какви данни
+  въвеждаш → каква формула се прилага → каква стойност се получава на всяка стъпка →
+  какъв е крайният резултат. Не е нужно да четеш код — само таблицата с данни вляво
+  и резултатите вдясно.
+</p>
+
+<div class="layout">
+
+  <div>
+    <div class="card">
+      <h2>1. Данни от теста (по стъпки)</h2>
+
+      <div class="type-toggle">
+        <label><input type="radio" name="type" value="bike" checked> Bike (Watt)</label>
+        <label><input type="radio" name="type" value="run"> Бягане (km/h)</label>
+      </div>
+
+      <table id="dataTable">
+        <thead>
+          <tr><th>Стъпка</th><th id="loadHeader">Watt</th><th>HF</th><th>Лактат</th><th></th></tr>
+        </thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+
+      <div class="toolbar">
+        <button id="addRowBtn" class="secondary">+ Ред</button>
+        <button id="calcBtn">Изчисли ▶</button>
+      </div>
+
+      <h3 style="margin-top:14px;">Готови примери</h3>
+      <div class="toolbar">
+        <button class="secondary" data-preset="normal">Нормален тест</button>
+        <button class="secondary" data-preset="dip">С начален спад (уловен бъг)</button>
+        <button class="secondary" data-preset="decreasing">Намаляващ товар</button>
+        <button class="secondary" data-preset="flat">Плосък лактат</button>
+        <button class="danger" data-preset="empty">Изчисти всичко</button>
+      </div>
+      <p class="null-msg" style="margin-top:6px;">
+        Примерът "с начален спад" е точно случаят, при който през тази сесия
+        беше открита и оправена грешка в интерполацията на Dickhuth/Freiburger —
+        виж обяснението под съответната карта долу.
+      </p>
+    </div>
+  </div>
+
+  <div>
+
+    <div class="card">
+      <h2>2. Резултати по модел</h2>
+      <div class="flow">
+        <b>Въвеждаш</b> редовете вляво <span class="arrow">→</span>
+        <b>очакваме</b> всеки модел да намери IAS/IANS точки от кривата <span class="arrow">→</span>
+        <b>виждаш</b> точните междинни стойности и крайната точка тук.
+      </div>
+      <div id="modelsOutput" class="model-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Trainingsbereich (тренировъчни зони)</h2>
+      <div class="zones-picker">
+        Зони на база модел:
+        <select id="zoneModelSelect"></select>
+      </div>
+      <div id="zonesOutput"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  Генерирано на 2026-08-14 · формулите тук са ръчно пренаписани 1:1 по
+  <code>ErgometryModelsUtil.js</code> / <code>ErgometrieUtil.js</code> от кода на
+  приложението, специално за да могат да се проверяват без да се чете код.
+  Ако резултат тук се разминава с приложението — това е сигнал за разминаване
+  между двете и трябва да се докладва.
+</footer>
+
+<script>
+
+// ============================================================
+// 🔹 Всичко под тази линия е 1:1 пренаписване (vanilla JS, без React/Redux)
+// на реалните формули от src/utils/ErgometryModelsUtil.js и
+// src/utils/ErgometrieUtil.js, така че резултатите тук да съвпадат точно
+// с това, което би показало приложението за същите въведени данни.
+// ============================================================
+
+function interpolateThreshold(data, target) {
+    if (!data || data.length < 2) return null;
+    for (let i = 0; i < data.length - 1; i++) {
+        const p1 = data[i], p2 = data[i + 1];
+        const l1 = Number(p1.lactate), l2 = Number(p2.lactate);
+        if (isNaN(l1) || isNaN(l2)) continue;
+        if (l1 === l2) continue;
+        // само ВЪЗХОДЯЩИ отсечки (виж бъгфикса от 2026-08-14 в ErgometryModelsUtil.js)
+        if (l1 < l2 && target >= l1 && target <= l2) {
+            const ratio = (target - l1) / (l2 - l1);
+            return {
+                lactate: target,
+                load: Number((p1.load + ratio * (p2.load - p1.load)).toFixed(1)),
+                hf: Number((Number(p1.hf) + ratio * (Number(p2.hf) - Number(p1.hf))).toFixed(0)),
+                stageRange: `${p1.stage}-${p2.stage}`
+            };
+        }
+    }
+    return null;
+}
+
+function interpolateByHF(data, targetHF) {
+    if (!data || data.length < 2) return null;
+    for (let i = 0; i < data.length - 1; i++) {
+        const p1 = data[i], p2 = data[i + 1];
+        const hf1 = Number(p1.hf), hf2 = Number(p2.hf);
+        if (isNaN(hf1) || isNaN(hf2)) continue;
+        if (targetHF >= hf1 && targetHF <= hf2) {
+            const ratio = (targetHF - hf1) / (hf2 - hf1);
+            return {
+                load: p1.load + (p2.load - p1.load) * ratio,
+                lactate: p1.lactate + (p2.lactate - p1.lactate) * ratio,
+                hf: targetHF,
+                stageRange: `${p1.stage}-${p2.stage}`
+            };
+        }
+    }
+    return null;
+}
+
+function interpolateByLoad(data, targetLoad) {
+    for (let i = 0; i < data.length - 1; i++) {
+        const p1 = data[i], p2 = data[i + 1];
+        const load1 = Number(p1.load), load2 = Number(p2.load);
+        if (targetLoad >= load1 && targetLoad <= load2) {
+            const ratio = (targetLoad - load1) / (load2 - load1);
+            return {
+                load: targetLoad,
+                lactate: p1.lactate + (p2.lactate - p1.lactate) * ratio,
+                hf: p1.hf + (p2.hf - p1.hf) * ratio,
+                stageRange: `${p1.stage}-${p2.stage}`
+            };
+        }
+    }
+    return null;
+}
+
+// ---------------- Dickhuth ----------------
+function calculateDickhuth(data) {
+    if (!data || data.length === 0) return null;
+    let lmin = Number.MAX_VALUE, lminRow = null;
+    for (let i = 0; i < data.length; i++) {
+        const lactate = Number(data[i].lactate);
+        if (lactate < lmin) { lmin = lactate; lminRow = data[i]; }
+    }
+    const IAS = lmin + 0.5;
+    const IANS = lmin + 1.5;
+    const IASPoint = interpolateThreshold(data, IAS);
+    const IANSPoint = interpolateThreshold(data, IANS);
+    return { model: 'dickhuth', lmin, IAS, IANS, lminRow, IASPoint, IANSPoint,
+        steps: [
+            `Намерен минимален лактат (L_min) = ${fmt(lmin)} mmol/l (стъпка ${lminRow?.stage})`,
+            `IAS = L_min + 0.5 = ${fmt(IAS)} mmol/l`,
+            `IANS = L_min + 1.5 = ${fmt(IANS)} mmol/l`,
+            `IAS точка чрез интерполация на кривата за лактат = ${fmt(IAS)} → ${pointDesc(IASPoint)}`,
+            `IANS точка чрез интерполация на кривата за лактат = ${fmt(IANS)} → ${pointDesc(IANSPoint)}`
+        ] };
+}
+
+// ---------------- Freiburg ----------------
+function calculateFreiburg(data) {
+    if (!data || data.length === 0) return null;
+    let lmin = Number.MAX_VALUE, lminRow = null;
+    for (let i = 0; i < data.length; i++) {
+        const lactate = Number(data[i].lactate);
+        if (lactate < lmin) { lmin = lactate; lminRow = data[i]; }
+    }
+    const IANS = lmin + 2.0;
+    const IANSPoint = interpolateThreshold(data, IANS);
+    let IASPoint = null, targetHF = null;
+    if (IANSPoint) {
+        targetHF = IANSPoint.hf * 0.75;
+        IASPoint = interpolateByHF(data, targetHF);
+    }
+    return { model: 'freiburg', lmin, IANS, lminRow, IASPoint, IANSPoint,
+        steps: [
+            `Намерен минимален лактат (L_min) = ${fmt(lmin)} mmol/l (стъпка ${lminRow?.stage})`,
+            `IANS = L_min + 2.0 = ${fmt(IANS)} mmol/l`,
+            `IANS точка чрез интерполация на лактатa = ${fmt(IANS)} → ${pointDesc(IANSPoint)}`,
+            IANSPoint ? `Целева HF за IAS = 75% × IANS-HF (${fmt(IANSPoint.hf)}) = ${fmt(targetHF)}` : `Няма IANS точка → IAS не може да се изчисли`,
+            `IAS точка чрез интерполация по HF = ${targetHF!=null?fmt(targetHF):'—'} → ${pointDesc(IASPoint)}`
+        ] };
+}
+
+// ---------------- Linear ----------------
+function calculateLinear(data) {
+    if (!data || data.length < 3) return null;
+    let IASPoint = null, IANSPoint = null, IASIndex = -1;
+    const baseline = Number(data[0].lactate);
+    for (let i = 1; i < data.length; i++) {
+        const current = Number(data[i].lactate);
+        if (current > baseline + 0.4) {
+            IASPoint = { lactate: current, load: data[i].load, hf: Number(data[i].hf), stageRange: `${data[i].stage}` };
+            IASIndex = i;
+            break;
+        }
+    }
+    if (IASIndex !== -1) {
+        for (let i = IASIndex; i < data.length - 1; i++) {
+            const prev = Number(data[i - 1].lactate);
+            const current = Number(data[i].lactate);
+            const next = Number(data[i + 1].lactate);
+            const slope1 = current - prev;
+            const slope2 = next - current;
+            if (slope2 > slope1 * 1.5) {
+                IANSPoint = { lactate: current, load: data[i].load, hf: Number(data[i].hf), stageRange: `${data[i].stage}` };
+                break;
+            }
+        }
+    }
+    return { model: 'linear', IAS: IASPoint?.lactate ?? null, IANS: IANSPoint?.lactate ?? null, IASPoint, IANSPoint,
+        steps: [
+            `Базов лактат (първа стъпка) = ${fmt(baseline)} mmol/l`,
+            `IAS = първата стъпка, при която лактат > базов + 0.4 → ${pointDesc(IASPoint)}`,
+            IASIndex !== -1
+              ? `IANS = първата следваща стъпка, при която наклонът рязко се увеличава (>1.5× предходния) → ${pointDesc(IANSPoint)}`
+              : `IAS не е намерен → IANS не се търси`
+        ] };
+}
+
+// ---------------- Keul Legacy (max slope) ----------------
+function calculateKeulLegacy(data) {
+    if (!data || data.length < 2) return null;
+    let maxSlope = 0, IANSPoint = null, bestPair = null;
+    for (let i = 0; i < data.length - 1; i++) {
+        const p1 = data[i], p2 = data[i + 1];
+        const lactate1 = Number(p1.lactate), lactate2 = Number(p2.lactate);
+        const load1 = Number(p1.load), load2 = Number(p2.load);
+        const loadDiff = load2 - load1;
+        if (isNaN(lactate1) || isNaN(lactate2) || isNaN(load1) || isNaN(load2) || loadDiff <= 0) continue;
+        const slope = (lactate2 - lactate1) / loadDiff;
+        if (slope > maxSlope) {
+            maxSlope = slope;
+            IANSPoint = { lactate: lactate2, load: load2, hf: Number(p2.hf), stageRange: `${p1.stage}-${p2.stage}` };
+            bestPair = `${p1.stage}→${p2.stage}`;
+        }
+    }
+    let IASPoint = null, derivedLoad = null;
+    if (IANSPoint) {
+        derivedLoad = Number((IANSPoint.load * 0.75).toFixed(1));
+        IASPoint = interpolateByLoad(data, derivedLoad);
+    }
+    return { model: 'keullegacy', IAS: IASPoint?.lactate || null, IANS: IANSPoint?.lactate || null, IASPoint, IANSPoint,
+        steps: [
+            IANSPoint ? `Най-стръмен наклон Δлактат/Δтовар между стъпки ${bestPair}, наклон = ${maxSlope.toFixed(4)}` : `Не е намерен положителен наклон`,
+            `IANS точка = ${pointDesc(IANSPoint)}`,
+            derivedLoad!=null ? `IAS товар = 75% × IANS товар (${fmt(IANSPoint.load)}) = ${fmt(derivedLoad)}` : `Няма IANS → IAS не се търси`,
+            `IAS точка чрез интерполация по товар = ${derivedLoad!=null?fmt(derivedLoad):'—'} → ${pointDesc(IASPoint)}`
+        ] };
+}
+
+// ---------------- Keul (exponential fit) ----------------
+function calculateKeul(data, type) {
+    if (!data || data.length < 3) return null;
+    const points = [];
+    for (let i = 0; i < data.length; i++) {
+        const load = Number(data[i].load), lactate = Number(data[i].lactate);
+        if (isNaN(load) || isNaN(lactate) || lactate <= 0) continue;
+        points.push({ load, lactate, hf: Number(data[i].hf), stage: data[i].stage });
+    }
+    if (points.length < 3) return null;
+    let sumX=0,sumY=0,sumXY=0,sumXX=0;
+    for (const p of points) {
+        const x = p.load, y = Math.log(p.lactate);
+        sumX+=x; sumY+=y; sumXY+=x*y; sumXX+=x*x;
+    }
+    const n = points.length;
+    const denominator = (n*sumXX) - (sumX*sumX);
+    if (denominator === 0) return null;
+    const b = ((n*sumXY) - (sumX*sumY)) / denominator;
+    const lnA = (sumY - (b*sumX)) / n;
+    const a = Math.exp(lnA);
+    if (a<=0 || b===0 || (a*b)<=0) return { model:'keul', invalid: true, steps: [`Регресията y = a·e^(b·x) не дава валидни a/b за тези данни (a=${a.toFixed(4)}, b=${b.toFixed(4)}) → моделът не може да изчисли праг.`] };
+    const targetSlope = type === 'run' ? 1.26 : 0.055;
+    let iansLoad = Math.log(targetSlope / (a*b)) / b;
+    if (isNaN(iansLoad) || !isFinite(iansLoad)) return { model:'keul', invalid: true, steps: [`Наклонът за целевия tangent (${targetSlope}) не се пресича с фитнатата крива в реален диапазон.`] };
+    const minLoad = points[0].load, maxLoad = points[points.length-1].load;
+    let clipped = false;
+    if (iansLoad < minLoad) { iansLoad = minLoad; clipped = true; }
+    if (iansLoad > maxLoad) { iansLoad = maxLoad; clipped = true; }
+    const IANSPoint = interpolateByLoad(data, iansLoad);
+    if (!IANSPoint) return { model:'keul', invalid: true, steps: [`Не е намерена IANS точка при товар ${fmt(iansLoad)}.`] };
+    const IASPoint = interpolateByHF(data, IANSPoint.hf * 0.75);
+    return { model: 'keul', IAS: IASPoint?.lactate || null, IANS: IANSPoint.lactate, IASPoint, IANSPoint,
+        steps: [
+            `Експоненциален фит y = a·e^(b·x) по логаритъм на лактата: a=${a.toFixed(4)}, b=${b.toFixed(5)}`,
+            `Целеви tangent наклон (${type==='run'?'бягане, km/h':'bike, Watt'}) = ${targetSlope}`,
+            `IANS товар, при който допирателната на кривата = целевия наклон: ${fmt(iansLoad)}${clipped?' (ограничено в границите на теста)':''}`,
+            `IANS точка = ${pointDesc(IANSPoint)}`,
+            `Целева HF за IAS = 75% × IANS-HF (${fmt(IANSPoint.hf)}) = ${fmt(IANSPoint.hf*0.75)}`,
+            `IAS точка = ${pointDesc(IASPoint)}`
+        ] };
+}
+
+// ---------------- LTP / Stückweise-linear ----------------
+function fitLine(points) {
+    const n = points.length;
+    if (n < 2) return { slope: 0, intercept: 0 };
+    let sumX=0,sumY=0,sumXY=0,sumXX=0;
+    for (const p of points) {
+        const x = Number(p.load), y = Number(p.lactate);
+        sumX+=x; sumY+=y; sumXY+=x*y; sumXX+=x*x;
+    }
+    const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX);
+    const intercept = (sumY - slope*sumX) / n;
+    return { slope, intercept };
+}
+function calculateLineError(points, line) {
+    let error = 0;
+    for (const p of points) {
+        const x = Number(p.load), actual = Number(p.lactate);
+        const predicted = line.slope*x + line.intercept;
+        error += (actual - predicted) ** 2;
+    }
+    return error;
+}
+function calculateLTP(data) {
+    if (!data || data.length < 6) return null;
+    const points = [];
+    for (let i = 0; i < data.length; i++) {
+        const load = Number(data[i].load), lactate = Number(data[i].lactate);
+        if (isNaN(load) || isNaN(lactate)) continue;
+        points.push({ load, lactate, hf: Number(data[i].hf), stage: data[i].stage });
+    }
+    if (points.length < 6) return null;
+    let bestError = Number.MAX_VALUE, bestResult = null, triedCombos = 0;
+    for (let i = 1; i < points.length - 4; i++) {
+        for (let j = i + 2; j < points.length - 1; j++) {
+            const segment1 = points.slice(0, i+1);
+            const segment2 = points.slice(i, j+1);
+            const segment3 = points.slice(j);
+            if (segment1.length < 2 || segment2.length < 2 || segment3.length < 2) continue;
+            triedCombos++;
+            const line1 = fitLine(segment1), line2 = fitLine(segment2), line3 = fitLine(segment3);
+            const totalError = calculateLineError(segment1,line1) + calculateLineError(segment2,line2) + calculateLineError(segment3,line3);
+            if (totalError < bestError) {
+                bestError = totalError;
+                bestResult = { IASPoint: points[i], IANSPoint: points[j], totalError };
+            }
+        }
+    }
+    if (!bestResult) return null;
+    return { model: 'ltp', IAS: bestResult.IASPoint.lactate, IANS: bestResult.IANSPoint.lactate,
+        IASPoint: { ...bestResult.IASPoint, stageRange: String(bestResult.IASPoint.stage) },
+        IANSPoint: { ...bestResult.IANSPoint, stageRange: String(bestResult.IANSPoint.stage) },
+        steps: [
+            `Проверени ${triedCombos} комбинации от 2 прекъсващи точки, разделящи кривата на 3 линейни отсечки.`,
+            `Избрана е комбинацията с минимална сборна квадратична грешка (Σ(действително−предвидено)²) = ${bestResult.totalError.toFixed(4)}`,
+            `IAS (първа прекъсваща точка) = стъпка ${bestResult.IASPoint.stage}, товар ${fmt(bestResult.IASPoint.load)}`,
+            `IANS (втора прекъсваща точка) = стъпка ${bestResult.IANSPoint.stage}, товар ${fmt(bestResult.IANSPoint.load)}`
+        ] };
+}
+
+// ---------------- Training zones cascade ----------------
+const PERCENT_IANS_MODELS = ['freiburg', 'keul'];
+const DEFAULT_ZONE_PERCENTS = { REG: 75, GA1: 85, GA2: 95, E1: 105 };
+
+function computeZoneHFBoundaries(result, model) {
+    if (!result?.IASPoint || !result?.IANSPoint) return null;
+    const measuredIasHF = Number(result.IASPoint.hf);
+    const iansHF = Number(result.IANSPoint.hf);
+    if (!measuredIasHF || !iansHF) return null;
+    const usesPercentIANS = PERCENT_IANS_MODELS.includes(model);
+    const percents = DEFAULT_ZONE_PERCENTS;
+    const iasHF = usesPercentIANS ? iansHF * percents.REG / 100 : measuredIasHF;
+    const regToHF = iasHF;
+    const ga2UpperHF = iansHF * percents.GA2 / 100;
+    const ga1ToHF = usesPercentIANS ? iansHF * percents.GA1 / 100 : (iasHF + ga2UpperHF) / 2;
+    const ga2ToHF = ga2UpperHF;
+    const e1ToHF = iansHF * percents.E1 / 100;
+    return { iasHF, iansHF, regToHF, ga1ToHF, ga2ToHF, e1ToHF, percents, usesPercentIANS };
+}
+
+function calculateTrainingZones(result, ergometryData, model) {
+    const normalized = ergometryData.filter(r => r.hf !== '' && r.hf != null && r.lactate !== '' && r.lactate != null && !isNaN(Number(r.load)) && !isNaN(Number(r.hf)) && !isNaN(Number(r.lactate)) && Number(r.lactate) > 0);
+    if (!normalized.length) return null;
+    const boundaries = computeZoneHFBoundaries(result, model);
+    if (!boundaries) return null;
+    const { regToHF, ga1ToHF, ga2ToHF, e1ToHF, percents, usesPercentIANS } = boundaries;
+    const regTo = interpolateByHF(normalized, regToHF)?.load;
+    const ga1To = interpolateByHF(normalized, ga1ToHF)?.load;
+    const ga2To = interpolateByHF(normalized, ga2ToHF)?.load;
+    const e1To = interpolateByHF(normalized, e1ToHF)?.load;
+    if (regTo == null || ga1To == null || ga2To == null || e1To == null) return null;
+    return {
+        usesPercentIANS,
+        REG: { from: 0, to: regTo, percentFrom: 0, percentTo: percents.REG, color: 'var(--reg)' },
+        GA1: { from: regTo, to: ga1To, percentFrom: percents.REG, percentTo: percents.GA1, color: 'var(--ga1)' },
+        GA2: { from: ga1To, to: ga2To, percentFrom: percents.GA1, percentTo: percents.GA2, color: 'var(--ga2)' },
+        E1: { from: ga2To, to: e1To, percentFrom: percents.GA2, percentTo: percents.E1, color: 'var(--e1)' },
+        E2: { from: e1To, to: null, percentFrom: percents.E1, percentTo: null, color: 'var(--e2)' }
+    };
+}
+
+// ---------------- Invariant checks (validateResult) ----------------
+function validateResult(result) {
+    const errors = [];
+    if (result?.IASPoint && result?.IANSPoint && result.IASPoint.load > result.IANSPoint.load) errors.push('IAS товар > IANS товар');
+    if (result?.IASPoint && result?.IANSPoint && result.IASPoint.hf > result.IANSPoint.hf) errors.push('IAS HF > IANS HF');
+    if (result?.IASPoint?.load < 0 || result?.IANSPoint?.load < 0) errors.push('Отрицателен товар');
+    if (result?.IASPoint?.lactate > result?.IANSPoint?.lactate) errors.push('IAS лактат > IANS лактат');
+    if (result?.IANSPoint?.load > 400) errors.push('Нереалистично висок IANS товар (>400)');
+    return { valid: errors.length === 0, errors };
+}
+
+// ================= UI helpers =================
+function fmt(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+}
+function pointDesc(p) {
+    if (!p) return 'няма (не е намерена пресечка)';
+    return `товар ${fmt(p.load)}, HF ${fmt(p.hf)}, лактат ${fmt(p.lactate)} (стъпки ${p.stageRange})`;
+}
+
+const MODEL_META = {
+    dickhuth:  { name: 'Dickhuth',        formula: 'IAS = Lmin+0.5, IANS = Lmin+1.5, интерполация по лактат', minRows: 1 },
+    freiburg:  { name: 'Freiburger',      formula: 'IANS = Lmin+2.0; IAS = 75% от IANS-HF',                  minRows: 1 },
+    linear:    { name: 'Linear',          formula: 'IAS = първо покачване >0.4 над базата; IANS = рязко увеличение на наклона', minRows: 3 },
+    ltp:       { name: 'Stückweise-linear (LTP)', formula: '3 линейни отсечки, минимална сборна квадратична грешка', minRows: 6 },
+    keul:      { name: 'Keul',            formula: 'Експоненциален фит + допирателна с фиксиран наклон; IAS = 75% от IANS-HF', minRows: 3 },
+    keullegacy:{ name: 'Keul Legacy',     formula: 'Максимален наклон Δлактат/Δтовар; IAS = 75% от IANS товар', minRows: 2 }
+};
+
+let rowCounter = 0;
+
+function addRow(load, hf, lactate) {
+    rowCounter++;
+    const tbody = document.getElementById('dataBody');
+    const tr = document.createElement('tr');
+    tr.dataset.stage = rowCounter;
+    tr.innerHTML = `
+      <td>${rowCounter}</td>
+      <td><input type="number" class="loadInput" value="${load ?? ''}"></td>
+      <td><input type="number" class="hfInput" value="${hf ?? ''}"></td>
+      <td><input type="number" step="0.01" class="lactateInput" value="${lactate ?? ''}"></td>
+      <td class="row-actions"><button class="danger removeRowBtn">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelector('.removeRowBtn').addEventListener('click', () => { tr.remove(); renumber(); });
+}
+
+function renumber() {
+    const rows = document.querySelectorAll('#dataBody tr');
+    rowCounter = rows.length;
+    rows.forEach((tr, i) => {
+        tr.dataset.stage = i + 1;
+        tr.querySelector('td').textContent = i + 1;
+    });
+}
+
+function clearRows() {
+    document.getElementById('dataBody').innerHTML = '';
+    rowCounter = 0;
+}
+
+function loadPreset(name) {
+    clearRows();
+    const presets = {
+        normal: [
+            [50,120,1.2],[100,135,1.3],[150,150,1.6],[200,162,2.3],
+            [250,174,3.6],[300,183,5.8],[350,190,9.2]
+        ],
+        dip: [
+            [50,100,2.4],[100,120,1.5],[150,140,2.0],[200,160,3.0],[250,180,4.5]
+        ],
+        decreasing: [
+            [300,180,5.0],[250,170,4.0],[200,160,3.0],[150,150,2.0],[100,140,1.5],[50,130,1.0]
+        ],
+        flat: [
+            [50,100,1.5],[80,108,1.5],[110,116,1.5],[140,124,1.5],[170,132,1.5],[200,140,1.5],[230,148,1.5],[260,156,1.5]
+        ],
+        empty: []
+    };
+    (presets[name] || []).forEach(([load, hf, lactate]) => addRow(load, hf, lactate));
+    if (name === 'empty') addRow('', '', '');
+}
+
+function readData() {
+    const rows = document.querySelectorAll('#dataBody tr');
+    const data = [];
+    rows.forEach(tr => {
+        const load = parseFloat(tr.querySelector('.loadInput').value);
+        const hf = parseFloat(tr.querySelector('.hfInput').value);
+        const lactate = parseFloat(tr.querySelector('.lactateInput').value);
+        if (!isNaN(load) && !isNaN(hf) && !isNaN(lactate)) {
+            data.push({ stage: tr.dataset.stage, load, hf, lactate });
+        }
+    });
+    return data;
+}
+
+function renderModelCard(key, result) {
+    const meta = MODEL_META[key];
+    const div = document.createElement('div');
+    if (!result) {
+        div.className = 'model-card null';
+        div.innerHTML = `
+          <div class="model-name">${meta.name} <span class="badge null">няма резултат</span></div>
+          <div class="model-formula">${meta.formula}</div>
+          <div class="null-msg">Недостатъчно/неподходящи данни за този модел (нужни са поне ${meta.minRows === 1 ? 'няколко' : meta.minRows} стъпки) — моделът връща "няма резултат" вместо да гърми, това е нарочно поведение.</div>
+        `;
+        return div;
+    }
+    if (result.invalid) {
+        div.className = 'model-card invalid';
+        div.innerHTML = `
+          <div class="model-name">${meta.name} <span class="badge invalid">невалиден фит</span></div>
+          <div class="model-formula">${meta.formula}</div>
+          ${result.steps.map(s => `<div class="step">${s}</div>`).join('')}
+        `;
+        return div;
+    }
+    const validation = validateResult(result);
+    div.className = 'model-card ' + (validation.valid ? 'ok' : 'invalid');
+    div.innerHTML = `
+      <div class="model-name">${meta.name} <span class="badge ${validation.valid ? 'ok' : 'invalid'}">${validation.valid ? 'ОК' : 'проблем'}</span></div>
+      <div class="model-formula">${meta.formula}</div>
+      ${result.steps.map(s => `<div class="step">${s}</div>`).join('')}
+      <div class="result-points">
+        <div class="point-box"><div class="title">IAS</div>${pointDesc(result.IASPoint)}</div>
+        <div class="point-box"><div class="title">IANS</div>${pointDesc(result.IANSPoint)}</div>
+      </div>
+      ${!validation.valid ? `<div class="errors"><b>Открити несъответствия:</b><ul>${validation.errors.map(e => `<li>${e}</li>`).join('')}</ul></div>` : ''}
+    `;
+    return div;
+}
+
+function renderZones(results, data) {
+    const select = document.getElementById('zoneModelSelect');
+    const out = document.getElementById('zonesOutput');
+    const usable = Object.entries(results).filter(([k, r]) => r && r.IASPoint && r.IANSPoint);
+    const prevValue = select.value;
+    select.innerHTML = usable.map(([k]) => `<option value="${k}">${MODEL_META[k].name}</option>`).join('');
+    if (!usable.length) {
+        out.innerHTML = `<div class="null-msg">Нито един модел не намери едновременно IAS и IANS с текущите данни — няма как да се изчислят тренировъчни зони.</div>`;
+        return;
+    }
+    if (usable.some(([k]) => k === prevValue)) select.value = prevValue;
+    const renderFor = (key) => {
+        const result = results[key];
+        const zones = calculateTrainingZones(result, data, key);
+        if (!zones) {
+            out.innerHTML = `<div class="null-msg">Моделът "${MODEL_META[key].name}" няма достатъчно данни за да изчисли зоните (нужна е HF-точка отвъд IANS в измерените стъпки).</div>`;
+            return;
+        }
+        const anchorNote = zones.usesPercentIANS
+          ? `За ${MODEL_META[key].name} границата REG→GA1 е ТЕОРЕТИЧНА точка = 75% от IANS-HF (не измерената IAS точка на модела).`
+          : `За ${MODEL_META[key].name} границата REG→GA1 се закача директно за ИЗМЕРЕНАТА IAS точка на модела.`;
+        out.innerHTML = `
+          <p class="null-msg" style="margin-top:0;">${anchorNote}</p>
+          <table class="zones-table">
+            <thead><tr><th>Зона</th><th>% от IANS-HF</th><th>Товар от</th><th>Товар до</th></tr></thead>
+            <tbody>
+              ${['REG','GA1','GA2','E1','E2'].map(z => {
+                  const zn = zones[z];
+                  return `<tr>
+                    <td><span class="zone-swatch" style="background:${zn.color}"></span>${z}</td>
+                    <td>${zn.percentFrom}${zn.percentTo!=null ? '–'+zn.percentTo : '+'}%</td>
+                    <td>${fmt(zn.from)}</td>
+                    <td>${zn.to!=null ? fmt(zn.to) : '∞'}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+    };
+    renderFor(select.value || usable[0][0]);
+    select.onchange = () => renderFor(select.value);
+}
+
+function calculate() {
+    const data = readData();
+    const type = document.querySelector('input[name="type"]:checked').value;
+    const results = {
+        dickhuth: calculateDickhuth(data),
+        freiburg: calculateFreiburg(data),
+        linear: calculateLinear(data),
+        ltp: calculateLTP(data),
+        keul: calculateKeul(data, type),
+        keullegacy: calculateKeulLegacy(data)
+    };
+    const out = document.getElementById('modelsOutput');
+    out.innerHTML = '';
+    Object.entries(results).forEach(([key, result]) => out.appendChild(renderModelCard(key, result)));
+    renderZones(results, data);
+}
+
+document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+document.getElementById('calcBtn').addEventListener('click', calculate);
+document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => { loadPreset(btn.dataset.preset); calculate(); });
+});
+document.querySelectorAll('input[name="type"]').forEach(r => {
+    r.addEventListener('change', () => {
+        document.getElementById('loadHeader').textContent = r.value === 'run' && r.checked ? 'km/h' : (document.querySelector('input[name="type"]:checked').value === 'run' ? 'km/h' : 'Watt');
+        calculate();
+    });
+});
+
+// начално състояние
+loadPreset('normal');
+calculate();
+
+</script>
+</body>
+</html>

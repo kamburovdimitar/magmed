@@ -1,120 +1,34 @@
-import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet, Button } from 'react-native'
-import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
-import LabelAndDobuleInputTextComponent from '../../components/LabelAndDoubleInputComponent'
-import TesMeasurmentComponent from '../TestMeasurementsComponent'
-import WattMeasurmentComponent from '../WattMeasurmentComponent'
-import PercentageComponent from '../PercentageComponent'
-import BeuterlungComponent from '../BeuterlungComponent'
-import KraftComponent from '../KraftComponent'
-import humanBody from '../../../assets/humanBody.jpg'
+// ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-19 (Europe/Sofia) — MUFU Muskel-Funktion ("3.05 Neuer Test - MUFU"
+//   мокъп): преди беше празен scratch/proof-of-concept (статична картинка,
+//   без данни, без callback wiring — виж git history). Пренаписан като
+//   тънка обвивка, точно както TestComponent1/4/5/6/7 — приема
+//   `measurement`/`callback` от Page8.tsx и делегира на
+//   MuskelFunktionComponent.tsx (KRAFT таблица + селектабилна диаграма на
+//   тялото; DEHNBARKEIT/BEWEGLICHKEIT placeholder за сега).
+// ============================================
 
-export default function TestComponent2() {
+import React from 'react'
+import { ScrollView, StyleSheet } from 'react-native'
+import MuskelFunktionComponent from '../MuskelFunktionComponent'
 
-    const [openKraftScreen, setopenKraftScreen] = useState(false)
-    const [openBEWEGLICHKEITScreen, setOpenBEWEGLICHKEITScreen] = useState(false)
-    const [openDEHNBARKEITScreen, setOpenDEHNBARKEITScreen] = useState(false)
-
-
-    function openKraftMenu(value) {
-        setopenKraftScreen(value)
-        setOpenBEWEGLICHKEITScreen(false)
-        setOpenDEHNBARKEITScreen(false)
-
-    }
-    function openDEHNBARKEITmenu(value) {
-        setopenKraftScreen(false)
-        setOpenBEWEGLICHKEITScreen(value)
-        setOpenDEHNBARKEITScreen(false)
-    }
-    function openBEWEGLICHKEITmenu(value) {
-        setopenKraftScreen(false)
-        setOpenBEWEGLICHKEITScreen(false)
-        setOpenDEHNBARKEITScreen(value)
-    }
+export default function TestComponent2({ measurement, callback }) {
 
     return (
-        <View style={{ flexDirection: 'row', width: '100%', height: '100%' }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
 
-            {/* LEFT row*/}
+            <MuskelFunktionComponent
+                measurement={measurement}
+                callback={callback}
+            />
 
-            <View style={{ flexDirection: 'column', width: '50%', height: '100%', }}>
-
-                <View style={{ width: '100%', height: '100%', flexDirection: 'row' }}>
-                    <View style={{ width: '50%', height: '100%', flexDirection: 'column' }}>
-                        <View style={{ width: '100%', height: '50%', flexDirection: 'column' }}>
-
-                            <BeuterlungComponent label={true}
-                                openKraftMenu={openKraftMenu}
-                                openDEHNBARKEITmenu={openDEHNBARKEITmenu}
-                                openBEWEGLICHKEITmenu={openBEWEGLICHKEITmenu} />
-
-                        </View>
-
-                        <View style={{ width: '100%', height: '50%' }}>
-
-                            <BeuterlungComponent label={true}
-                                openKraftMenu={openKraftMenu}
-                                openDEHNBARKEITmenu={openDEHNBARKEITmenu}
-                                openBEWEGLICHKEITmenu={openBEWEGLICHKEITmenu} />
-
-                        </View>
-
-                    </View>
-
-                    <View style={{ width: '50%', height: '100%', flexDirection: 'column' }}>
-                        {openKraftScreen &&
-                            <KraftComponent label={false} />}
-                    </View>
-
-                </View>
-
-
-
-
-
-
-            </View>
-
-            {/* RIGHT row */}
-
-            <View style={{ flexDirection: 'column', width: '50%', height: '100%', backgroundColor: "grey" }}>
-                {openKraftScreen && (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <Image
-                            source={require('../../../assets/humanBody.jpg')}
-                            style={{ width: '80%', height: '80%' }}
-                            resizeMode="contain"
-                        />
-                    </View>
-                )}
-
-            </View>
-
-        </View>
-
+        </ScrollView>
     )
 }
 
 const styles = StyleSheet.create({
-    fullcontainer: {
-        flex: 1,
-
-        width: '100%',
-        height: '100%'
-
-    },
-
-    cellHeader: {
-        flex: 1,
-        borderWidth: 1,
-        fontWeight: 'bold',
-        textAlign: 'center'
-    },
-    cell: {
-        flex: 1,
-        borderWidth: 1,
-        textAlign: 'center'
+    container: {
+        padding: 10,
+        paddingBottom: 30
     }
-
 })

@@ -95,6 +95,7 @@ import { createTest, setActiveTest, saveActiveTest, renameActiveTest } from "../
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
+import { CodexUtil } from '../../utils/CodexUtil'
 
 
 
@@ -153,6 +154,54 @@ export default function Page8({ goTo }) {
         setIsDirty(false);
 
     }, [activeTestId]);
+
+    // 🔹 2026-08-21 (Claude) — DK потвърди: "да, [оправи age/gender и] тук
+    // (Page8/'Measurements')". Same gap fixed on Page10 ("Training"): age
+    // and gender were never synced from the patient (birthdate/gender) into
+    // the per-test `MDPatientMeasurements`, so `expectedheartrate`/
+    // `sollLeistungNorm` silently used age=0/gender="male" defaults on this
+    // screen too.
+    //
+    // This screen keeps a LOCAL draft (see change log at top — Redux is
+    // only touched by explicit Save/New Test/Apply), so unlike Page10 we do
+    // NOT dispatch anything here — we only patch the in-memory `draft` via
+    // the functional setDraft form (so it correctly applies on top of the
+    // draft-reload effect right above, not a stale pre-reload value — both
+    // effects depend on `activeTestId` and run in declaration order). We
+    // deliberately do NOT call `setIsDirty(true)` for this — auto-filling
+    // age/gender from the patient's own identity isn't a "user edit" that
+    // should trigger the unsaved-changes confirm dialog when switching
+    // tests; it just makes the numbers correct while viewing/editing. If
+    // the user does make a real edit afterwards, Save persists the
+    // corrected age/gender along with it.
+    const computedAge = CodexUtil.calculateAge(selectedUser?.birthdate);
+    const patientGender = selectedUser?.gender || '';
+
+    useEffect(() => {
+
+        setDraft((prev) => {
+
+            const patch: any = {};
+            let needsUpdate = false;
+
+            if (computedAge != null && prev.age !== computedAge) {
+                patch.age = computedAge;
+                needsUpdate = true;
+            }
+
+            if (patientGender && prev.gender !== patientGender) {
+                patch.gender = patientGender;
+                needsUpdate = true;
+            }
+
+            if (!needsUpdate) return prev;
+
+            return new MDPatientMeasurements({ ...prev, ...patch });
+
+        });
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [computedAge, patientGender, activeTestId]);
 
     // 🔹 commit the header name edit to Redux (on blur, not per keystroke)
     function handleRenameTest() {
@@ -419,8 +468,19 @@ export default function Page8({ goTo }) {
             measurement={measurement}
         />
 
-        if (ergoView === 'detail2') return <TestComponent2 />
-        if (ergoView === 'detail3') return <TestComponent3 />
+        // 🔹 2026-08-19 — detail2/3 (Muskel-Funktion/Körper-Haltung) вече
+        // получават measurement/callback точно като detail1/4/5/6/7 —
+        // преди се рендираха без props (виж git history), затова каквото и
+        // да променеше потребителят вътре, никога не стигаше до
+        // draft/Speichern.
+        if (ergoView === 'detail2') return <TestComponent2
+            measurement={measurement}
+            callback={updateHandler}
+        />
+        if (ergoView === 'detail3') return <TestComponent3
+            measurement={measurement}
+            callback={updateHandler}
+        />
 
         // detail4 = "Ergometrie": body/vitals + device toggle + SOLL/IST
         // Watt (bike) or Max Speed/Pace (treadmill) + Karvonen HR zones.

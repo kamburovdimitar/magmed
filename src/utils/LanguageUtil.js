@@ -1,4 +1,4 @@
-import Translations from "./translations"
+import Translations from "./Translations"
 
 
 class LanguageUtil {

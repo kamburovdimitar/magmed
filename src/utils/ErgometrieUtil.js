@@ -285,6 +285,146 @@ function validateResult(result) {
     };
 }
 
+// ------------------------------------------------
+// 🔹 2026-08-14 (Europe/Sofia) — Testability pass: pulled out of Page11.tsx
+// where they lived as component-local (but actually pure — they only touch
+// their own arguments) functions. Moving them here makes the underlying
+// business logic something a unit test can hit directly, without needing a
+// full React/Redux render. Page11.tsx now calls these via ErgometryUtil.*
+// instead of the local copies it used to have; behavior is unchanged.
+// ------------------------------------------------
+
+// 🔹 Datenerfassung input format rules ("3.32 CCC Laktat Datenerfassung
+// und Auswertung": "Herzfrequenzwerte können nur in Format 0 eingegeben
+// werden" / Laktat "0 / 0,0 / 0,00 / 0.0 / 0.00") — extracted out of
+// DatenerfassungComponentList.tsx's updateHf/updateLactate so the input
+// sanitizing itself is unit-testable as plain string->string functions,
+// independent of the TextInput/FlatList wiring around them.
+
+// 🔹 HF: digits only, no decimals/letters
+function sanitizeHfInput(value) {
+    return String(value ?? '').replace(/[^0-9]/g, '');
+}
+
+// 🔹 Laktat: digits + at most ONE separator (, or .), max 2 digits after it
+function sanitizeLactateInput(value) {
+
+    let cleaned = String(value ?? '').replace(/[^0-9.,]/g, '');
+
+    const firstSeparatorMatch = cleaned.match(/[.,]/);
+
+    if (firstSeparatorMatch) {
+
+        const sepIndex = firstSeparatorMatch.index;
+
+        const integerPart = cleaned.slice(0, sepIndex).replace(/[.,]/g, '');
+
+        const decimalPart = cleaned
+            .slice(sepIndex + 1)
+            .replace(/[.,]/g, '')
+            .slice(0, 2);
+
+        cleaned = `${integerPart}${cleaned[sepIndex]}${decimalPart}`;
+    }
+
+    return cleaned;
+}
+
+// 🔹 Datenerfassung Eingabelogik ("3.32 CCC Laktat Datenerfassung"):
+// "Wird der Button 'Laktatkurve'/'Auswertung' betätigt: wird eine
+// unvollständige letzte Stufe automatisch gelöscht" — a stage counts as
+// "incomplete" only when BOTH HF and Laktat are empty (either one alone is
+// fine — Laktat is optional per stage, per the same spec).
+function stripIncompleteLastRow(sourceData) {
+
+    if (!sourceData?.length) return sourceData;
+
+    const last = sourceData[sourceData.length - 1];
+
+    const hfEmpty =
+        last.hf === '' ||
+        last.hf === undefined ||
+        last.hf === null;
+
+    const lactateEmpty =
+        last.lactate === '' ||
+        last.lactate === undefined ||
+        last.lactate === null;
+
+    if (hfEmpty && lactateEmpty) {
+        return sourceData.slice(0, -1);
+    }
+
+    return sourceData;
+}
+
+// 🔹 Plausibilitätsprüfung: "Die Belastungswerte müssen stufenweise
+// ansteigen. Abfallende oder identische Belastungswerte sind nicht
+// zulässig." Does NOT block the calculation (spec wants a warning/pointer
+// to a different model, not a hard stop) — just returns a message key (or
+// null when the load column is fine) for the UI to show.
+//
+// `getErrorMessage` is injectable so this stays pure/framework-free — the
+// caller (Page11.tsx) passes LanguageUtil.getName, a test can pass a plain
+// identity function or a stub.
+function checkLoadPlausibility(rows, getErrorMessage = (key) => key) {
+
+    for (let i = 1; i < rows.length; i++) {
+
+        if (Number(rows[i].load) <= Number(rows[i - 1].load)) {
+            return getErrorMessage('plausibility_load_error_text');
+        }
+    }
+
+    return null;
+}
+
+// 🔹 Save vs Update semantics for the Archive button (Page11.tsx
+// saveIntoArchive_History): if `loadedReportId` points at a report that
+// still exists in `existingReports`, UPDATE that entry in place (keeps its
+// id, refreshes ergometry/result/createdAt) instead of piling up a
+// duplicate every time Archive is clicked. Otherwise, append a new one.
+// `buildUpdatedReport`/`buildNewReport` are injected so this function stays
+// free of the MDErgometryReport model class — the caller decides how the
+// actual report object gets constructed; this function only decides WHICH
+// path to take and returns the resulting array/id.
+function resolveArchiveSaveOrUpdate({
+    existingReports,
+    loadedReportId,
+    buildUpdatedReport,
+    buildNewReport
+}) {
+
+    const reports = existingReports ?? [];
+
+    const existingIndex = loadedReportId
+        ? reports.findIndex((r) => r.id === loadedReportId)
+        : -1;
+
+    if (existingIndex !== -1) {
+
+        const updatedReports = [...reports];
+
+        updatedReports[existingIndex] = buildUpdatedReport(reports[existingIndex]);
+
+        return {
+            reportId: loadedReportId,
+            updatedReports,
+            wasUpdate: true,
+            existingIndex
+        };
+    }
+
+    const newReport = buildNewReport();
+
+    return {
+        reportId: newReport.id,
+        updatedReports: [...reports, newReport],
+        wasUpdate: false,
+        existingIndex: -1
+    };
+}
+
 function getReportByModel(reports, model) {
 
     if (!reports || !model)
@@ -520,6 +660,12 @@ export const ErgometryUtil = {
     validateResult,
     validateAllModels,
     getReportByModel,
+
+    stripIncompleteLastRow,
+    checkLoadPlausibility,
+    resolveArchiveSaveOrUpdate,
+    sanitizeHfInput,
+    sanitizeLactateInput,
 
     calculateWattPerKg,
     calculateHFPercent,

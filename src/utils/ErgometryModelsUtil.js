@@ -273,7 +273,10 @@ function calculateChartMaxLoad(data) {
  */
 function calculateLinear(data) {
 
-    if (data.length < 3) {
+    // 🔹 2026-08-14: липсваща null-guard (единствената от 6-те модела без
+    // нея) — открито от randomizedInvariants.test.js (validateAllModels(null,
+    // ...) хвърляше TypeError вместо да върне null както другите модели).
+    if (!data || data.length < 3) {
         return null;
     }
 
@@ -760,9 +763,19 @@ function interpolateThreshold(
             continue;
         }
 
+        // 🔹 2026-08-14: само ВЪЗХОДЯЩИ отсечки (l1 < l2) се броят за праг.
+        // Причина: реалните лактатни криви често правят лек спад ПРЕДИ lmin
+        // (виж стария бъг тук — при данни [2.4, 1.5, 2.0, 3.0, 4.5] с
+        // IAS-цел=2.0 кодът намираше пресечка в спадащия сегмент 2.4→1.5
+        // (защото 2.0 лежи между 1.5 и 2.4) и връщаше товар от НАЧАЛОТО на
+        // теста вместо истинската пресечка след lmin (2.0→3.0 сегмент,
+        // load=150 — точно каквото очаква calculateDickhuth.test.js).
+        // IAS/IANS по дефиниция се търсят на ВЪЗХОДЯЩАТА част на кривата
+        // след минимума, затова низходящите отсечки вече изцяло се
+        // прескачат тук.
         if (
-            (target >= l1 && target <= l2) ||
-            (target >= l2 && target <= l1)
+            l1 < l2 &&
+            target >= l1 && target <= l2
         ) {
 
             const ratio =
@@ -2205,6 +2218,7 @@ export const ErgometryModelsUtil = {
     calculateTrainingZones,
     calculateTrainingZoneTable,
     normalizeChartData,
+    formatPace,
     DEFAULT_ZONE_PERCENTS,
 
     calculateLTP,

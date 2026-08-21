@@ -46,6 +46,31 @@ class Translations {
     de: 'Geschlecht',
     en: 'Gender'
   },
+  // 🔹 2026-08-21 (Claude) — DK: "gender ... нека е с дроп даун и да не
+  // може да бъде празно" — новите dropdown опции/placeholder/hint текстове
+  // (виж HeaderComponent.tsx). Ползваме "male"/"female" като канонични
+  // стойности навсякъде (списък/dropdown/модел), защото ErgometrieUtil.js
+  // вече очаква точно тях (`gender === "female"`).
+  male_text: {
+    de: 'Männlich',
+    en: 'Male'
+  },
+  female_text: {
+    de: 'Weiblich',
+    en: 'Female'
+  },
+  select_gender_text: {
+    de: '— Auswählen —',
+    en: '— Select —'
+  },
+  complete_all_fields_hint_text: {
+    de: 'Bitte alle Felder ausfüllen (inkl. Geschlecht).',
+    en: 'Please fill in all fields (including Gender).'
+  },
+  nav_locked_hint_text: {
+    de: 'Bitte zuerst Patientendaten vollständig ausfüllen.',
+    en: 'Please complete the patient form first.'
+  },
   patientid_text: {
     de: 'Patientenkennung',
     en: 'Patient ID'
@@ -57,7 +82,16 @@ class Translations {
    delete_client_text: {
     de: 'clear - translate DE',
     en: 'clear'
-  },  
+  },
+  // 🔹 2026-08-21 (Claude) — забелязах при инспекция на Page4.tsx (докато
+  // работех по gender-a): този ключ липсваше, затова бутонът в "Search
+  // Patient" показваше суровото "DELETE_CUSTOMER_TEXT" (виж DK-скрийншот).
+  // Малка, отделна поправка purely opportunistic — не е част от gender
+  // заявката, но е директно видима в същия екран.
+  delete_customer_text: {
+    de: 'Kunde löschen',
+    en: 'Delete Customer'
+  },
   add_btn_text: {
     de: 'add client - translate DE',
     en: 'Add client'
@@ -290,6 +324,18 @@ class Translations {
       de: 'Auswertung',
       en: 'Evaluation'
     },
+    trainingsplan_text: {
+      de: 'Trainingsplan',
+      en: 'Training plan'
+    },
+    uebungen_auswaehlen_text: {
+      de: 'Übungen auswählen',
+      en: 'Select exercises'
+    },
+    keine_befunde_text: {
+      de: 'Keine Befunde erfasst',
+      en: 'No findings recorded'
+    },
 
     detail_analyse_text: {
       de: 'DIALOG (Detail-Analyse)',
@@ -326,18 +372,39 @@ class Translations {
       en: 'Save/Generate'
     },
 
+    // 🔹 2026-08-19 — DK: бутонът трябва да е "Add" докато няма селектиран
+    // archive запис (създава НОВ запис в листа), и "Save" щом има
+    // селектиран/зареден запис (update-ва СЪЩИЯ). Преди беше "Archive" /
+    // "Update Archive" — само преименувано, логиката (loadedReportId) е
+    // непроменена. Виж Page11.tsx persistArchiveEntry(). 2026-08-19 (2) —
+    // DK поиска "Save/Generate" и този бутон да се слеят в един — вече е
+    // ЕДИНСТВЕНИЯТ бутон, save() вика persistArchiveEntry() накрая.
     archivieren_text: {
-      de: 'Archivieren',
-      en: 'Archive'
+      de: 'Hinzufügen',
+      en: 'Add'
     },
 
-    // 🔹 2026-08-14 — UI redesign: Archive бутонът вече показва различен
-    // текст, когато текущите данни вече представляват съществуващ archive
-    // запис (loadedReportId сетнат) — тогава Archive прави UPDATE вместо
-    // да създава нов запис. Виж Page11.tsx saveIntoArchive_History().
     archiv_aktualisieren_text: {
-      de: 'Archiv aktualisieren',
-      en: 'Update Archive'
+      de: 'Speichern',
+      en: 'Save'
+    },
+
+    // 🔹 2026-08-19 (2) — DK: съобщението за неуспешен Add/Save трябва да
+    // е popup (не inline банер) с КОНКРЕТНА причина — виж
+    // buildArchiveFailureReason()/persistArchiveEntry() в Page11.tsx.
+    archiv_kein_ergebnis_title_text: {
+      de: 'Nicht hinzugefügt',
+      en: 'Not added'
+    },
+
+    archiv_grund_zu_wenig_daten_text: {
+      de: 'Für die gewählte Berechnungsmethode sind zu wenige gültige Messwerte (Load/Laktat) vorhanden.',
+      en: 'Not enough valid measurements (load/lactate) for the selected calculation method.'
+    },
+
+    archiv_grund_allgemein_text: {
+      de: 'Für die aktuellen Daten konnte kein gültiges Ergebnis berechnet werden.',
+      en: 'No valid result could be calculated for the current data.'
     },
 
     alle_daten_loeschen_text: {
@@ -348,6 +415,250 @@ class Translations {
     testdaten_aus_szenario_text: {
       de: 'Testdaten aus Szenario generieren',
       en: 'Generate Fake Data From Test Scenario'
+    },
+
+    // 🔹 2026-08-14 (Europe/Sofia) — öffnet den eigenständigen
+    // "Business-Logic-Tracer" (public/tools/business_logic_tracer.html):
+    // rechnet dieselben Formeln (Dickhuth/Freiburger/Linear/LTP/Keul/Keul
+    // Legacy + Trainingsbereich-Kaskade) Schritt für Schritt nach, ohne
+    // Code lesen zu müssen.
+    logik_pruefen_text: {
+      de: 'Rechenlogik prüfen',
+      en: 'Check the calculation logic'
+    },
+
+    // 🔹 2026-08-17 (Europe/Sofia) — "3.36 CCC Laktatkurve überlagern"
+    // под-изглед в Page11 (виж LaktatkurveUeberlagernComponent.tsx).
+    ansicht_umschalten_text: {
+      de: 'Ansicht wechseln',
+      en: 'Switch view'
+    },
+
+    ansicht_aktuell_text: {
+      de: 'Aktuell',
+      en: 'Current'
+    },
+
+    ansicht_ueberlagern_text: {
+      de: 'Überlagern',
+      en: 'Overlay'
+    },
+
+    // 🔹 2026-08-18 (Europe/Sofia) — DK поиска изричен 4-бутонен под-навигатор
+    // вместо 2-бутонния (виж LaktatkurveTrainingsbereichComponent.tsx /
+    // LaktatkurveRechenverfahrenComponent.tsx).
+    ansicht_trainingsbereich_text: {
+      de: 'Trainingsbereich',
+      en: 'Training Zones'
+    },
+
+    ansicht_rechenverfahren_text: {
+      de: 'Rechenverfahren',
+      en: 'Calculation Methods'
+    },
+
+    trainingsbereich_kein_ergebnis_text: {
+      de: 'Noch kein gültiges Ergebnis (IAS/IANS) für diesen Test — bitte zuerst Speichern/Generieren.',
+      en: 'No valid result (IAS/IANS) for this test yet — please Save/Generate first.'
+    },
+
+    rechenverfahren_intro_text: {
+      de: 'Übersicht der 6 Rechenverfahren zur Schwellenbestimmung. Das aktuell gewählte Verfahren ist hervorgehoben.',
+      en: 'Overview of the 6 calculation methods used to determine the thresholds. The currently selected method is highlighted.'
+    },
+
+    rechenverfahren_todo_text: {
+      de: 'Detaillierter Abgleich mit "3.32 Rechenverfahren Beispiele" folgt in einem nächsten Schritt.',
+      en: 'A detailed audit against "3.32 Rechenverfahren Beispiele" follows in a next step.'
+    },
+
+    rechenverfahren_dickhuth_desc_text: {
+      de: 'Feste Schwelle bei 4 mmol/l plus individuelles Laktatminimum.',
+      en: 'Fixed 4 mmol/l threshold plus the individual lactate minimum.'
+    },
+
+    rechenverfahren_freiburg_desc_text: {
+      de: 'Laktatminimum + 2,0 mmol/l als feste Verschiebung.',
+      en: 'Lactate minimum + a fixed 2.0 mmol/l offset.'
+    },
+
+    rechenverfahren_linear_desc_text: {
+      de: 'Einfache lineare Regression über alle Messpunkte.',
+      en: 'Simple linear regression across all measured points.'
+    },
+
+    rechenverfahren_ltp_desc_text: {
+      de: 'Stückweise lineare Regression — sucht den Knickpunkt (Breakpoint) der Kurve.',
+      en: 'Piecewise linear regression — finds the curve\'s breakpoint.'
+    },
+
+    rechenverfahren_keul_desc_text: {
+      de: 'Individuelle anaerobe Schwelle über exponentielle Kurvenanpassung.',
+      en: 'Individual anaerobic threshold via exponential curve fitting.'
+    },
+
+    rechenverfahren_keul_legacy_desc_text: {
+      de: 'Ältere, vereinfachte Variante der maximalen Steigungsmethode.',
+      en: 'Older, simplified variant of the maximum-slope method.'
+    },
+
+    ueberlagern_absolute_text: {
+      de: 'absolute Darstellung',
+      en: 'absolute view'
+    },
+
+    ueberlagern_normiert_text: {
+      de: 'normierte Darstellung (%IANS)',
+      en: 'normalized view (%IANS)'
+    },
+
+    ueberlagern_tests_text: {
+      de: 'Tests',
+      en: 'Tests'
+    },
+
+    ueberlagern_keine_tests_text: {
+      de: 'Keine archivierten Tests für diesen Patienten.',
+      en: 'No archived tests for this patient.'
+    },
+
+    ueberlagern_izberi_text: {
+      de: 'Bitte mindestens einen Test links auswählen.',
+      en: 'Please select at least one test on the left.'
+    },
+
+    ueberlagern_test_datum_text: {
+      de: 'Test Datum',
+      en: 'Test Date'
+    },
+
+    // 🔹 2026-08-18 (Europe/Sofia) — "3.36 CCC überlagern" стъпка 3: 5-те
+    // toggle бутона от дясната колона на PDF-а (Herzfrequenzkurven/
+    // Trainingszonen/Test Datum/Schwellenwerte/Schwellenlinien ein/aus),
+    // приложени тук като реални бутони над графиката.
+    ueberlagern_toggle_hf_text: {
+      de: 'Herzfrequenzkurven ein/aus',
+      en: 'Heart rate curves on/off'
+    },
+
+    ueberlagern_toggle_zonen_text: {
+      de: 'Trainingszonen ein/aus',
+      en: 'Training zones on/off'
+    },
+
+    ueberlagern_toggle_datum_text: {
+      de: 'Test Datum ein/aus',
+      en: 'Test date on/off'
+    },
+
+    ueberlagern_toggle_schwellenwerte_text: {
+      de: 'Schwellenwerte ein/aus',
+      en: 'Threshold values on/off'
+    },
+
+    ueberlagern_toggle_schwellenlinien_text: {
+      de: 'Schwellenlinien ein/aus',
+      en: 'Threshold lines on/off'
+    },
+
+    // 🔹 2026-08-18 (Europe/Sofia) — "3.36 CCC überlagern" стъпка 4:
+    // навигационните бутони от най-горе на дясната колона (страница 5 от
+    // PDF-а). DK изрично поиска да са на СВОЕ ниво, над toggle-ите, и лесно
+    // да могат да се дизейбълнат — виж NAV_BUTTONS_ENABLED флага в
+    // LaktatkurveUeberlagernComponent.tsx.
+    ueberlagern_nav_zurueck_text: {
+      de: 'ZURÜCK Kurvenansicht',
+      en: 'BACK to curve view'
+    },
+
+    ueberlagern_nav_dialog_text: {
+      de: 'Dialog',
+      en: 'Dialog'
+    },
+
+    ueberlagern_nav_datenerfassung_text: {
+      de: 'Daten Erfassung',
+      en: 'Data Entry'
+    },
+
+    // 🔹 2026-08-17 (Europe/Sofia) — HomeScreen.js икон-навигация: тези
+    // labels бяха hardcoded немски низове директно в NAV_ITEMS (бъг,
+    // открит при преглед на скрийншот от DK — менюто излизаше немско,
+    // докато останалата част от приложението е на английски, защото
+    // активният език по подразбиране е 'en'). Прекарани сега през
+    // LanguageUtil.getName(), както навсякъде другаде.
+    nav_neuer_patient_text: {
+      de: 'Neuer Patient',
+      en: 'New Patient'
+    },
+
+    nav_patient_aktualisieren_text: {
+      de: 'Patient aktualisieren/löschen',
+      en: 'Update/Delete Patient'
+    },
+
+    nav_page3_text: {
+      de: 'Seite 3',
+      en: 'Page 3'
+    },
+
+    nav_patient_suchen_text: {
+      de: 'Patient suchen',
+      en: 'Search Patient'
+    },
+
+    nav_speichern_text: {
+      de: 'Speichern',
+      en: 'Save'
+    },
+
+    nav_drucken_text: {
+      de: 'Drucken',
+      en: 'Print'
+    },
+
+    nav_page7_text: {
+      de: 'Seite 7',
+      en: 'Page 7'
+    },
+
+    // 🔹 2026-08-19 — DK: "page 8 ... трябва да прекръстиш на межърмънтс" —
+    // Page8 хоства Körpermaße/Muskel-Funktion/Körper-Haltung/Ergometrie/...
+    // ("3.00 Test" менюто), не е никаква конкретна "страница 8" — старото
+    // placeholder име (просто номера на файла) вече е сменено с описателно.
+    nav_page8_text: {
+      de: 'Messungen',
+      en: 'Measurements'
+    },
+
+    nav_ergebnisse_text: {
+      de: 'Ergebnisse',
+      en: 'Results'
+    },
+
+    nav_training_text: {
+      de: 'Training',
+      en: 'Training'
+    },
+
+    nav_laktatkurve_text: {
+      de: 'Laktatkurve',
+      en: 'Lactate Curve'
+    },
+
+    nav_page12_text: {
+      de: 'Seite 12',
+      en: 'Page 12'
+    },
+
+    nav_einstellungen_text: {
+      de: 'Einstellungen',
+      en: 'Settings'
+    },
+
+    nav_abmelden_text: {
+      de: 'Abmelden',
+      en: 'Log Out'
     },
 
     hf_umschalten_text: {
@@ -653,6 +964,78 @@ class Translations {
     de: 'normal',
     en: 'normal'
   },
+
+  // 🔹 2026-08-19 — MUFU (Muskel-Funktion/Körper-Haltung, "3.05 Neuer Test -
+  // MUFU" мокъп): DK поиска KRAFT (сила) таблицата с интерактивна снимка на
+  // тялото (виж MuskelFunktionKraftComponent.tsx) + Körper-Haltung с
+  // WIRBELSÄULE (реизползва вече готовия BeuterlungTable.tsx).
+  beurteilung_text: {
+    de: 'BEURTEILUNG',
+    en: 'ASSESSMENT'
+  },
+  kraft_text: {
+    de: 'KRAFT',
+    en: 'STRENGTH'
+  },
+  dehnbarkeit_text: {
+    de: 'DEHNBARKEIT',
+    en: 'FLEXIBILITY'
+  },
+  beweglichkeit_text: {
+    de: 'BEWEGLICHKEIT',
+    en: 'MOBILITY'
+  },
+  mufu_placeholder_text: {
+    de: 'Noch nicht implementiert.',
+    en: 'Not implemented yet.'
+  },
+
+  // 🔹 10-те мускула от KRAFT таблицата, реда точно както в мокъпа
+  oberarmbeuger_text: {
+    de: 'Oberarmbeuger',
+    en: 'Elbow flexors'
+  },
+  oberarmstrecker_text: {
+    de: 'Oberarmstrecker',
+    en: 'Elbow extensors'
+  },
+  schulterblattfixatoren_text: {
+    de: 'Schulterblattfixatoren',
+    en: 'Scapula fixators'
+  },
+  schulterabduktion_text: {
+    de: 'Schulterabduktion',
+    en: 'Shoulder abduction'
+  },
+  bwsstrecker_text: {
+    de: 'BWS-Strecker',
+    en: 'Thoracic spine extensors'
+  },
+  lwsstrecker_text: {
+    de: 'LWS-Strecker',
+    en: 'Lumbar spine extensors'
+  },
+  gesaessmuskulatur_text: {
+    de: 'Gesäßmuskulatur',
+    en: 'Gluteal muscles'
+  },
+  beinabduktor_text: {
+    de: 'Beinabduktor',
+    en: 'Leg abductor'
+  },
+  mquadriceps_text: {
+    de: 'M. quadriceps',
+    en: 'Quadriceps'
+  },
+  mischiocruralis_text: {
+    de: 'M. ischiocruralis',
+    en: 'Hamstrings'
+  },
+  bauchmuskulatur_text: {
+    de: 'Bauchmuskulatur',
+    en: 'Abdominal muscles'
+  },
+
   speichern: {
     de: 'Speichern',
     en: 'Save'
@@ -732,6 +1115,146 @@ class Translations {
   sonntag: {
     de: 'Sonntag',
     en: 'Sunday'
+  },
+
+  // 🔹 2026-08-20 — "Training – Gesundheit" модул (Training/❤️ страница,
+  // Page10.tsx/TrainingsplanComponent.tsx/TrainingsplanKeinTestComponent.tsx)
+  // — 5 нови PDF-а, план обсъден с DK преди имплементация.
+  kein_test_text: {
+    de: 'Kein Test',
+    en: 'No Test'
+  },
+  training_ergometrie_text: {
+    de: 'Ergometrie',
+    en: 'Ergometry'
+  },
+  training_laktat_ergometrie_text: {
+    de: 'Laktat Ergometrie',
+    en: 'Lactate Ergometry'
+  },
+  training_spiro_ergometrie_text: {
+    de: 'Spiro Ergometrie',
+    en: 'Spiro Ergometry'
+  },
+  hfruhe_text: {
+    de: 'HFruhe',
+    en: 'HR rest'
+  },
+  hfmax_text: {
+    de: 'HFmax.',
+    en: 'HR max.'
+  },
+  watt_max_text: {
+    de: 'Watt max.',
+    en: 'Watt max.'
+  },
+  kmh_max_text: {
+    de: 'km/h max.',
+    en: 'km/h max.'
+  },
+  radfahren_text: {
+    de: 'Radfahren',
+    en: 'Cycling'
+  },
+  laufen_text: {
+    de: 'Laufen',
+    en: 'Running'
+  },
+  trainingsbereich_text: {
+    de: 'Trainingsbereich',
+    en: 'Training zone'
+  },
+  gesundheitssport_text: {
+    de: 'GESUNDHEITSSPORT',
+    en: 'HEALTH SPORT'
+  },
+  freizeitsport_text: {
+    de: 'FREIZEITSPORT',
+    en: 'LEISURE SPORT'
+  },
+  stufe_text: {
+    de: 'Stufe',
+    en: 'Stage'
+  },
+  wntz_text: {
+    de: 'WNTZ',
+    en: 'WNTZ'
+  },
+  wntz_minuten_text: {
+    de: 'WNTZ Minuten',
+    en: 'WNTZ minutes'
+  },
+  dauer_te_minuten_text: {
+    de: 'Dauer/TE Minuten',
+    en: 'Duration/session minutes'
+  },
+  te_woche_haeufigkeit_text: {
+    de: 'TE/Woche Häufigkeit',
+    en: 'Sessions/week frequency'
+  },
+  zeit_aufteilung_text: {
+    de: 'Zeit Aufteilung % Trainingsbereich',
+    en: 'Time split % training zone'
+  },
+  trainingsblock_wochen_text: {
+    de: 'Trainingsblock Wochen',
+    en: 'Training block weeks'
+  },
+  vorlage_a_text: {
+    de: 'Vorlage A',
+    en: 'Template A'
+  },
+  vorlage_b_text: {
+    de: 'Vorlage B',
+    en: 'Template B'
+  },
+  vorlage_c_text: {
+    de: 'Vorlage C',
+    en: 'Template C'
+  },
+  automatik_ein_aus_text: {
+    de: 'Automatik EIN / AUS',
+    en: 'Automatic ON / OFF'
+  },
+  nicht_gewaehlte_bereiche_ausblenden_text: {
+    de: 'Nicht gewählte Bereiche ausblenden',
+    en: 'Hide unselected areas'
+  },
+  trainings_woche_gestalten_text: {
+    de: 'Trainings-Woche GESTALTEN',
+    en: 'DESIGN training week'
+  },
+  leere_tabellen_text: {
+    de: 'LEERE Tabellen',
+    en: 'EMPTY tables'
+  },
+  personenspezifische_standardwerte_text: {
+    de: 'Personenspezifische Standardwerte',
+    en: 'Person-specific defaults'
+  },
+  abrufen_text: {
+    de: 'Abrufen',
+    en: 'Retrieve'
+  },
+  wntz_erklaerung_text: {
+    de: 'Wöchentliche Netto-Trainingszeit: gesamte geplante Trainingszeit pro Woche ohne organisatorische Pausen.',
+    en: 'Weekly net training time: total planned training time per week, excluding organisational breaks.'
+  },
+  dauer_te_erklaerung_text: {
+    de: 'Effektive Belastungsdauer einer einzelnen Trainingseinheit.',
+    en: 'Effective load duration of a single training session.'
+  },
+  te_woche_erklaerung_text: {
+    de: 'Häufigkeit - Anzahl der Trainingseinheiten pro Kalenderwoche. Minimum-Maximum-Empfehlung (z.B. 2–3 Trainingseinheiten pro Woche)',
+    en: 'Frequency - number of training sessions per calendar week. Minimum-maximum recommendation (e.g. 2–3 sessions per week)'
+  },
+  zeit_aufteilung_erklaerung_text: {
+    de: '90 % der Train.-Zeit im Bereich GA1 und 10 % der Train.-Zeit im Bereich GA2',
+    en: '90% of training time in the GA1 zone and 10% of training time in the GA2 zone'
+  },
+  trainingsblock_erklaerung_text: {
+    de: 'Zeitraum, in dem die Trainingsstufe vor einer Steigerung auf die nächste Stufe durchgeführt werden soll.',
+    en: 'Period during which the training stage should be maintained before progressing to the next stage.'
   }
 }
 

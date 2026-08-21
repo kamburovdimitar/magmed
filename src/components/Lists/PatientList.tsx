@@ -1,6 +1,21 @@
 import React, { useState } from 'react'
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
 import { MDPatient } from "../../model/MDPatient";
+import LanguageUtil from '../../utils/LanguageUtil'
+
+// 🔹 2026-08-21 (Claude) — DK: "на сърч компонента трябва да се появява
+// джендъра също" — списъкът с пациенти (използван от Page1.tsx/Page4.tsx)
+// показваше Last Name/First Name/Title/Date of Birth/Patient ID, но не и
+// Gender. Тук показваме преведеното "Male"/"Female", не суровата
+// "male"/"female" стойност, пазена в модела.
+function genderLabel(value: string) {
+
+    if (value === 'male') return LanguageUtil.getName('male_text')
+    if (value === 'female') return LanguageUtil.getName('female_text')
+
+    return ''
+
+}
 
 export default function PatientList(
     { data, onSelectItem }: {
@@ -37,6 +52,7 @@ export default function PatientList(
                 <Text style={styles.col}>{item.firstname}</Text>
                 <Text style={styles.col}>{item.title}</Text>
                 <Text style={styles.col}>{item.birthdate}</Text>
+                <Text style={styles.col}>{genderLabel(item.gender)}</Text>
                 <Text style={styles.col}>{item.patientid}</Text>
 
             </TouchableOpacity>
