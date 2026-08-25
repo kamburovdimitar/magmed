@@ -43,6 +43,9 @@ import { MDPatientMeasurements } from '../model/MDPatientMeasurements';
 import { MDPatient } from '../model/MDPatient';
 import { KEIN_TEST_DEFAULT_STAGES } from '../constants/trainingsplanKeinTestDefaults';
 import TrainingsplanKeinTestComponent from './TrainingsplanKeinTestComponent';
+import TrainingsplanErgometrieComponent from './TrainingsplanErgometrieComponent';
+import TrainingsplanLaktatErgometrieComponent from './TrainingsplanLaktatErgometrieComponent';
+import TrainingsplanSpiroErgometrieComponent from './TrainingsplanSpiroErgometrieComponent';
 
 const TABS = [
     { key: 'keinTest', labelKey: 'kein_test_text' },
@@ -51,21 +54,52 @@ const TABS = [
     { key: 'spiroErgometrie', labelKey: 'training_spiro_ergometrie_text' }
 ];
 
+// 🔹 2026-08-21 (Claude) — DK: "сега следващите 3 таба ... започни с
+// ергометри." Общото ляво контролно табло (Automatik/Nicht gewählte
+// Bereiche/Trainings-Woche GESTALTEN/LEERE Tabellen/Standardwerte) сега
+// важи за ПОВЕЧЕ от един таб — трябва да пипа обекта на АКТИВНИЯ таб, не
+// само trainingsplanKeinTest (иначе бутоните тук щяха да местят
+// trainingsplanKeinTest, докато самата Ergometrie компонента чете от
+// trainingsplanErgometrie — пълно разминаване). Затова storage полето се
+// избира динамично по activeTab.
+const STORAGE_KEY_BY_TAB: any = {
+    keinTest: 'trainingsplanKeinTest',
+    ergometrie: 'trainingsplanErgometrie',
+    laktatErgometrie: 'trainingsplanLaktatErgometrie',
+    spiroErgometrie: 'trainingsplanSpiroErgometrie'
+};
+
+// 🔹 REHABILITATION/GESUNDHEITSSPORT/FREIZEITSPORT (5.24b мокъп, ляво
+// меню) — само за табовете СЛЕД Kein Test (в Kein Test мокъпа тези 3
+// бутона липсват изцяло, виж 5.21b). Засега важи и за Laktat/Spiro
+// Ergometrie предварително (все още без техните PDF-и) — лесно за
+// стесняване по-късно, ако се окаже грешно.
+const TRAININGSKATEGORIE_OPTIONS = [
+    { value: 'rehabilitation', labelKey: 'rehabilitation_text' },
+    { value: 'gesundheitssport', labelKey: 'gesundheitssport_text' },
+    { value: 'freizeitsport', labelKey: 'freizeitsport_text' }
+];
+
 export default function TrainingsplanComponent({ measurement, callback, patient, patientCallback }: any) {
 
     const [activeTab, setActiveTab] = useState('keinTest');
+    const [savedFlash, setSavedFlash] = useState(false);
 
-    const kt = measurement?.trainingsplanKeinTest ?? {};
+    const showTrainingskategorie = activeTab !== 'keinTest';
+
+    const storageKey = STORAGE_KEY_BY_TAB[activeTab] ?? 'trainingsplanKeinTest';
+    const kt = measurement?.[storageKey] ?? {};
     const editMode = kt.editMode ?? 'grundeinstellung';
     const automatikEnabled = kt.automatikEnabled ?? false;
     const hideUnselected = kt.hideUnselected ?? false;
+    const trainingskategorie = kt.trainingskategorie ?? 'gesundheitssport';
 
     function updateKt(patch: any) {
 
         callback(
             new MDPatientMeasurements({
                 ...measurement,
-                trainingsplanKeinTest: {
+                [storageKey]: {
                     ...kt,
                     ...patch
                 }
@@ -108,6 +142,11 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
 
     }
 
+    // 🔹 2026-08-21 (Claude) — same reason as STORAGE_KEY_BY_TAB above:
+    // "Personenspezifische Standardwerte" също трябва да пазят отделни
+    // подразбирания ЗА ВСЕКИ таб (ключувано по `activeTab`), не само за
+    // Kein Test — иначе Ergometrie-то щеше тихомълком да чете/презаписва
+    // същите запазени стойности като Kein Test.
     function speichernStandardwerte() {
 
         if (!patientCallback || !patient) return;
@@ -117,7 +156,7 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                 ...patient,
                 trainingsplanStandardwerte: {
                     ...(patient.trainingsplanStandardwerte ?? {}),
-                    keinTest: kt
+                    [activeTab]: kt
                 }
             })
         );
@@ -126,7 +165,7 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
 
     function abrufenStandardwerte() {
 
-        const saved = patient?.trainingsplanStandardwerte?.keinTest;
+        const saved = patient?.trainingsplanStandardwerte?.[activeTab];
 
         if (!saved) return;
 
@@ -143,10 +182,172 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                 ...patient,
                 trainingsplanStandardwerte: {
                     ...(patient.trainingsplanStandardwerte ?? {}),
-                    keinTest: null
+                    [activeTab]: null
                 }
             })
         );
+
+    }
+
+    // 🔹 2026-08-21 (Claude) — DK: "генерално не сме сложили сейв, трябва
+    // да го сложим и тук, както и на предната страница." И двата таба
+    // ВЕЧЕ auto-save-ват на всяка промяна (виж Page10.tsx — dispatch на
+    // saveActiveTest при всеки callback), но нямаше никакъв видим бутон,
+    // затова DK не е сигурен дали/кога нещо реално се записва. Този бутон
+    // не прави нищо технически различно (пак просто препредава текущия
+    // measurement) — просто дава ясно, видимо потвърждение "Записано ✓"
+    // за 1.5 секунди, за спокойствие.
+    function saveNow() {
+
+        callback(new MDPatientMeasurements({ ...measurement }));
+
+        setSavedFlash(true);
+
+        setTimeout(() => setSavedFlash(false), 1500);
+
+    }
+
+    // 🔹 2026-08-21 (Claude) — DK: "сложи ми отдолу един generate fake
+    // data button, да мога да го цъкам и да попълва автоматично, това,
+    // което се попълва, защото аз не се ориентирам." Попълва точно
+    // нещата, които реално се избират/въвеждат от доктора на тази
+    // страница (виж обяснението, дадено на DK в чата): кои стадии са
+    // активни + примерни стойности в "Individuelle Planung" режим +
+    // избран Vorlage шаблон вдясно (Ratschläge). Vorlage B/C нямат
+    // предоставен текст все още (само A) — затова генераторът винаги
+    // избира A, за да остане нещо смислено видимо вдясно вместо празно
+    // поле.
+    function generateFakeData() {
+
+        const dauerTeOptions = ['10-15', '15-20', '20-30', '30-40', '40-50', '40-60', '40-80', '45-90'];
+        const teWocheOptions = ['2-3', '3-4', '3-5', '3-6', '3-7'];
+        const zeitAufteilungOptions = ['90/10', '80/20', '70/30', '60/40'];
+        const trainingsblockOptions = ['3-5', '4-6', '5-7', '6-8', '7-9'];
+
+        function pick(options: string[]) {
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        const fakeStages = KEIN_TEST_DEFAULT_STAGES.map((s) => ({
+            ...s,
+            active: Math.random() > 0.15,
+            wntz: Math.max(15, Math.round((s.wntz + (Math.random() * 40 - 20)) / 5) * 5),
+            dauerTe: pick(dauerTeOptions),
+            teWoche: pick(teWocheOptions),
+            zeitAufteilung: pick(zeitAufteilungOptions),
+            trainingsblock: s.stage === 8 ? '-----' : pick(trainingsblockOptions)
+        }));
+
+        updateKt({
+            editMode: 'individuell',
+            stages: fakeStages,
+            ratschlagTemplate: 'A',
+            ratschlagText: null
+        });
+
+    }
+
+    // 🔹 2026-08-21 (Claude) — DK: "2. fake буton" за Ergometrie таба
+    // (същия принцип като Kein Test-ния generateFakeData по-горе) — плюс
+    // случаен избор на trainingskategorie, тъй като Ergometrie-то има тази
+    // допълнителна опция.
+    function generateFakeDataErgometrie() {
+
+        const dauerTeOptions = ['10-15', '15-20', '20-30', '30-40', '40-50', '40-60', '40-80', '45-90'];
+        const teWocheOptions = ['2-3', '3-4', '3-5', '3-6', '3-7'];
+        const zeitAufteilungOptions = ['90/10', '80/20', '70/30', '60/40'];
+        const trainingsblockOptions = ['3-5', '4-6', '5-7', '6-8', '7-9'];
+        const kategorieOptions = ['rehabilitation', 'gesundheitssport', 'freizeitsport'];
+
+        function pick(options: string[]) {
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        const fakeStages = KEIN_TEST_DEFAULT_STAGES.map((s) => ({
+            ...s,
+            active: Math.random() > 0.15,
+            wntz: Math.max(15, Math.round((s.wntz + (Math.random() * 40 - 20)) / 5) * 5),
+            dauerTe: pick(dauerTeOptions),
+            teWoche: pick(teWocheOptions),
+            zeitAufteilung: pick(zeitAufteilungOptions),
+            trainingsblock: s.stage === 8 ? '-----' : pick(trainingsblockOptions)
+        }));
+
+        updateKt({
+            editMode: 'individuell',
+            stages: fakeStages,
+            ratschlagTemplate: 'A',
+            ratschlagText: null,
+            trainingskategorie: pick(kategorieOptions)
+        });
+
+    }
+
+    // 🔹 2026-08-21 (Claude) — DK: "давай третото лактат ергометри" — същия
+    // fake-data принцип, за Laktat Ergometrie таба.
+    function generateFakeDataLaktatErgometrie() {
+
+        const dauerTeOptions = ['10-15', '15-20', '20-30', '30-40', '40-50', '40-60', '40-80', '45-90'];
+        const teWocheOptions = ['2-3', '3-4', '3-5', '3-6', '3-7'];
+        const zeitAufteilungOptions = ['90/10', '80/20', '70/30', '60/40'];
+        const trainingsblockOptions = ['3-5', '4-6', '5-7', '6-8', '7-9'];
+        const kategorieOptions = ['rehabilitation', 'gesundheitssport', 'freizeitsport'];
+
+        function pick(options: string[]) {
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        const fakeStages = KEIN_TEST_DEFAULT_STAGES.map((s) => ({
+            ...s,
+            active: Math.random() > 0.15,
+            wntz: Math.max(15, Math.round((s.wntz + (Math.random() * 40 - 20)) / 5) * 5),
+            dauerTe: pick(dauerTeOptions),
+            teWoche: pick(teWocheOptions),
+            zeitAufteilung: pick(zeitAufteilungOptions),
+            trainingsblock: s.stage === 8 ? '-----' : pick(trainingsblockOptions)
+        }));
+
+        updateKt({
+            editMode: 'individuell',
+            stages: fakeStages,
+            ratschlagTemplate: 'A',
+            ratschlagText: null,
+            trainingskategorie: pick(kategorieOptions)
+        });
+
+    }
+
+    // 🔹 2026-08-21 (Claude) — DK: "остана последният — Spiro Ergometrie" —
+    // същия fake-data принцип, за Spiro Ergometrie таба (4-ти и последен).
+    function generateFakeDataSpiroErgometrie() {
+
+        const dauerTeOptions = ['10-15', '15-20', '20-30', '30-40', '40-50', '40-60', '40-80', '45-90'];
+        const teWocheOptions = ['2-3', '3-4', '3-5', '3-6', '3-7'];
+        const zeitAufteilungOptions = ['90/10', '80/20', '70/30', '60/40'];
+        const trainingsblockOptions = ['3-5', '4-6', '5-7', '6-8', '7-9'];
+        const kategorieOptions = ['rehabilitation', 'gesundheitssport', 'freizeitsport'];
+
+        function pick(options: string[]) {
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        const fakeStages = KEIN_TEST_DEFAULT_STAGES.map((s) => ({
+            ...s,
+            active: Math.random() > 0.15,
+            wntz: Math.max(15, Math.round((s.wntz + (Math.random() * 40 - 20)) / 5) * 5),
+            dauerTe: pick(dauerTeOptions),
+            teWoche: pick(teWocheOptions),
+            zeitAufteilung: pick(zeitAufteilungOptions),
+            trainingsblock: s.stage === 8 ? '-----' : pick(trainingsblockOptions)
+        }));
+
+        updateKt({
+            editMode: 'individuell',
+            stages: fakeStages,
+            ratschlagTemplate: 'A',
+            ratschlagText: null,
+            trainingskategorie: pick(kategorieOptions)
+        });
 
     }
 
@@ -174,6 +375,26 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
 
                 {/* ===== LEFT CONTROL PANEL ===== */}
                 <View style={styles.controlPanel}>
+
+                    {/* 🔹 5.24b мокъп — само за Ergometrie/Laktat/Spiro
+                        табовете (Kein Test го няма, виж 5.21b). Избира
+                        категорията на плана — засега само Gesundheitssport
+                        има реални % диапазони (виж коментара при
+                        TRAININGSKATEGORIE_OPTIONS по-горе). */}
+                    {
+                        showTrainingskategorie &&
+                        TRAININGSKATEGORIE_OPTIONS.map((option) => (
+                            <Pressable
+                                key={option.value}
+                                style={[styles.controlButton, trainingskategorie === option.value && styles.controlButtonActive]}
+                                onPress={() => updateKt({ trainingskategorie: option.value })}
+                            >
+                                <Text style={styles.controlButtonText}>
+                                    {LanguageUtil.getName(option.labelKey)}
+                                </Text>
+                            </Pressable>
+                        ))
+                    }
 
                     <Pressable style={styles.controlButton} onPress={toggleAutomatik}>
                         <Text style={styles.controlButtonText}>
@@ -220,9 +441,44 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                     {
                         activeTab === 'keinTest'
                             ? <TrainingsplanKeinTestComponent measurement={measurement} callback={callback} />
-                            : <Text style={styles.placeholder}>{LanguageUtil.getName('mufu_placeholder_text')}</Text>
+                            : activeTab === 'ergometrie'
+                                ? <TrainingsplanErgometrieComponent measurement={measurement} callback={callback} />
+                                : activeTab === 'laktatErgometrie'
+                                    ? <TrainingsplanLaktatErgometrieComponent measurement={measurement} callback={callback} />
+                                    : activeTab === 'spiroErgometrie'
+                                        ? <TrainingsplanSpiroErgometrieComponent measurement={measurement} callback={callback} />
+                                        : <Text style={styles.placeholder}>{LanguageUtil.getName('mufu_placeholder_text')}</Text>
                     }
                 </View>
+
+            </View>
+
+            {/* ===== FOOTER: Generate fake data + Save (DK: помощни бутони
+                за ориентация в демо/тест данните, докато няма реална БД,
+                плюс видимо потвърждение, че записва) — вече за всичките 4
+                табове. ===== */}
+            <View style={styles.footerRow}>
+
+                <Pressable
+                    style={styles.fakeDataButton}
+                    onPress={
+                        activeTab === 'keinTest'
+                            ? generateFakeData
+                            : activeTab === 'ergometrie'
+                                ? generateFakeDataErgometrie
+                                : activeTab === 'laktatErgometrie'
+                                    ? generateFakeDataLaktatErgometrie
+                                    : generateFakeDataSpiroErgometrie
+                    }
+                >
+                    <Text style={styles.fakeDataButtonText}>Generate fake data</Text>
+                </Pressable>
+
+                <Pressable style={styles.saveButton} onPress={saveNow}>
+                    <Text style={styles.saveButtonText}>
+                        {savedFlash ? LanguageUtil.getName('saved_confirmation_text') : LanguageUtil.getName('speichern')}
+                    </Text>
+                </Pressable>
 
             </View>
 
@@ -245,12 +501,15 @@ const styles = StyleSheet.create({
 
     tabRow: {
         flexDirection: 'row',
-        gap: 6
+        gap: 8
     },
 
+    // 🔹 2026-08-21 (Claude) — DK: "бутоните в дясно и бутоните горе,
+    // отново да са по-големи" — горните 4 таба (Kein Test/Ergometrie/...)
+    // уголемени (padding + шрифт).
     tab: {
-        paddingVertical: 12,
-        paddingHorizontal: 24,
+        paddingVertical: 16,
+        paddingHorizontal: 32,
         borderWidth: 1,
         borderColor: '#7c9fb3',
         backgroundColor: '#eef3f7'
@@ -262,7 +521,7 @@ const styles = StyleSheet.create({
     },
 
     tabText: {
-        fontSize: 15,
+        fontSize: 17,
         fontWeight: '600'
     },
 
@@ -281,36 +540,47 @@ const styles = StyleSheet.create({
         gap: 10
     },
 
+    // 🔹 2026-08-21 (Claude) — DK: "бутоните в дясно и бутоните горе,
+    // отново да са по-големи" — цялото ляво контролно табло (Automatik,
+    // чекбокс, Trainings-Woche GESTALTEN, LEERE Tabellen, Standardwerte)
+    // уголемено (padding + шрифт), за консистентност с горните табове.
     controlButton: {
         borderWidth: 1,
         borderColor: '#7c9fb3',
         backgroundColor: '#ffffff',
-        padding: 14
+        padding: 18
     },
 
     controlButtonText: {
-        fontSize: 13.5,
+        fontSize: 15,
         fontWeight: '600',
         textAlign: 'center'
+    },
+
+    // 🔹 REHABILITATION/GESUNDHEITSSPORT/FREIZEITSPORT избраната опция —
+    // същия жълт highlight конвенция като tabActive.
+    controlButtonActive: {
+        backgroundColor: '#fff176',
+        borderColor: '#c9a800'
     },
 
     controlCheckboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
         borderWidth: 1,
         borderColor: '#7c9fb3',
         backgroundColor: '#ffffff',
-        padding: 12
+        padding: 16
     },
 
     controlCheckboxText: {
-        fontSize: 13,
+        fontSize: 14,
         flex: 1
     },
 
     checkboxGlyph: {
-        fontSize: 18
+        fontSize: 26
     },
 
     standardwerteBox: {
@@ -318,11 +588,11 @@ const styles = StyleSheet.create({
         borderColor: '#7c9fb3',
         backgroundColor: '#eef3f7',
         padding: 12,
-        gap: 8
+        gap: 10
     },
 
     standardwerteTitle: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 4
@@ -332,11 +602,11 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#7c9fb3',
         backgroundColor: '#fff176',
-        paddingVertical: 10
+        paddingVertical: 14
     },
 
     standardwerteButtonText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '600',
         textAlign: 'center'
     },
@@ -351,6 +621,44 @@ const styles = StyleSheet.create({
         color: '#777',
         padding: 20,
         textAlign: 'center'
+    },
+
+    footerRow: {
+        flexDirection: 'row',
+        gap: 14
+    },
+
+    fakeDataButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#2e7d32',
+        backgroundColor: '#c8e6c9',
+        paddingVertical: 16,
+        alignItems: 'center'
+    },
+
+    fakeDataButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1b5e20'
+    },
+
+    // 🔹 2026-08-21 (Claude) — DK: Save бутон (виж коментара при saveNow()
+    // по-горе защо) — синьо, за да се различава ясно от зеления
+    // "Generate fake data".
+    saveButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#0d47a1',
+        backgroundColor: '#bbdefb',
+        paddingVertical: 16,
+        alignItems: 'center'
+    },
+
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#0d47a1'
     }
 
 });

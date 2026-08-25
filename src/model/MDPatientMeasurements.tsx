@@ -74,6 +74,11 @@ export class MDPatientMeasurements {
     trainingsplanKeinTest: any = {};
     trainingsplanErgometrie: any = {};
     trainingsplanLaktatErgometrie: any = {};
+    // 🔹 2026-08-21 (Claude) — DK: "остана последният — Spiro Ergometrie"
+    // (5.90CCCGESUNDHEITS_Training.pdf, "SPIROERGOMETRIE, Fahrrad –
+    // Standardeinstellung") — 4-ти таб на модула, същия плосък-поле
+    // подход като горните три (виж TrainingsplanSpiroErgometrieComponent.tsx).
+    trainingsplanSpiroErgometrie: any = {};
 
     // 🔹 id на archive записа (ergometryReports[]), който текущата
     // `ergometry` в момента "представлява" — Page11.tsx's Archive бутон

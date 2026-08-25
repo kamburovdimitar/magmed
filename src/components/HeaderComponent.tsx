@@ -10,8 +10,17 @@ import LanguageUtil from '../utils/LanguageUtil'
 // стойност ("m", "М", "мъж"...) и никъде реално не се задаваше (виж
 // Page1.tsx - "const gender = ''; // not added for the momemnt"). Всички
 // изчисления надолу по веригата (ErgometrieUtil.getSollLeistungNorm и
-// др.) очакват точно "male"/"female", затова dropdown-ът връща само тези
-// две стойности - невъзможно е вече да се получи произволен/грешен низ.
+// др.) очакват точно "male"/"female", затова тук връщаме само тези две
+// стойности - невъзможно е вече да се получи произволен/грешен низ.
+//
+// 🔹 2026-08-21 (по-късно същия ден) — DK: "едното ниво е над другото"
+// (виж скрийншот - "UPDATE CLIENT" лентата покриваше горната опция на
+// floating dropdown менюто, защото position:'absolute' floating меню
+// върху row без изричен stacking context се държеше непредвидимо в RN
+// Web). Заменено с обикновен ВИНАГИ видим 2-бутонен segmented toggle
+// (Male | Female) на мястото на полето — без absolute positioning, без
+// z-index, значи няма как да се получи overlap с нищо под него. И е
+// по-бързо за ползване (1 клик вместо отвори-после-избери).
 const GENDER_OPTIONS = [
     { value: 'male', labelKey: 'male_text' },
     { value: 'female', labelKey: 'female_text' }
@@ -26,7 +35,6 @@ export default function HeaderComponent({ buttonCallback, buttonName, setButtonS
     const [gender, setGender] = useState('')
     const [patientid, setPatientId] = useState('')
     const [measurements, setMeasurements] = useState({})
-    const [genderMenuOpen, setGenderMenuOpen] = useState(false)
 
     // 🔹 DK: "не можем да сейвнем, ако всичко не е попълнено и останалите
     // страници стоят дизейбълнати" — Patient ID нарочно е изключен от тук:
@@ -87,17 +95,6 @@ export default function HeaderComponent({ buttonCallback, buttonName, setButtonS
 
     function selectGender(value: string) {
         setGender(value)
-        setGenderMenuOpen(false)
-    }
-
-    function genderLabel(value: string) {
-
-        const match = GENDER_OPTIONS.find((o) => o.value === value)
-
-        return match
-            ? LanguageUtil.getName(match.labelKey)
-            : LanguageUtil.getName('select_gender_text')
-
     }
     return (
 
@@ -187,44 +184,33 @@ export default function HeaderComponent({ buttonCallback, buttonName, setButtonS
                     />
                 </View>
 
-                <View style={[styles.col, styles.genderCol]}>
+                <View style={styles.col}>
                     <Text>{LanguageUtil.getName('gender_text')}</Text>
-                    <Pressable
-                        style={[styles.input, styles.genderBox, !gender && styles.genderBoxEmpty]}
-                        onPress={() => {
+                    <View style={[styles.genderToggleRow, !gender && styles.genderToggleRowEmpty]}>
+                        {
+                            GENDER_OPTIONS.map((option, index) => (
+                                <Pressable
+                                    key={option.value}
+                                    style={[styles.genderToggleOption, index > 0 && styles.genderToggleOptionDivider, gender === option.value && styles.genderToggleOptionActive]}
+                                    onPress={() => {
 
-                            setGenderMenuOpen(!genderMenuOpen)
+                                        selectGender(option.value)
 
-                            if (setButtonState) {
-                                setButtonState(2)
-                            }
-                            if (setClearFieldFlag) {
-                                setClearFieldFlag(0)
-                            }
-                        }}
-                    >
-                        <Text style={!gender && styles.genderPlaceholderText}>
-                            {genderLabel(gender)}
-                        </Text>
-                        <Text style={styles.genderCaret}>{genderMenuOpen ? '▲' : '▼'}</Text>
-                    </Pressable>
-
-                    {
-                        genderMenuOpen &&
-                        <View style={styles.genderMenu}>
-                            {
-                                GENDER_OPTIONS.map((option) => (
-                                    <Pressable
-                                        key={option.value}
-                                        style={[styles.genderMenuItem, gender === option.value && styles.genderMenuItemActive]}
-                                        onPress={() => selectGender(option.value)}
-                                    >
-                                        <Text>{LanguageUtil.getName(option.labelKey)}</Text>
-                                    </Pressable>
-                                ))
-                            }
-                        </View>
-                    }
+                                        if (setButtonState) {
+                                            setButtonState(2)
+                                        }
+                                        if (setClearFieldFlag) {
+                                            setClearFieldFlag(0)
+                                        }
+                                    }}
+                                >
+                                    <Text style={[styles.genderToggleText, gender === option.value && styles.genderToggleTextActive]}>
+                                        {LanguageUtil.getName(option.labelKey)}
+                                    </Text>
+                                </Pressable>
+                            ))
+                        }
+                    </View>
                 </View>
 
                 <View style={styles.col}>
@@ -296,53 +282,48 @@ const styles = StyleSheet.create({
         width: 60
     },
 
-    // 🔹 Gender dropdown (виж GENDER_OPTIONS/genderLabel по-горе) — просто
-    // Pressable "кутийка", която прилича на другите TextInput-и (същия
-    // `input` стил), плюс малък flex-row за caret-а, и floating меню под
-    // нея с 2-те опции.
-    genderCol: {
-        position: 'relative',
-        zIndex: 10
-    },
-
-    genderBox: {
+    // 🔹 Gender — 2-бутонен segmented toggle (Male | Female), винаги
+    // видим, без absolute positioning/z-index (виж коментара при
+    // GENDER_OPTIONS по-горе защо заменихме floating dropdown менюто с
+    // това — премахва изцяло класа бъгове тип "едното ниво е над
+    // другото").
+    genderToggleRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: '#999',
+        borderRadius: 4,
+        overflow: 'hidden'
     },
 
-    genderBoxEmpty: {
+    genderToggleRowEmpty: {
         borderColor: '#c0392b'
     },
 
-    genderPlaceholderText: {
-        color: '#888'
+    genderToggleOption: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 6,
+        backgroundColor: '#fff'
     },
 
-    genderCaret: {
-        fontSize: 10,
-        color: '#555'
+    genderToggleOptionDivider: {
+        borderLeftWidth: 1,
+        borderLeftColor: '#999'
     },
 
-    genderMenu: {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
-        borderWidth: 1,
-        borderColor: '#999',
-        backgroundColor: '#fff',
-        zIndex: 20,
-        elevation: 6
+    genderToggleOptionActive: {
+        backgroundColor: '#fff176'
     },
 
-    genderMenuItem: {
-        paddingVertical: 8,
-        paddingHorizontal: 8
+    genderToggleText: {
+        fontSize: 13,
+        color: '#333'
     },
 
-    genderMenuItemActive: {
-        backgroundColor: '#d0e8ff'
+    genderToggleTextActive: {
+        fontWeight: 'bold',
+        color: '#000'
     },
 
     hintText: {

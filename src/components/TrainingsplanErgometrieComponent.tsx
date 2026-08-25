@@ -1,65 +1,58 @@
 // ===== CLAUDE CHANGE LOG (newest last) =====
-// 2026-08-20 (Europe/Sofia) — DK: "Training – Gesundheit" модул. Първи
-//   реален таб — "Kein Test" (5.21b_Training_Gesundheit_Kein_Test_
-//   Grundeinstellung_EXPORT_2.pdf, 3 страници: Grundeinstellung/
-//   Individuelle Planung/CODEX + 5.90CCCGESUNDHEITS_Training.pdf's
-//   Entscheidungsbaum + 0.00 MAGMED Codex 04_2.pdf за точните формули).
+// 2026-08-21 (Europe/Sofia) — DK: "сега следващите 3 таба ... ергометрия,
+//   лактат ергометри, спиро ергометри. започни с ергометри." (следвайки
+//   PDF-по-PDF плана — 5.24b_Training_Gesundheit_Ergometrie_Watt_
+//   Grundeinstellung_EXPORT.pdf, 6 страници: Ergometrie Watt/km-h
+//   Grundeinstellung + CODEX страници + Individuelle/Automatische
+//   Planung).
 //
-//   Формулна верига (виж CODEX страницата в PDF-а, кодовете #23#/#25#/
-//   #31#/#118#/#120#/#121#/#122#/#123#/#XZ#):
-//     HFruhe (#23#) — measurement.heartraterest, ако е въведен, иначе
-//       стандарт 70 S/min (Entscheidungsbaum: "HFruhe: Standardwert = 70").
-//     HFmax (#25#) — measurement.expectedheartrate (220-Alter, вече
-//       съществуващ getter, реизползван 1:1).
-//     Watt max (#31#) — measurement.sollLeistungNorm (вече съществуващ
-//       getter, ErgometrieUtil.getSollLeistungNorm по възраст — засега
-//       опростена таблица, не официалната MAGMED таблица; известен, вече
-//       флагнат дълг, не блокира тук).
-//     km/h max (#120#) — TrainingsplanUtil.calculateSpeedFromWatt(Watt max)
-//       (#KaW#).
-//     GA1/GA2 Trainings-HF Fahrrad (#118#) — CodexUtil.
-//       calculateKarvonenHeartRate(HFruhe, HFmax, intensität%), веднъж за
-//       долната и веднъж за горната граница на всяка зона.
-//     GA1/GA2 Laufen HF (#118+XZ#) — Fahrrad HF + глобалната #XZ# настройка
-//       (Redux settingsSlice.xzCorrection).
-//     GA1/GA2 Watt (#121#) — TrainingsplanUtil.calculateIntensityWatt(Watt
-//       max, intensität%).
-//     GA1/GA2 Laufen km/h (#122#) — TrainingsplanUtil.
-//       calculateSpeedFromWatt(#121# Watt) (СЪЩАТА #KaW# формула, реизполз-
-//       вана — Kein Test няма отделен Laufband тест, затова km/h идва
-//       винаги от Watt чрез Näherungswert, точно както Entscheidungsbaum-ът
-//       го описва: "Trainingsintensität min/km: Näherungswert vom Watt").
-//     GA1/GA2 PACE (#123#) — CodexUtil.calculatePace(#122# km/h) (#MaK#).
+//   DK потвърди 6-те точки да следват СЪЩИЯ модел като Kein Test таба
+//   (TrainingsplanKeinTestComponent.tsx): UI, "Generate fake data" бутон,
+//   инфо бутони, отделен обект за съхранение (measurement.
+//   trainingsplanErgometrie, по аналогия на trainingsplanKeinTest),
+//   бг/де/ен превключвател за Ratschläge, и Save бутон (виж
+//   TrainingsplanComponent.tsx — Save/фейк данни бутоните вече са общи за
+//   всички табове, кой обект пипат зависи от activeTab).
 //
-//   ЗАБЕЛЕЖКА за DK: примерните числа в 5.21b мокъпа (напр. GA1 Watt
-//   "85-105") не се пресъздават байт-по-байт от формулите тук — следвах
-//   ДОСЛОВНО документираните формули в 0.00 MAGMED Codex 04_2.pdf (които
-//   имат собствени, вътрешно последователни примери, напр. #129#
-//   60%×250=150 ✓), не бегло въведените числа в 5.21b screenshot-а, които
-//   изглеждат несъответстващи дори помежду си. Кажи, ако очакваш друго.
+//   Основната обобщаваща (Basiswerte & Trainingszonen + 8-степенна
+//   Trainings-Woche таблица + Ratschläge панел) секция е ПРАКТИЧЕСКИ
+//   идентична на Kein Test таба — същите формули (HFruhe/HFmax/Watt max/
+//   km-h max, Karvonen GA1/GA2 зони), СЪЩАТА 8-степенна таблица (5.24b
+//   мокъпа показва абсолютно същите стойности като 5.21b — 30/60/90/.../
+//   300 WNTZ и т.н.) и СЪЩИЯТ Ratschläge Vorlage A текст (проверих
+//   дословно в PDF-а — идентичен на немски). Затова тук реизползваме
+//   директно константите от trainingsplanKeinTestDefaults.js вместо да ги
+//   дублираме — ако някога Ergometrie трябва да има различни стойности,
+//   ще ги извадим в общ файл tогава.
 //
-//   editMode ('grundeinstellung'|'individuell') съответства на 2-та вида
-//   от мокъпа (страница 1 vs 2) — "Trainings-Woche GESTALTEN" бутонът
-//   (виж TrainingsplanComponent.tsx) превключва между тях. В
-//   'grundeinstellung' всичко е read-only (авто-изчислено); в
-//   'individuell' HFruhe/HFmax/Watt max стават редактируеми override-и,
-//   8-те стадия и Ratschläge стават свободно редактируеми (виж 5.90 PDF:
-//   "In der freien Planung können alle Parameter in Gold gefärbten
-//   Fenstern individuell verändert werden. Die geänderten Werte
-//   überschreiben nicht die Grundeinstellung.").
+//   НОВО спрямо Kein Test (5.24b, ляво меню): REHABILITATION /
+//   GESUNDHEITSSPORT / FREIZEITSPORT — 3-late категория за интензитета на
+//   плана (виж TrainingsplanComponent.tsx controlPanel — рендерът е там,
+//   защото визуално е в общото ляво меню, но пише в
+//   measurement.trainingsplanErgometrie.trainingskategorie). PDF-ът
+//   показва точни % стойности САМО за GESUNDHEITSSPORT (GA1: 50-60, GA2:
+//   60-70 — same като Kein Test). Rehabilitation/Freizeitsport нямат
+//   собствени % диапазони в този конкретен PDF — засега и трите бутона
+//   използват едни и същи (Gesundheitssport) диапазони, докато DK не
+//   предостави съответните им PDF-и с точните стойности за другите две.
 //
-// 2026-08-24 (Europe/Sofia) — DK забеляза, че Cycling/Laufen чекбоксовете
-//   не се цъкат в 'grundeinstellung' режим (трябваше DESIGN training week
-//   → individuell). Това беше несъзнателна непоследователност спрямо
-//   "Hide unselected areas" (TrainingsplanComponent.tsx), който винаги е
-//   кликаем независимо от editMode — двата чекбокса тук просто отбелязват
-//   с какво спортува пациентът (не са override на изчислена стойност),
-//   затова премахнах "isIndividuell &&" пазача от onPress — вече са
-//   кликаеми и в двата режима, както hideUnselected.
+//   CODEX страницата (стр. 2) показва формулни номера (#23#/#24#/#32#/
+//   #35#/#40#/#119#/#125#/#XZ#) без самите формули (тези са в отделния
+//   "0.00 MAGMED Codex 04_2.pdf", не в този файл) — затова тук реизполз-
+//   ваме ДОСЛОВНО същата формулна верига, която вече важи за Kein Test
+//   (CodexUtil.calculateKarvonenHeartRate + xzCorrection за Laufen HF,
+//   TrainingsplanUtil.calculateIntensityWatt/calculateSpeedFromWatt,
+//   CodexUtil.calculatePace) — известен опростен участък, флагнат за DK.
+//
+// 2026-08-24 — DK забеляза, че Cycling/Laufen чекбоксовете тук не се цъкат
+//   в 'grundeinstellung' режим. Премахнах "isIndividuell &&" пазача от
+//   onPress (виж пълния разбор в TrainingsplanKeinTestComponent.tsx —
+//   същата непоследователност спрямо "Hide unselected areas", поправена
+//   идентично във всичките 4 таба).
 // ============================================
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useSelector } from 'react-redux';
 import LanguageUtil from '../utils/LanguageUtil';
 import { CodexUtil } from '../utils/CodexUtil';
@@ -81,22 +74,31 @@ const VORLAGEN: any = {
     C: RATSCHLAEGE_VORLAGE_C
 };
 
-// 🔹 2026-08-21 (Claude) — DK: "искам това [обяснението, което ти дадох в
-// чата] да ми бъде сложено като инфо бутон отстрани на всяка една
-// таблица ... нека е на български [засега]". Реизползван е СЪЩИЯ вече
-// съществуващ механизъм като другите инфо бутони в приложението
-// (TitleWithInfoComponent + PopupService.openPopup — виж например
-// TestMeasurementsComponent.tsx) — не нов компонент. Съдържанието засега е
-// само на български (DK ще каже кога да добавим EN/DE версии на самите
-// popup текстове — за разлика от Ratschläge текста вдясно, за него изрично
-// поиска превключвател bg/de/en).
+// 🔹 2026-08-24 (Claude) — DK: "да сложи. и да видим после какво правим"
+// (след като посочи, че Rehabilitation/Gesundheitssport/Freizeitsport дават
+// едни и същи стойности). PDF-ът (5.24b) има точни % САМО за
+// Gesundheitssport (GA1: 50-60 / GA2: 60-70 от HFR) — Rehabilitation и
+// Freizeitsport нямат собствен мокъп. Тук слагаме ПРИБЛИЗИТЕЛНИ placeholder
+// стойности (±10pp спрямо Gesundheitssport — по-нисък интензитет за
+// Rehabilitation, по-висок за Freizeitsport), ясно флагнати като временни,
+// докато DK предостави реалните диапазони.
+const ERGOMETRIE_INTENSITY_RANGES_BY_KATEGORIE: any = {
+    rehabilitation: { ga1: { from: 40, to: 50 }, ga2: { from: 50, to: 60 } },
+    gesundheitssport: KEIN_TEST_INTENSITY_RANGES,
+    freizeitsport: { ga1: { from: 60, to: 70 }, ga2: { from: 70, to: 80 } }
+};
+
+// 🔹 2026-08-21 (Claude) — само на български засега (виж същия коментар в
+// TrainingsplanKeinTestComponent.tsx защо) — съдържанието е пренаписано за
+// Ergometrie контекста (споменава конкретно избора Rehabilitation/
+// Gesundheitssport/Freizeitsport от лявото меню).
 const INFO_SUMMARY_BG = {
-    title: 'Основни стойности и тренировъчни зони',
+    title: 'Основни стойности и тренировъчни зони (Ергометрия)',
     description:
         'Показва базовите физиологични стойности на пациента (пулс в покой и максимален, максимални ватове и скорост), '
         + 'изчислени автоматично от неговата възраст и пол — не се въвеждат ръчно тук. Долната таблица показва в какъв '
-        + 'диапазон (пулс, ватове, темпо) трябва да тренира пациентът при по-лека (Здравен спорт/GA1) и по-усилена '
-        + '(Свободно време спорт/GA2) интензивност.',
+        + 'диапазон (пулс, ватове, темпо) трябва да тренира пациентът при по-лека (GA1) и по-усилена (GA2) интензивност, '
+        + 'на велоергометър (Radfahren) и/или бягаща пътека (Laufen).',
     formula:
         'HF max = 220 − Възраст\n'
         + 'Watt max = таблична норма по възраст и пол\n'
@@ -108,8 +110,9 @@ const INFO_SUMMARY_BG = {
         'Watt max = очаквана нормална мощност според възрастта и пола на пациента.',
         'km/h max = приблизителна максимална скорост, изчислена от Watt max.',
         'Колоездене / Бягане (чекбоксовете) = отбележи с какво тренира пациентът — определя кои колони се виждат в таблицата.',
-        'Здравен спорт (GA1) = по-лека интензивност, 50–60% от резерва на сърдечната честота.',
-        'Свободно време спорт (GA2) = по-усилена интензивност, 60–70%.'
+        'Rehabilitation / Gesundheitssport / Freizeitsport (ляво меню) = категория на плана — определя интензитета на зоните. '
+        + 'В момента точни % стойности има само за Gesundheitssport (50–70% от резерва на сърдечната честота); '
+        + 'Rehabilitation/Freizeitsport временно ползват същите стойности, докато не получим техните конкретни диапазони.'
     ],
     source:
         'Стойностите се преизчисляват автоматично при всяка промяна на данните за пациента (възраст, пол, HF в покой). '
@@ -117,9 +120,9 @@ const INFO_SUMMARY_BG = {
 };
 
 const INFO_STAGES_BG = {
-    title: 'Тренировъчен план по седмици (8 етапа)',
+    title: 'Тренировъчен план по седмици (8 етапа) — Ергометрия',
     description:
-        'Това е самият тренировъчен план, който се дава на пациента — прогресия през 8 етапа с постепенно нарастващо '
+        'Това е самият тренировъчен план за велоергометър/бягаща пътека — прогресия през 8 етапа с постепенно нарастващо '
         + 'натоварване. По подразбиране стойностите са стандартни за всички пациенти ("Grundeinstellung"); за да ги '
         + 'промениш индивидуално за този пациент, натисни "DESIGN training week" от лявото меню — редовете стават '
         + 'редактируеми.',
@@ -131,51 +134,51 @@ const INFO_STAGES_BG = {
         'Тренировъчен блок (седмици) = колко седмици пациентът остава на този етап, преди да премине към следващия.',
         'Чекбоксът вляво на всеки ред показва дали етапът е активен/включен в плана.'
     ],
-    source: 'Стойностите по подразбиране следват стандартната прогресия от документацията MAGMED Codex.'
+    source: 'Стойностите по подразбиране следват стандартната прогресия от документацията MAGMED Codex (същите като Kein Test таба).'
 };
 
-export default function TrainingsplanKeinTestComponent({ measurement, callback }: any) {
+export default function TrainingsplanErgometrieComponent({ measurement, callback }: any) {
 
     const xzCorrection = useSelector(
         (state: any) => state.settings?.xzCorrection
     ) ?? 10;
 
-    const kt = measurement?.trainingsplanKeinTest ?? {};
+    const erg = measurement?.trainingsplanErgometrie ?? {};
 
-    const editMode = kt.editMode ?? 'grundeinstellung';
+    const editMode = erg.editMode ?? 'grundeinstellung';
     const isIndividuell = editMode === 'individuell';
 
-    const radfahrenEnabled = kt.radfahrenEnabled ?? true;
-    const laufenEnabled = kt.laufenEnabled ?? true;
-    const hideUnselected = kt.hideUnselected ?? false;
-    const automatikEnabled = kt.automatikEnabled ?? false;
-    const ratschlagTemplate = kt.ratschlagTemplate === undefined ? 'A' : kt.ratschlagTemplate;
-    // 🔹 DK: "текста в дясно Recommendations, да има опция да е на
-    // български, немски и английски, първоначално да е на български" —
-    // отделен избор ОТ глобалния LanguageUtil.language (който важи за
-    // етикети/бутони из цялото приложение и няма 'bg' версия за всичко) —
-    // пазим го в kt, за да оцелее презареждане на теста.
-    const ratschlagLanguage = kt.ratschlagLanguage ?? 'bg';
-    const stages = kt.stages ?? KEIN_TEST_DEFAULT_STAGES;
+    const radfahrenEnabled = erg.radfahrenEnabled ?? true;
+    const laufenEnabled = erg.laufenEnabled ?? true;
+    const hideUnselected = erg.hideUnselected ?? false;
+    const ratschlagTemplate = erg.ratschlagTemplate === undefined ? 'A' : erg.ratschlagTemplate;
+    const ratschlagLanguage = erg.ratschlagLanguage ?? 'bg';
+    const stages = erg.stages ?? KEIN_TEST_DEFAULT_STAGES;
 
-    // 🔹 базови (Grundeinstellung) стойности — виж formulaта в change log-а
+    // 🔹 2026-08-24 (Claude) — избраната категория (виж TrainingsplanComponent.tsx
+    // controlPanel) определя кой GA1/GA2 диапазон се ползва — виж
+    // ERGOMETRIE_INTENSITY_RANGES_BY_KATEGORIE по-горе за placeholder стойностите.
+    const trainingskategorie = erg.trainingskategorie ?? 'gesundheitssport';
+    const activeIntensityRanges = ERGOMETRIE_INTENSITY_RANGES_BY_KATEGORIE[trainingskategorie]
+        ?? KEIN_TEST_INTENSITY_RANGES;
+
     const hfruheBase = measurement?.heartraterest > 0 ? measurement.heartraterest : 70;
     const hfmaxBase = measurement?.expectedheartrate > 0 ? measurement.expectedheartrate : 0;
     const wattMaxBase = measurement?.sollLeistungNorm ?? 0;
 
-    const hfruhe = (isIndividuell && kt.hfruheOverride != null) ? kt.hfruheOverride : hfruheBase;
-    const hfmax = (isIndividuell && kt.hfmaxOverride != null) ? kt.hfmaxOverride : hfmaxBase;
-    const wattMax = (isIndividuell && kt.wattMaxOverride != null) ? kt.wattMaxOverride : wattMaxBase;
+    const hfruhe = (isIndividuell && erg.hfruheOverride != null) ? erg.hfruheOverride : hfruheBase;
+    const hfmax = (isIndividuell && erg.hfmaxOverride != null) ? erg.hfmaxOverride : hfmaxBase;
+    const wattMax = (isIndividuell && erg.wattMaxOverride != null) ? erg.wattMaxOverride : wattMaxBase;
 
     const kmhMax = TrainingsplanUtil.calculateSpeedFromWatt(wattMax) ?? 0;
 
-    function updateKt(patch: any) {
+    function updateErg(patch: any) {
 
         callback(
             new MDPatientMeasurements({
                 ...measurement,
-                trainingsplanKeinTest: {
-                    ...kt,
+                trainingsplanErgometrie: {
+                    ...erg,
                     ...patch
                 }
             })
@@ -209,8 +212,8 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
     }
 
-    const ga1 = computeZone(KEIN_TEST_INTENSITY_RANGES.ga1.from, KEIN_TEST_INTENSITY_RANGES.ga1.to);
-    const ga2 = computeZone(KEIN_TEST_INTENSITY_RANGES.ga2.from, KEIN_TEST_INTENSITY_RANGES.ga2.to);
+    const ga1 = computeZone(activeIntensityRanges.ga1.from, activeIntensityRanges.ga1.to);
+    const ga2 = computeZone(activeIntensityRanges.ga2.from, activeIntensityRanges.ga2.to);
 
     const showRadfahren = radfahrenEnabled || !hideUnselected;
     const showLaufen = laufenEnabled || !hideUnselected;
@@ -223,15 +226,13 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
             i === stageIndex ? { ...s, active: !s.active } : s
         );
 
-        updateKt({ stages: updated });
+        updateErg({ stages: updated });
 
     }
 
     // 🔹 2026-08-21 (Claude) — DK: "на всичките полета отгоре, трябва да
     // им сложиш тикче селект ал/деселект ал" — master чекбокс в хедъра на
-    // чекбокс-колоната: ако ВСИЧКИ 8 стадия са активни, показва ☑ и
-    // цъкването деактивира всички наведнъж; иначе показва ☐ и цъкването
-    // активира всички наведнъж (стандартно "select all" поведение).
+    // чекбокс-колоната (виж същия коментар в TrainingsplanKeinTestComponent.tsx).
     function toggleAllStages() {
 
         if (!isIndividuell) return;
@@ -240,7 +241,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
         const updated = stages.map((s: any) => ({ ...s, active: !allActive }));
 
-        updateKt({ stages: updated });
+        updateErg({ stages: updated });
 
     }
 
@@ -250,12 +251,12 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
             i === stageIndex ? { ...s, [field]: value } : s
         );
 
-        updateKt({ stages: updated });
+        updateErg({ stages: updated });
 
     }
 
-    const ratschlagText = kt.ratschlagText != null
-        ? kt.ratschlagText
+    const ratschlagText = erg.ratschlagText != null
+        ? erg.ratschlagText
         : (ratschlagTemplate ? (VORLAGEN[ratschlagTemplate]?.[ratschlagLanguage] ?? '') : '');
 
     function infoHandlerSummary() {
@@ -290,7 +291,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                             style={[styles.smallInput, styles.editableGold]}
                                             keyboardType="numeric"
                                             value={String(hfruhe)}
-                                            onChangeText={(v) => updateKt({ hfruheOverride: Number(v) || 0 })}
+                                            onChangeText={(v) => updateErg({ hfruheOverride: Number(v) || 0 })}
                                         />
                                     )
                                     : <Text style={styles.readonlyValue}>{hfruhe}</Text>
@@ -307,7 +308,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                             style={[styles.smallInput, styles.editableGold]}
                                             keyboardType="numeric"
                                             value={String(hfmax)}
-                                            onChangeText={(v) => updateKt({ hfmaxOverride: Number(v) || 0 })}
+                                            onChangeText={(v) => updateErg({ hfmaxOverride: Number(v) || 0 })}
                                         />
                                     )
                                     : <Text style={styles.readonlyValue}>{hfmax}</Text>
@@ -324,7 +325,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                             style={[styles.smallInput, styles.editableGreen]}
                                             keyboardType="numeric"
                                             value={String(wattMax)}
-                                            onChangeText={(v) => updateKt({ wattMaxOverride: Number(v) || 0 })}
+                                            onChangeText={(v) => updateErg({ wattMaxOverride: Number(v) || 0 })}
                                         />
                                     )
                                     : <Text style={styles.readonlyValue}>{wattMax}</Text>
@@ -347,7 +348,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                 showRadfahren && (
                                     <Pressable
                                         style={styles.sportToggle}
-                                        onPress={() => updateKt({ radfahrenEnabled: !radfahrenEnabled })}
+                                        onPress={() => updateErg({ radfahrenEnabled: !radfahrenEnabled })}
                                     >
                                         <Text style={styles.checkboxGlyph}>{radfahrenEnabled ? '☑' : '☐'}</Text>
                                         <Text style={styles.sportToggleLabel}>{LanguageUtil.getName('radfahren_text')}</Text>
@@ -358,7 +359,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                 showLaufen && (
                                     <Pressable
                                         style={styles.sportToggle}
-                                        onPress={() => updateKt({ laufenEnabled: !laufenEnabled })}
+                                        onPress={() => updateErg({ laufenEnabled: !laufenEnabled })}
                                     >
                                         <Text style={styles.checkboxGlyph}>{laufenEnabled ? '☑' : '☐'}</Text>
                                         <Text style={styles.sportToggleLabel}>{LanguageUtil.getName('laufen_text')}</Text>
@@ -379,7 +380,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
                             <View style={styles.zoneRow}>
                                 <Text style={styles.zoneLabelCell}>
-                                    {LanguageUtil.getName('gesundheitssport_text')} (GA1: {KEIN_TEST_INTENSITY_RANGES.ga1.from} - {KEIN_TEST_INTENSITY_RANGES.ga1.to})
+                                    {LanguageUtil.getName('gesundheitssport_text')} (GA1: {activeIntensityRanges.ga1.from} - {activeIntensityRanges.ga1.to})
                                 </Text>
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga1.hfFahrrad}</Text>}
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga1.watt}</Text>}
@@ -389,7 +390,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
                             <View style={styles.zoneRow}>
                                 <Text style={styles.zoneLabelCell}>
-                                    {LanguageUtil.getName('freizeitsport_text')} (GA2: {KEIN_TEST_INTENSITY_RANGES.ga2.from} - {KEIN_TEST_INTENSITY_RANGES.ga2.to})
+                                    {LanguageUtil.getName('freizeitsport_text')} (GA2: {activeIntensityRanges.ga2.from} - {activeIntensityRanges.ga2.to})
                                 </Text>
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga2.hfFahrrad}</Text>}
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga2.watt}</Text>}
@@ -437,10 +438,6 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                 <Text style={styles.stageCell}>{s.stage}.</Text>
 
                                 {
-                                    // 🔹 2026-08-21 — DK потвърди (по 5.90CCCGESUNDHEITS_Training.pdf:
-                                    // "alle Parameter in Gold gefärbten Fenstern individuell
-                                    // verändert werden") — не само Trainingsblock, а ВСИЧКИ
-                                    // колони на етапа стават редактируеми в Individuelle Planung.
                                     isIndividuell
                                         ? (
                                             <TextInput
@@ -518,7 +515,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                             <Pressable
                                 key={v}
                                 style={styles.vorlageOption}
-                                onPress={() => updateKt({
+                                onPress={() => updateErg({
                                     ratschlagTemplate: ratschlagTemplate === v ? null : v,
                                     ratschlagText: null
                                 })}
@@ -554,11 +551,6 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
             <View style={styles.rightPanel}>
                 <Text style={styles.rightPanelTitle}>{LanguageUtil.getName('ratschlaege')}</Text>
 
-                {/* 🔹 DK: "текста в дясно Recommendations, да има опция да е
-                    на български, немски и английски, първоначално да е на
-                    български." — превключва само коя Vorlage-версия/език се
-                    зарежда, докато няма ръчна редакция (ratschlagText ==
-                    null) — виж коментара при `ratschlagLanguage` по-горе. */}
                 <View style={styles.ratschlagLangRow}>
                     {
                         [
@@ -569,7 +561,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                             <Pressable
                                 key={lang.code}
                                 style={[styles.ratschlagLangOption, ratschlagLanguage === lang.code && styles.ratschlagLangOptionActive]}
-                                onPress={() => updateKt({ ratschlagLanguage: lang.code })}
+                                onPress={() => updateErg({ ratschlagLanguage: lang.code })}
                             >
                                 <Text style={[styles.ratschlagLangText, ratschlagLanguage === lang.code && styles.ratschlagLangTextActive]}>
                                     {lang.label}
@@ -583,7 +575,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                     style={styles.ratschlagTextArea}
                     multiline
                     value={ratschlagText}
-                    onChangeText={(v) => updateKt({ ratschlagText: v })}
+                    onChangeText={(v) => updateErg({ ratschlagText: v })}
                 />
             </View>
 
@@ -593,14 +585,6 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
 const styles = StyleSheet.create({
 
-    // 🔹 2026-08-21 — DK: "не ми харесва, много е ситно всичко" — старите
-    // размери (10-13px шрифт, 2-3px padding) правеха всичко нечетимо и
-    // сбутано. Изцяло преработени размери по-долу, следвайки пропорциите
-    // от 5.21b мокъпа (голяма, лесна за четене таблица) — самата ЛОГИКА/
-    // wiring не са пипани, само CSS. Добавен е `flex:1, width:'100%'` тук
-    // — липсваше преди, затова цялото съдържание се свиваше до ~половин
-    // екран с празно място вдясно (RN Web View без flex/width не запълва
-    // родителя).
     row: {
         flex: 1,
         width: '100%',
@@ -678,10 +662,6 @@ const styles = StyleSheet.create({
         marginBottom: 4
     },
 
-    // 🔹 2026-08-21 — DK: "чек боксовете ги направи по-големи, защото
-    // много трудно се кликат" — по-голям glyph (19→28) + реален padding
-    // около Pressable-а (преди нямаше никакъв — hit area беше буквално
-    // само размера на текста), за да е много по-лесно да се уцели.
     sportToggle: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -776,9 +756,6 @@ const styles = StyleSheet.create({
         padding: 8
     },
 
-    // 🔹 Zeit Aufteilung колоната в individuell режим — редактируемо число
-    // + фиксиран "GA1/GA2" суфикс до него (самото разпределение GA1/GA2
-    // винаги е двойка зони, суфиксът не се редактира).
     zeitAufteilungCell: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -845,9 +822,6 @@ const styles = StyleSheet.create({
         lineHeight: 18
     },
 
-    // 🔹 "най-десния компонент" за Ratschläge (DK) — по-широк, ясно
-    // озаглавен панел, същия цвят/бордер конвенция като другите "кутии"
-    // из приложението (виж actionBox в KoerperHaltungComponent.tsx).
     rightPanel: {
         flex: 1,
         borderWidth: 1,
@@ -863,11 +837,6 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
 
-    // 🔹 2026-08-21 (Claude) — DK: "текста в дясно Recommendations, да има
-    // опция да е на български, немски и английски, първоначално да е на
-    // български." Малък 3-бутонен segmented switcher (БГ/DE/EN), същата
-    // конструкция като genderToggleRow в HeaderComponent.tsx, но в жълтата
-    // тема на дясното Ratschläge поле.
     ratschlagLangRow: {
         flexDirection: 'row',
         marginBottom: 10,

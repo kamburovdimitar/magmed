@@ -92,6 +92,20 @@ class Translations {
     de: 'Kunde löschen',
     en: 'Delete Customer'
   },
+  // 🔹 2026-08-21 (Claude) — DK: "инфо бутон отстрани на всяка една
+  // таблица" (Training – Kein Test страница). Заглавия на секциите,
+  // показвани до бутона "ⓘ" (TitleWithInfoComponent) — самото съдържание
+  // на поп-ъпа е засега само на български (INFO_SUMMARY_BG/INFO_STAGES_BG
+  // в TrainingsplanKeinTestComponent.tsx), но тези кратки заглавия минават
+  // през общата LanguageUtil de/en система като всичко останало.
+  basiswerte_trainingszonen_text: {
+    de: 'Basiswerte & Trainingszonen',
+    en: 'Base values & training zones'
+  },
+  trainingswoche_plan_text: {
+    de: 'Trainingsplan (Trainingswoche)',
+    en: 'Training plan (training week)'
+  },
   add_btn_text: {
     de: 'add client - translate DE',
     en: 'Add client'
@@ -1040,6 +1054,14 @@ class Translations {
     de: 'Speichern',
     en: 'Save'
   },
+  // 🔹 2026-08-21 (Claude) — DK: "трябва да сложим [Save бутон] ... тук,
+  // както и на предната страница" (Training таба) — краткотрайно
+  // потвърждение "✓ Записано", показвано на самия Save бутон за 1.5 сек
+  // (виж saveNow() в TrainingsplanComponent.tsx).
+  saved_confirmation_text: {
+    de: 'Gespeichert ✓',
+    en: 'Saved ✓'
+  },
   zuruecksetzen: {
     de: 'Zurücksetzen',
     en: 'Reset'
@@ -1136,6 +1158,29 @@ class Translations {
     de: 'Spiro Ergometrie',
     en: 'Spiro Ergometry'
   },
+  // 🔹 2026-08-21 (Claude) — DK: "лактат ергометри" (5.25b мокъп) — IAS/
+  // LTP1 и IANS/LTP2 са установени медицински съкращения (Individuelle
+  // Aerobe/Anaerobe Schwelle, Lactate Threshold Point 1/2) — оставени
+  // непреведени и на двата езика, точно както в мокъпа.
+  ias_ltp1_text: {
+    de: 'IAS/LTP1',
+    en: 'IAS/LTP1'
+  },
+  ians_ltp2_text: {
+    de: 'IANS/LTP2',
+    en: 'IANS/LTP2'
+  },
+  // 🔹 2026-08-21 (Claude) — "остана последният — Spiro Ergometrie" —
+  // VT1/VT2 (Ventilatory Threshold 1/2) — установени медицински
+  // съкращения, непреведени и на двата езика, точно като IAS/IANS.
+  vt1_text: {
+    de: 'VT1',
+    en: 'VT1'
+  },
+  vt2_text: {
+    de: 'VT2',
+    en: 'VT2'
+  },
   hfruhe_text: {
     de: 'HFruhe',
     en: 'HR rest'
@@ -1163,6 +1208,15 @@ class Translations {
   trainingsbereich_text: {
     de: 'Trainingsbereich',
     en: 'Training zone'
+  },
+  // 🔹 2026-08-21 (Claude) — DK: "ергометрия" таб (5.24b мокъп) — ляво
+  // меню REHABILITATION/GESUNDHEITSSPORT/FREIZEITSPORT (виж
+  // TrainingsplanComponent.tsx). gesundheitssport_text/freizeitsport_text
+  // вече съществуваха (реизползвани и като GA1/GA2 етикети в Kein Test
+  // таба) — само rehabilitation_text липсваше.
+  rehabilitation_text: {
+    de: 'REHABILITATION',
+    en: 'REHABILITATION'
   },
   gesundheitssport_text: {
     de: 'GESUNDHEITSSPORT',
