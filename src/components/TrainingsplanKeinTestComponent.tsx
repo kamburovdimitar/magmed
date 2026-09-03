@@ -68,7 +68,7 @@ import { MDPatientMeasurements } from '../model/MDPatientMeasurements';
 import TitleWithInfoComponent from './TitleWithInfoComponent';
 import { openPopup } from '../services/PopupService';
 import {
-    KEIN_TEST_DEFAULT_STAGES,
+    EMPTY_STAGES,
     KEIN_TEST_INTENSITY_RANGES,
     RATSCHLAEGE_VORLAGE_A,
     RATSCHLAEGE_VORLAGE_B,
@@ -119,10 +119,9 @@ const INFO_SUMMARY_BG = {
 const INFO_STAGES_BG = {
     title: 'Тренировъчен план по седмици (8 етапа)',
     description:
-        'Това е самият тренировъчен план, който се дава на пациента — прогресия през 8 етапа с постепенно нарастващо '
-        + 'натоварване. По подразбиране стойностите са стандартни за всички пациенти ("Grundeinstellung"); за да ги '
-        + 'промениш индивидуално за този пациент, натисни "DESIGN training week" от лявото меню — редовете стават '
-        + 'редактируеми.',
+        'Това е самият тренировъчен план, който се дава на пациента — прогресия през до 8 етапа с постепенно '
+        + 'нарастващо натоварване. Таблицата тръгва празна — докторът я попълва ръчно, ред по ред, конкретно за ТОЗИ '
+        + 'пациент (натисни "DESIGN training week" от лявото меню, за да отключиш редакция).',
     fields: [
         'WNTZ (минути) = обща нетна тренировъчна седмица — колко минути общо тренира пациентът седмично на този етап.',
         'Продължителност на сесия (минути) = колко минути трае всяка отделна тренировка.',
@@ -131,7 +130,7 @@ const INFO_STAGES_BG = {
         'Тренировъчен блок (седмици) = колко седмици пациентът остава на този етап, преди да премине към следващия.',
         'Чекбоксът вляво на всеки ред показва дали етапът е активен/включен в плана.'
     ],
-    source: 'Стойностите по подразбиране следват стандартната прогресия от документацията MAGMED Codex.'
+    source: 'Няма стойности "по подразбиране" — докторът решава сам колко етапа да ползва и какви числа да сложи, според конкретния пациент.'
 };
 
 export default function TrainingsplanKeinTestComponent({ measurement, callback }: any) {
@@ -156,7 +155,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
     // етикети/бутони из цялото приложение и няма 'bg' версия за всичко) —
     // пазим го в kt, за да оцелее презареждане на теста.
     const ratschlagLanguage = kt.ratschlagLanguage ?? 'bg';
-    const stages = kt.stages ?? KEIN_TEST_DEFAULT_STAGES;
+    const stages = kt.stages ?? EMPTY_STAGES;
 
     // 🔹 базови (Grundeinstellung) стойности — виж formulaта в change log-а
     const hfruheBase = measurement?.heartraterest > 0 ? measurement.heartraterest : 70;
@@ -370,7 +369,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                         <View style={styles.zoneTable}>
 
                             <View style={styles.zoneHeaderRow}>
-                                <Text style={styles.zoneHeaderCell}>{LanguageUtil.getName('trainingsbereich_text')}</Text>
+                                <Text style={styles.zoneHeaderLabelCell}>{LanguageUtil.getName('trainingsbereich_text')}</Text>
                                 {showRadfahren && <Text style={styles.zoneHeaderCell}>S/min</Text>}
                                 {showRadfahren && <Text style={styles.zoneHeaderCell}>Watt</Text>}
                                 {showLaufen && <Text style={styles.zoneHeaderCell}>S/min</Text>}
@@ -639,13 +638,13 @@ const styles = StyleSheet.create({
     },
 
     fieldLabel: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         minWidth: 110
     },
 
     readonlyValue: {
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: 'bold',
         minWidth: 46
     },
@@ -655,7 +654,7 @@ const styles = StyleSheet.create({
         borderColor: '#999',
         width: 64,
         padding: 6,
-        fontSize: 15,
+        fontSize: 18,
         borderRadius: 4
     },
 
@@ -668,7 +667,7 @@ const styles = StyleSheet.create({
     },
 
     unit: {
-        fontSize: 13,
+        fontSize: 16,
         color: '#555'
     },
 
@@ -691,12 +690,12 @@ const styles = StyleSheet.create({
     },
 
     sportToggleLabel: {
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: '600'
     },
 
     checkboxGlyph: {
-        fontSize: 28
+        fontSize: 30
     },
 
     zoneTable: {
@@ -711,7 +710,20 @@ const styles = StyleSheet.create({
 
     zoneHeaderCell: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        borderWidth: 0.5,
+        borderColor: '#9fb3c8',
+        padding: 8
+    },
+
+    // 🔹 2026-08-25 (Claude) — същата ширина (flex: 1.6) като zoneLabelCell,
+    // за да се подравнят колоните на header реда с редовете под тях
+    // (DK докладва че таблицата "Тренировъчна зона" изглежда разместена).
+    zoneHeaderLabelCell: {
+        flex: 1.6,
+        fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
         borderWidth: 0.5,
@@ -725,7 +737,7 @@ const styles = StyleSheet.create({
 
     zoneLabelCell: {
         flex: 1.6,
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: '600',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
@@ -734,7 +746,7 @@ const styles = StyleSheet.create({
 
     zoneValueCell: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         textAlign: 'center',
         borderWidth: 0.5,
@@ -769,7 +781,7 @@ const styles = StyleSheet.create({
 
     stageCell: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
         textAlign: 'center',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
@@ -788,14 +800,14 @@ const styles = StyleSheet.create({
     },
 
     zeitAufteilungInput: {
-        fontSize: 13,
+        fontSize: 16,
         textAlign: 'center',
         minWidth: 44,
         padding: 4
     },
 
     zeitAufteilungSuffix: {
-        fontSize: 13
+        fontSize: 16
     },
 
     vorlageRow: {
@@ -817,7 +829,7 @@ const styles = StyleSheet.create({
     },
 
     vorlageLabel: {
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: '600'
     },
 
@@ -835,13 +847,13 @@ const styles = StyleSheet.create({
 
     legendLabel: {
         width: 160,
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: 'bold'
     },
 
     legendText: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
         lineHeight: 18
     },
 
@@ -857,7 +869,7 @@ const styles = StyleSheet.create({
     },
 
     rightPanelTitle: {
-        fontSize: 16,
+        fontSize: 19,
         fontWeight: 'bold',
         marginBottom: 10,
         textAlign: 'center'
@@ -889,7 +901,7 @@ const styles = StyleSheet.create({
     },
 
     ratschlagLangText: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         color: '#333'
     },
@@ -900,7 +912,7 @@ const styles = StyleSheet.create({
 
     ratschlagTextArea: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 17,
         lineHeight: 20,
         textAlignVertical: 'top',
         minHeight: 560

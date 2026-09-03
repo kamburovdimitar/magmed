@@ -24,31 +24,40 @@
 // (sections ?? WIRBELSAEULE_SECTIONS) вместо да дублира JSX, (2)
 // KoerperHaltungAuswertungComponent.tsx може да реизползва СЪЩАТА
 // декларация за label look-up на избраните редове (AUSWERTUNG бутон).
+// 🔹 2026-08-27 (Europe/Sofia) — DK: "нещата в списъка, не са преведени...
+// на български" (+ follow-up: "тези също .... Lordose Kyphose... и
+// останалите"). `label` was rendered directly as raw text by
+// BeuterlungTable.tsx / KoerperHaltungAuswertungComponent.tsx — never
+// translated. Added `labelKey` (new koerperhaltung_*_text keys in
+// Translations.js) alongside the existing `label`; both consumers now look
+// the row up via LanguageUtil.getName(r.labelKey) instead of using r.label
+// directly. Kept `label` in place (unused now, but harmless) rather than
+// removing it, in case anything else still reads it.
 export const WIRBELSAEULE_SECTIONS = [
     {
         title: 'HWS',
         rows: [
-            { label: 'Lordose', key: 'lordose' },
-            { label: 'Skoliose', key: 'skoliose' },
-            { label: 'Kyphose', key: 'kyphose' },
-            { label: 'Schiefhals', key: 'schiefhals' },
-            { label: 'Steilstellung', key: 'steilstellung' }
+            { label: 'Lordose', labelKey: 'koerperhaltung_lordose_text', key: 'lordose' },
+            { label: 'Skoliose', labelKey: 'koerperhaltung_skoliose_text', key: 'skoliose' },
+            { label: 'Kyphose', labelKey: 'koerperhaltung_kyphose_text', key: 'kyphose' },
+            { label: 'Schiefhals', labelKey: 'koerperhaltung_schiefhals_text', key: 'schiefhals' },
+            { label: 'Steilstellung', labelKey: 'koerperhaltung_steilstellung_text', key: 'steilstellung' }
         ]
     },
     {
         title: 'BWS',
         rows: [
-            { label: 'Kyphose', key: 'bws_kyphose' },
-            { label: 'Skoliose', key: 'bws_skoliose' },
-            { label: 'Steilstellung', key: 'bws_steil' }
+            { label: 'Kyphose', labelKey: 'koerperhaltung_kyphose_text', key: 'bws_kyphose' },
+            { label: 'Skoliose', labelKey: 'koerperhaltung_skoliose_text', key: 'bws_skoliose' },
+            { label: 'Steilstellung', labelKey: 'koerperhaltung_steilstellung_text', key: 'bws_steil' }
         ]
     },
     {
         title: 'LWS',
         rows: [
-            { label: 'Lordose', key: 'lws_lordose' },
-            { label: 'Skoliose', key: 'lws_skoliose' },
-            { label: 'Steilstellung', key: 'lws_steil' }
+            { label: 'Lordose', labelKey: 'koerperhaltung_lordose_text', key: 'lws_lordose' },
+            { label: 'Skoliose', labelKey: 'koerperhaltung_skoliose_text', key: 'lws_skoliose' },
+            { label: 'Steilstellung', labelKey: 'koerperhaltung_steilstellung_text', key: 'lws_steil' }
         ]
     }
 ];
@@ -56,9 +65,9 @@ export const WIRBELSAEULE_SECTIONS = [
 export const KOPF_SECTIONS = [
     {
         rows: [
-            { label: 'Kopfschiefstand', key: 'kopf_schiefstand' },
-            { label: 'Kopfvorhaltung', key: 'kopf_vorhaltung' },
-            { label: 'Kopfrotation', key: 'kopf_rotation' }
+            { label: 'Kopfschiefstand', labelKey: 'koerperhaltung_kopfschiefstand_text', key: 'kopf_schiefstand' },
+            { label: 'Kopfvorhaltung', labelKey: 'koerperhaltung_kopfvorhaltung_text', key: 'kopf_vorhaltung' },
+            { label: 'Kopfrotation', labelKey: 'koerperhaltung_kopfrotation_text', key: 'kopf_rotation' }
         ]
     }
 ];
@@ -66,10 +75,10 @@ export const KOPF_SECTIONS = [
 export const SCHULTER_SECTIONS = [
     {
         rows: [
-            { label: 'Schulterhochstand rechts', key: 'schulter_hochstand_re' },
-            { label: 'Schulterhochstand links', key: 'schulter_hochstand_li' },
-            { label: 'Schulterprotraktion', key: 'schulter_protraktion' },
-            { label: 'Schulterasymmetrie', key: 'schulter_asymmetrie' }
+            { label: 'Schulterhochstand rechts', labelKey: 'koerperhaltung_schulterhochstand_rechts_text', key: 'schulter_hochstand_re' },
+            { label: 'Schulterhochstand links', labelKey: 'koerperhaltung_schulterhochstand_links_text', key: 'schulter_hochstand_li' },
+            { label: 'Schulterprotraktion', labelKey: 'koerperhaltung_schulterprotraktion_text', key: 'schulter_protraktion' },
+            { label: 'Schulterasymmetrie', labelKey: 'koerperhaltung_schulterasymmetrie_text', key: 'schulter_asymmetrie' }
         ]
     }
 ];
@@ -77,10 +86,10 @@ export const SCHULTER_SECTIONS = [
 export const BECKEN_SECTIONS = [
     {
         rows: [
-            { label: 'Beckenschiefstand', key: 'becken_schiefstand' },
-            { label: 'Beckenkippung anterior', key: 'becken_kippung_anterior' },
-            { label: 'Beckenkippung posterior', key: 'becken_kippung_posterior' },
-            { label: 'Beckenrotation', key: 'becken_rotation' }
+            { label: 'Beckenschiefstand', labelKey: 'koerperhaltung_beckenschiefstand_text', key: 'becken_schiefstand' },
+            { label: 'Beckenkippung anterior', labelKey: 'koerperhaltung_beckenkippung_anterior_text', key: 'becken_kippung_anterior' },
+            { label: 'Beckenkippung posterior', labelKey: 'koerperhaltung_beckenkippung_posterior_text', key: 'becken_kippung_posterior' },
+            { label: 'Beckenrotation', labelKey: 'koerperhaltung_beckenrotation_text', key: 'becken_rotation' }
         ]
     }
 ];
@@ -88,9 +97,9 @@ export const BECKEN_SECTIONS = [
 export const KNIE_SECTIONS = [
     {
         rows: [
-            { label: 'Genu valgum', key: 'knie_valgum' },
-            { label: 'Genu varum', key: 'knie_varum' },
-            { label: 'Genu recurvatum', key: 'knie_recurvatum' }
+            { label: 'Genu valgum', labelKey: 'koerperhaltung_genu_valgum_text', key: 'knie_valgum' },
+            { label: 'Genu varum', labelKey: 'koerperhaltung_genu_varum_text', key: 'knie_varum' },
+            { label: 'Genu recurvatum', labelKey: 'koerperhaltung_genu_recurvatum_text', key: 'knie_recurvatum' }
         ]
     }
 ];
@@ -98,11 +107,11 @@ export const KNIE_SECTIONS = [
 export const FUSS_SECTIONS = [
     {
         rows: [
-            { label: 'Senkfuß', key: 'fuss_senkfuss' },
-            { label: 'Spreizfuß', key: 'fuss_spreizfuss' },
-            { label: 'Hohlfuß', key: 'fuss_hohlfuss' },
-            { label: 'Knickfuß', key: 'fuss_knickfuss' },
-            { label: 'Plattfuß', key: 'fuss_plattfuss' }
+            { label: 'Senkfuß', labelKey: 'koerperhaltung_senkfuss_text', key: 'fuss_senkfuss' },
+            { label: 'Spreizfuß', labelKey: 'koerperhaltung_spreizfuss_text', key: 'fuss_spreizfuss' },
+            { label: 'Hohlfuß', labelKey: 'koerperhaltung_hohlfuss_text', key: 'fuss_hohlfuss' },
+            { label: 'Knickfuß', labelKey: 'koerperhaltung_knickfuss_text', key: 'fuss_knickfuss' },
+            { label: 'Plattfuß', labelKey: 'koerperhaltung_plattfuss_text', key: 'fuss_plattfuss' }
         ]
     }
 ];

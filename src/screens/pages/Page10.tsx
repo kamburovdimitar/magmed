@@ -38,6 +38,7 @@ import TrainingsplanComponent from '../../components/TrainingsplanComponent';
 import { createTest, saveActiveTest, setSelectedUser } from '../../store/userSlice';
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements';
 import { CodexUtil } from '../../utils/CodexUtil';
+import LanguageUtil from '../../utils/LanguageUtil';
 
 export default function Page10({ goTo }: any) {
 
@@ -136,7 +137,14 @@ export default function Page10({ goTo }: any) {
 
     return (
 
-        <View style={styles.container}>
+        <View style={styles.container} nativeID="magmed-app-root">
+
+            {/* 🔹 2026-08-26 (Claude) — nativeID="magmed-app-root" добавен
+                за принт доклада (PrintReportComponent.tsx, отворен от
+                TrainingsplanComponent.tsx) — същия print-CSS trick като
+                Page8.tsx: скрива ЦЯЛАТА тази страница по време на печат,
+                оставяйки видим само report-а (той portal-ва извън тук,
+                react-native-web Modal). */}
 
             {/* 🔹 2026-08-21 — DK: "цялата страница е позиционирана надолу,
                 трябва да е под Update button." Причина: HeaderComponent.tsx
@@ -170,7 +178,7 @@ export default function Page10({ goTo }: any) {
             </View>
 
             <Button
-                title="Back to Home"
+                title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                 onPress={() => goTo('home')}
             />
 
@@ -194,8 +202,13 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1
     },
 
+    // 🔹 2026-08-28 (Claude) — belt-and-suspenders заедно с фикса в
+    // TrainingsplanComponent.tsx (виж неговия changelog за пълния разбор
+    // на overlap бъга, докладван от DK) — `minHeight:0` за да не се
+    // разчита само на вътрешния фикс, ако утре тук се добави друго дете.
     content: {
         flex: 1,
+        minHeight: 0,
         padding: 10
     }
 

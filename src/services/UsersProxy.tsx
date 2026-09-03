@@ -5,21 +5,44 @@
 //   list (`measurements: []`) instead of a single blank
 //   MDPatientMeasurements — matches the new shape; each patient just has no
 //   tests yet until they click "New Test".
+//
+// 2026-08-21 (Claude) — DK: "gender ... още когато създаваме обект patient,
+//   мисля че не се попълва ... това го ъпдейтни". Всичките 4 демо пациента
+//   имаха `gender: ""` — сега истински "male"/"female".
+//
+// 2026-08-25 (Europe/Sofia) — DK: "продължаваме към wire-ване на
+//   проксита" — wire-ваме към реалния magmed-server API (виж
+//   C:\magmed\magmed-server\src\routes\patients.js), който пише в
+//   истинския MongoDB Atlas "magmed" клъстър, вместо статичния in-memory
+//   масив по-долу.
+//
+//   Старият `static data` масив стана `FALLBACK_DATA` — вече НЕ е основният
+//   източник на истина (той е MongoDB през magmed-server), а само мрежа за
+//   безопасност: ако magmed-server не е стартиран локално (забравено
+//   `npm start` в C:\magmed\magmed-server), getAllUsers/getUserById тихо се
+//   връщат към него (console.error + fallback), за да не увисне целият
+//   клиент. addUser/updateUser НЕ fallback-ват — при провалена заявка
+//   хвърлят грешката нагоре (по-добре ясен провал при запис, отколкото
+//   тихо загубени данни, които после изглеждат все едно са се запазили).
+//
+//   Всички извикващи места минаха от синхронно UsersProxy.getAllUsers() на
+//   await UsersProxy.getAllUsers() — виж changelog-овете на Page4.tsx/
+//   Page9.tsx/Page1.tsx.
 // ============================================
 
 import { MDPatient } from "../model/MDPatient";
 
+// 🔹 адресът на magmed-server (виж C:\magmed\magmed-server\.env, PORT).
+// Засега hardcode-нат — стъпка отвъд днешния демо обхват е да дойде от
+// build/env конфигурация, за да работи и извън localhost (напр. на тест
+// сървър или на таблет).
+const API_BASE = "http://localhost:4001";
+
 class UsersProxy {
 
-
-    // 🔹 2026-08-21 (Claude) — DK: "gender ... още когато създаваме обект
-    // patient, мисля че не се попълва ... това го ъпдейтни, така че да е
-    // попълнено правилно, защото аз ползвам хардкоднати стойности, все
-    // още нямам бд." Всичките 4 демо пациента имаха `gender: ""` — сега
-    // истински "male"/"female" (същите точни низове, които dropdown-ът в
-    // HeaderComponent.tsx вече записва, и които ErgometrieUtil.js очаква).
-    // тази дейта трябва да отиде в редукс , която ще идва
-    static data: MDPatient[] = [
+    // 🔹 само fallback за "сървърът-не-е-пуснат" случая — вече НЕ е
+    // основният източник на истина.
+    static FALLBACK_DATA: MDPatient[] = [
         {
             lastname: "Müller",
             firstname: "Hans",
@@ -62,96 +85,91 @@ class UsersProxy {
         }
     ];
 
-    static getAllUsers() {
-        return UsersProxy.data;
+    static async getAllUsers(): Promise<MDPatient[]> {
+
+        try {
+
+            const response = await fetch(`${API_BASE}/api/patients`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to load patients (${response.status})`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+
+            console.error('UsersProxy.getAllUsers error, magmed-server изглежда недостъпен — ползвам fallback данни:', error);
+            return UsersProxy.FALLBACK_DATA;
+
+        }
+
     }
 
     static async addUser(firstName: string, lastName: string, title: string, gender: string, birthdate: string, patientId: string) {
-        const newPatient: MDPatient = {
-            firstname: firstName,
-            lastname: lastName,
-            title: title,
-            gender: gender,
-            birthdate: birthdate,
-            patientid: patientId,
-            measurements: [],
-            activeTestId: ""
-        };
 
-        this.data.push(newPatient);
+        const response = await fetch(`${API_BASE}/api/patients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firstname: firstName,
+                lastname: lastName,
+                title,
+                gender,
+                birthdate,
+                patientid: patientId
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result?.error || `Failed to add patient (${response.status})`);
+        }
+
+        return result;
+
     }
 
     static async updateUser(patient: MDPatient) {
 
-        for (let i = 0; i < this.data.length; i++) {
+        const response = await fetch(`${API_BASE}/api/patients/${patient.patientid}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patient)
+        });
 
-            if (this.data[i].patientid === patient.patientid) {
+        const result = await response.json();
 
-                this.data[i].firstname = patient.firstname;
-                this.data[i].lastname = patient.lastname;
-                this.data[i].title = patient.title;
-                this.data[i].birthdate = patient.birthdate;
-                this.data[i].gender = patient.gender;
-                this.data[i].measurements = patient.measurements;
-                return this.data[i];
-            }
+        if (!response.ok) {
+            throw new Error(result?.error || `Failed to update patient (${response.status})`);
         }
 
-        return null;
+        return result;
+
     }
 
-
-    // static async getAllUsers() {
-
-    //     try {
-    //         const response = await fetch('/api/users')
-
-    //         if (!response.ok) {
-    //             throw new Error('Failed to load users')
-    //         }
-
-    //         const data = await response.json()
-    //         return data
-
-    //     } catch (error) {
-
-    //         console.error('UsersProxy.getUsers error:', error)
-    //         return UsersProxy.data
-
-    //     }
-
-    // }
-
-    static async getUserById(userId) {
+    static async getUserById(userId: string) {
 
         try {
 
-            const response = await fetch(`/api/users/${userId}`)
+            const response = await fetch(`${API_BASE}/api/patients/${userId}`);
 
             if (!response.ok) {
-                throw new Error('Failed to load user')
+                throw new Error(`Failed to load patient (${response.status})`);
             }
 
-            const data = await response.json()
-            return data
+            return await response.json();
 
         } catch (error) {
 
-            console.error('UsersProxy.getUserById error:', error)
+            console.error('UsersProxy.getUserById error, magmed-server изглежда недостъпен — ползвам fallback данни:', error);
 
-            for (let i = 0; i < UsersProxy.data.length; i++) {
-                if (UsersProxy.data[i].patientId == userId) {
-                    return UsersProxy.data[i]
-                }
-            }
-
-            return null
+            return UsersProxy.FALLBACK_DATA.find(p => p.patientid === userId) ?? null;
 
         }
 
     }
 }
-
-
 
 export default UsersProxy

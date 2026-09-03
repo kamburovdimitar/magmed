@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Button, Linking } from 'react-native';
+import LanguageUtil from '../../utils/LanguageUtil';
 
 export default function LoginScreen({ goTo }) {
 
@@ -20,7 +21,7 @@ export default function LoginScreen({ goTo }) {
   return (
     <View>
       <Button
-        title="Login"
+        title={LanguageUtil.getName('login_text')}
         onPress={() => login()}
       />
     </View>

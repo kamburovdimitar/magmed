@@ -1,4 +1,43 @@
 // ===== CLAUDE CHANGE LOG (newest last) =====
+// 2026-08-27 (2) (Europe/Sofia) — DK: "десният екран да бъде разделен на 2.
+//   Горната текущият екран, долният да бъде листа, да имат стрелка, за да
+//   може да се скриват." Split the right panel into rightPanelTop (whatever
+//   `content` currently is — TestPanel/Print/Interpretation) and
+//   rightPanelBottom, a permanently-mounted "Vorhandene Tests" drawer with
+//   a header row (label + ▾/▸ arrow) that toggles `testsListExpanded`.
+//   Because the list is no longer a full-panel takeover gated behind a
+//   confirm dialog (the old `showTestsList`/`confirmAction==='existing'`
+//   flow), the actual data-loss risk moved to where it really lives: Apply.
+//   `handleApplyTest` now checks `isDirty` itself and, if dirty, routes
+//   through the SAME confirm dialog via a new `confirmAction === 'apply'`
+//   branch (holding the target id in `pendingApplyId`) before the real
+//   `doApplyTest` runs — so switching tests while the draft has unsaved
+//   edits still warns, exactly as before, just triggered at the right
+//   moment now that opening the list itself can't lose anything.
+//   TestPanelComponent's "Existing Tests" button now just expands the
+//   drawer (`setTestsListExpanded(true)`) instead of swapping `content`.
+//   TestsListComponent itself needed no changes — its existing "Затвори"
+//   button doubles nicely as "collapse the drawer" via
+//   onClose={() => setTestsListExpanded(false)}.
+// 2026-08-27 (Europe/Sofia) — DK: "трябва да имаме del бутон до приложи ...
+//   искам отдолу да има по-големи бутони, добави/запази/". Two changes:
+//   (1) TestsListComponent now applies on row-click (see its own changelog)
+//   and exposes a Delete button per row; wired here via requestDeleteTest
+//   -> a SECOND ConfirmDialogComponent instance (separate from the
+//   existing unsaved-changes gate — this one always asks, since deleting a
+//   whole saved test is destructive regardless of `isDirty`) ->
+//   dispatch(deleteTest(id)). (2) The bottom-of-left-panel action row was
+//   plain RN <Button> (not resizable via style — only `color` tint), so it
+//   was converted to Pressable+Text with the app's established big-button
+//   convention (full-width colored bars — see TrainingsplanComponent.tsx's
+//   footerRow/saveButton). Also added a new "Добави" button here (reuses
+//   requestNewTest / the 'neuer_test_text' label, same action as the New
+//   Test button already in TestPanelComponent's right-panel row — kept the
+//   existing translated label for consistency rather than inventing a
+//   separate "Добави" string for the identical action). DK's message cut
+//   off after "добави/запази/" — the third slot was filled with the
+//   already-present "Назад към началото" (Back to Home) button, just
+//   restyled to match; flag to DK if a different third button was meant.
 // 2026-08-11 14:20 (Europe/Sofia) — Restored the "enlarge to read" zoom control
 //   (Codex 3.13) via zoomLevel state + A-/Reset/A+ buttons in the Interpretation
 //   modal header, wired to InterprationPanel's new zoomLevel prop (real font
@@ -69,6 +108,7 @@ import {
     StyleSheet,
     Button,
     Modal,
+    Pressable,
 } from 'react-native';
 import LanguageUtil from '../../utils/LanguageUtil'
 import HeaderSearchComponent from '../../components/HeaderComponent'
@@ -86,12 +126,12 @@ import TestComponent4 from '../../components/testComponents/TestComponent4'
 import TestComponent5 from '../../components/testComponents/TestComponent5'
 import TestComponent6 from '../../components/testComponents/TestComponent6'
 import TestComponent7 from '../../components/testComponents/TestComponent7'
-import PrintTestPanel from '../../components/PrintTestPanel'
+import PrintFullReportComponent from '../../components/PrintFullReportComponent'
 import InterprationPanel from '../../components/InterprationPanel'
 import { MDPatient } from '../../model/MDPatient'
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { createTest, setActiveTest, saveActiveTest, renameActiveTest } from "../../store/userSlice";
+import { createTest, setActiveTest, saveActiveTest, renameActiveTest, deleteTest } from "../../store/userSlice";
 import { MDPatientMeasurements } from '../../model/MDPatientMeasurements'
 import LabelAndInputTextComponent from '../../components/LabelAndInputComponent'
 import { ERGOMETRY_MODELS } from '../../constants/ergometryModels'
@@ -107,6 +147,13 @@ export default function Page8({ goTo }) {
 
     const [ergoView, setErgoView] = useState('');
     const [leftView, setLeftView] = useState('');
+    // 🔹 2026-08-28 (Claude) — DK: замества счупения "печат" бутон
+    // (стария PrintTestPanel — грешен title key + строеше данните от
+    // суровия measurements масив, виж PrintFullReportComponent.tsx-ния
+    // changelog за пълния разбор). Новият доклад е Modal (react-native-web
+    // portal-ва извън #magmed-app-root сам), затова не минава през
+    // leftView/content суич-а по-долу като старото — просто showFullReport.
+    const [showFullReport, setShowFullReport] = useState(false);
     const [dataPatient, setDataPatient] = useState({} as MDPatient);
     const [showInterpretationModal, setShowInterpretationModal] = useState(false);
     const INTERPRETATION_ZOOM_DEFAULT = 1.45;
@@ -129,8 +176,20 @@ export default function Page8({ goTo }) {
 
     const [draft, setDraft] = useState(() => new MDPatientMeasurements());
     const [isDirty, setIsDirty] = useState(false);
-    const [showTestsList, setShowTestsList] = useState(false);
-    const [confirmAction, setConfirmAction] = useState(null as 'new' | 'existing' | null);
+    // 🔹 bottom-panel "Vorhandene Tests" drawer — collapsible via the
+    // header arrow (see rightPanelBottom in the JSX below). Defaults open
+    // so the list is visible without an extra click.
+    const [testsListExpanded, setTestsListExpanded] = useState(true);
+
+    const [confirmAction, setConfirmAction] = useState(null as 'new' | 'apply' | null);
+
+    // 🔹 holds the target test id while confirmAction === 'apply' (Apply
+    // clicked with unsaved changes in the draft) — mirrors the New Test gate.
+    const [pendingApplyId, setPendingApplyId] = useState(null as string | null);
+
+    // 🔹 DEL button (Existing Tests panel) — holds the id of the test
+    // pending deletion while the confirm dialog is up; null = no dialog.
+    const [deleteTargetId, setDeleteTargetId] = useState(null as string | null);
 
     // 🔹 name shown/editable in the header (see JSX below) — hydrated
     // alongside `draft` in the same effect, so it always matches whichever
@@ -363,41 +422,72 @@ export default function Page8({ goTo }) {
 
     }
 
-    function requestExistingTests() {
-
-        if (isDirty) {
-            setConfirmAction('existing');
-        } else {
-            setShowTestsList(true);
-        }
-
-    }
-
     function handleConfirmDiscard() {
 
         if (confirmAction === 'new') {
             doNewTest();
         }
 
-        if (confirmAction === 'existing') {
-            setShowTestsList(true);
-            setConfirmAction(null);
+        if (confirmAction === 'apply' && pendingApplyId) {
+            doApplyTest(pendingApplyId);
         }
 
+        setConfirmAction(null);
+        setPendingApplyId(null);
     }
 
     function handleCancelDiscard() {
         setConfirmAction(null);
+        setPendingApplyId(null);
     }
 
-    function handleApplyTest(id) {
+    function doApplyTest(id) {
         dispatch(setActiveTest(id));
-        setShowTestsList(false);
 
-        // 🔹 при Apply от Existing Tests винаги отваряме "ALLE Tests"
-        // (detail7), за да се вижда целият тест наведнъж, а не последния
-        // отворен detail-изглед отпреди
-        setErgoView('detail7');
+        // 🔹 2026-08-27 (4) — DK: "когато сменим теста, нека се запазва
+        // текущият екран ... да можеш да ги сравниш с другия тест". Used to
+        // force-reset ergoView to 'detail7' ("ALLE Tests") on every Apply;
+        // now deliberately left untouched, so switching tests while looking
+        // at e.g. "Мускулна функция" (detail2) keeps that same view open —
+        // letting the user compare the same section across tests instead of
+        // being bounced back to the combined view each time.
+
+        setConfirmAction(null);
+        setPendingApplyId(null);
+    }
+
+    // 🔹 the list is now an always-visible drawer (see rightPanelBottom),
+    // so the isDirty guard that used to gate OPENING the list now gates the
+    // actual data-losing action, APPLYING a different test.
+    function handleApplyTest(id) {
+
+        if (isDirty) {
+            setPendingApplyId(id);
+            setConfirmAction('apply');
+            return;
+        }
+
+        doApplyTest(id);
+    }
+
+    // 🔹 DEL бутон до Приложи — винаги пита за потвърждение (за разлика от
+    // New Test/Existing Tests confirm-а по-горе, тук няма "isDirty" пътека
+    // за прескачане: изтриването на цял запазен тест е необратимо).
+    function requestDeleteTest(id) {
+        setDeleteTargetId(id);
+    }
+
+    function handleConfirmDeleteTest() {
+
+        if (deleteTargetId) {
+            dispatch(deleteTest(deleteTargetId));
+        }
+
+        setDeleteTargetId(null);
+    }
+
+    function handleCancelDeleteTest() {
+        setDeleteTargetId(null);
     }
 
     useEffect(() => {
@@ -413,7 +503,7 @@ export default function Page8({ goTo }) {
     }
 
     function onPrint() {
-        setLeftView("print")
+        setShowFullReport(true);
     }
 
     function onInterpration(value) {
@@ -526,22 +616,13 @@ export default function Page8({ goTo }) {
 
     let content;
 
-    if (showTestsList) {
-        content = <TestsListComponent
-            tests={tests}
-            activeTestId={activeTestId}
-            onApply={handleApplyTest}
-            onClose={() => setShowTestsList(false)}
-        />;
-    } else if (leftView === 'print') {
-        content = <PrintTestPanel />;
-    } else if (leftView === 'interpratation') {
+    if (leftView === 'interpratation') {
         content = <InterprationPanel selectedModel={model} />;
     } else {
         content = <TestPanel
             handlerButton={handlerButton}
             onNewTest={requestNewTest}
-            onExistingTests={requestExistingTests}
+            onExistingTests={() => setTestsListExpanded(true)}
         />;
     }
 
@@ -599,24 +680,81 @@ export default function Page8({ goTo }) {
                     {renderTestView()}
                 </View>
 
-                <Button
-                    title={LanguageUtil.getName('speichern')}
-                    onPress={handleSaveTest}
-                />
+                <View style={styles.footerRow}>
 
-                <Button
-                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
-                    onPress={() => goTo('home')}
-                />
+                    <Pressable
+                        style={[styles.footerButton, styles.addButton]}
+                        onPress={requestNewTest}
+                    >
+                        <Text style={styles.footerButtonText}>
+                            {LanguageUtil.getName('hinzufuegen_text')}
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={[styles.footerButton, styles.saveButton]}
+                        onPress={handleSaveTest}
+                    >
+                        <Text style={styles.footerButtonText}>
+                            {LanguageUtil.getName('aktualisieren_text')}
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={[styles.footerButton, styles.backButton]}
+                        onPress={() => goTo('home')}
+                    >
+                        <Text style={styles.footerButtonText}>
+                            {LanguageUtil.getName('zurueck_zur_startseite_text')}
+                        </Text>
+                    </Pressable>
+
+                </View>
                 <TextInput
                     value={draft?.heightcm?.toString()}
                 />
 
             </View>
 
-            {/* RIGHT PANEL */}
+            {/* RIGHT PANEL — top: current panel, bottom: collapsible
+                "Vorhandene Tests" drawer (arrow toggles testsListExpanded) */}
             <View style={styles.rightPanel}>
-                {content}
+
+                <View style={styles.rightPanelTop}>
+                    {content}
+                </View>
+
+                <View style={[styles.rightPanelBottom, testsListExpanded && styles.rightPanelBottomExpanded]}>
+
+                    <Pressable
+                        style={styles.testsListHeader}
+                        onPress={() => setTestsListExpanded((v) => !v)}
+                    >
+                        <Text style={styles.testsListHeaderText}>
+                            {LanguageUtil.getName('vorhandene_tests_test')}
+                        </Text>
+
+                        <Text style={styles.testsListHeaderArrow}>
+                            {testsListExpanded ? '▾' : '▸'}
+                        </Text>
+                    </Pressable>
+
+                    {
+                        testsListExpanded &&
+
+                        <View style={styles.testsListBody}>
+                            <TestsListComponent
+                                tests={tests}
+                                activeTestId={activeTestId}
+                                onApply={handleApplyTest}
+                                onDelete={requestDeleteTest}
+                                onClose={() => setTestsListExpanded(false)}
+                            />
+                        </View>
+                    }
+
+                </View>
+
             </View>
 
             <Modal
@@ -637,12 +775,12 @@ export default function Page8({ goTo }) {
                         </View>
 
                         <Button
-                            title="Print"
+                            title={LanguageUtil.getName('nav_drucken_text')}
                             onPress={printInterpretation}
                         />
 
                         <Button
-                            title="Close"
+                            title={LanguageUtil.getName('schliessen')}
                             onPress={() => setShowInterpretationModal(false)}
                         />
                     </View>
@@ -659,6 +797,22 @@ export default function Page8({ goTo }) {
                 onConfirm={handleConfirmDiscard}
                 onCancel={handleCancelDiscard}
             />
+
+            <ConfirmDialogComponent
+                visible={deleteTargetId !== null}
+                message={LanguageUtil.getName('test_delete_confirm_text')}
+                onConfirm={handleConfirmDeleteTest}
+                onCancel={handleCancelDeleteTest}
+            />
+
+            {showFullReport && (
+                <PrintFullReportComponent
+                    measurement={measurement}
+                    patient={selectedUser}
+                    activeTest={activeTest}
+                    onClose={() => setShowFullReport(false)}
+                />
+            )}
 
         </View>
 
@@ -716,7 +870,57 @@ const styles = StyleSheet.create({
 
     rightPanel: {
         flex: 1,
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#f5f5f5',
+        flexDirection: 'column'
+    },
+
+    // 🔹 2026-08-27 (2) — top/bottom split of rightPanel: top holds the
+    // current panel (TestPanel/Print/Interpretation), bottom is the
+    // collapsible "Vorhandene Tests" drawer.
+    // 2026-08-27 (3) — DK: "супер, но го направи 50 на 50" — while expanded,
+    // rightPanelBottom now also gets flex:1 (rightPanelBottomExpanded,
+    // applied conditionally in the JSX), matching rightPanelTop's flex:1
+    // for an exact 50/50 split. While collapsed, rightPanelBottom keeps no
+    // flex at all, so it shrinks back to just the header bar's own height
+    // and rightPanelTop reclaims the rest — same as before this change.
+    rightPanelTop: {
+        flex: 1,
+        minHeight: 0
+    },
+
+    rightPanelBottom: {
+        borderTopWidth: 1,
+        borderTopColor: '#ccc',
+        backgroundColor: 'white'
+    },
+
+    rightPanelBottomExpanded: {
+        flex: 1,
+        minHeight: 0
+    },
+
+    testsListHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        backgroundColor: '#e8e8e8'
+    },
+
+    testsListHeaderText: {
+        fontWeight: 'bold',
+        fontSize: 15
+    },
+
+    testsListHeaderArrow: {
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
+
+    testsListBody: {
+        flex: 1,
+        minHeight: 0
     },
 
     formSection: {
@@ -769,10 +973,27 @@ const styles = StyleSheet.create({
 
     },
 
+    // 🔹 2026-08-27 (5) (Europe/Sofia) — DK: "трябва да се подравни бутоните,
+    // така че да са на дъното, а не да покриват долната част от
+    // страницата". Root cause matches the exact bug already fixed inside
+    // TestComponent4/5/6.jsx (see their own changelogs): a flex:1 View, by
+    // default CSS flexbox rules (min-height:auto), refuses to shrink below
+    // its content's natural size — so when a test view's content (e.g. the
+    // Körper-Haltung table + image) is taller than the space actually left
+    // for it, listSection grew past its allotted box instead of clipping,
+    // and its overflow painted on top of the footer buttons right below it
+    // (rather than being scrolled inside the ScrollView every TestComponent
+    // already wraps its content in). `minHeight: 0` is the standard fix —
+    // it lets listSection actually respect its flex-computed height, so the
+    // inner ScrollView gets a real bounded box to scroll within instead of
+    // overflowing, and the footer buttons stay put at the bottom, never
+    // covered.
     listSection: {
         flex: 1,
+        minHeight: 0,
         padding: 10,
         flexDirection: 'row',
+        overflow: 'hidden',
     },
     colsection: {
         flex: 1,
@@ -807,6 +1028,42 @@ const styles = StyleSheet.create({
     listFooter: {
         marginTop: 10,
         alignItems: 'flex-end'
+    },
+
+    // 🔹 2026-08-27 — big bottom action row (Добави/Запази/Назад), replacing
+    // the plain RN <Button>s (those can't be resized via `style`, only
+    // tinted via `color`). Matches the app's established big-button look
+    // (full-width colored bars) used e.g. in TrainingsplanComponent.tsx.
+    footerRow: {
+        flexDirection: 'row',
+        gap: 10,
+        padding: 10
+    },
+
+    footerButton: {
+        flex: 1,
+        paddingVertical: 16,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+
+    footerButtonText: {
+        color: 'white',
+        fontSize: 17,
+        fontWeight: 'bold'
+    },
+
+    addButton: {
+        backgroundColor: '#2f6fed'
+    },
+
+    saveButton: {
+        backgroundColor: '#2e9e4f'
+    },
+
+    backButton: {
+        backgroundColor: '#666'
     }
 
 })

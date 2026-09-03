@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { registerPopup } from '../services/PopupService';
+import LanguageUtil from '../utils/LanguageUtil';
 
 export default function InfoPopUpComponent() {
 
@@ -91,7 +92,7 @@ export default function InfoPopUpComponent() {
 
                     <Text style={styles.source}>
 
-                        Source: {infoObject.source}
+                        {LanguageUtil.getName('source_text')}: {infoObject.source}
 
                     </Text>
 
@@ -103,7 +104,7 @@ export default function InfoPopUpComponent() {
                 >
 
                     <Text style={styles.buttonText}>
-                        Close
+                        {LanguageUtil.getName('schliessen')}
                     </Text>
 
                 </TouchableOpacity>

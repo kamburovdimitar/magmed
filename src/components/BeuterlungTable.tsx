@@ -27,6 +27,14 @@
 //   keys като преди — данните на съществуващи тестове не се засягат).
 //   Вече винаги минаваме през ЕДИН рендер-път (sections ?? default), без
 //   дублиран JSX — WIRBELSÄULE поведението остава идентично.
+//
+// 2026-08-27 (Europe/Sofia) — DK: "нещата в списъка, не са преведени...
+//   на български" / "Lordose Kyphose... и останалите". Row labels
+//   (r.label) were raw hardcoded German strings passed straight to
+//   row()/<Text> — never went through LanguageUtil. row() now takes the
+//   already-translated label; the mapping below calls
+//   LanguageUtil.getName(r.labelKey) (new keys added to
+//   koerperHaltungSections.js/Translations.js) before passing it in.
 // ============================================
 
 import { View, Text, StyleSheet, Pressable } from "react-native";
@@ -79,7 +87,7 @@ export default function BeuterlungTable({ value, onChange, sections }: any) {
                         }
 
                         {
-                            section.rows.map((r: any) => row(r.label, r.key, selected, handlePress))
+                            section.rows.map((r: any) => row(LanguageUtil.getName(r.labelKey), r.key, selected, handlePress))
                         }
                     </View>
                 ))

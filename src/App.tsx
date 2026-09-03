@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
 
 import { ThemeProvider } from '../src/config'
 import LoginScreen from './screens/auth/LoginScreen'
 import HomeScreen from './screens/main/HomeScreen'
+import useAutoSyncSelectedPatient from './hooks/useAutoSyncSelectedPatient'
 
 import Page1 from './screens/pages/Page1'
 import Page2 from './screens/pages/Page2'
@@ -21,6 +23,20 @@ import InfoPopUpComponent from './components/InfoPopUpComponent'
 export default function App() {
 
     const [screen, setScreen] = useState('login')
+
+    // 🔹 2026-08-25 — единствено място, което пази промените по избрания
+    // пациент (вкл. Save на тест — createTest/saveActiveTest/setActiveTest/
+    // renameActiveTest в userSlice.ts) трайно в MongoDB през magmed-server,
+    // вместо само в Redux. Виж hooks/useAutoSyncSelectedPatient.ts.
+    useAutoSyncSelectedPatient()
+
+    // 🔹 2026-08-25 — subscribe тук (root ниво), само за да предизвика
+    // реален rerender на цялото екранно дърво при смяна на езика в
+    // Settings (dispatch(setLanguage(...)) в store/settingsSlice.ts).
+    // LanguageUtil.getName() чете живо от store-а на всеки render (виж
+    // utils/LanguageUtil.js), но без subscription никъде нищо не знае, че
+    // трябва да рисува наново — точно това правеше стария switch "мъртъв".
+    useSelector((state: any) => state.settings.language)
 
 
     // искаш да се вкара в мап и самия компонент да връща името на пейджа скрийна.

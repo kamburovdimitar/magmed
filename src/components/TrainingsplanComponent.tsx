@@ -37,15 +37,16 @@
 // ============================================
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Switch, ScrollView } from 'react-native';
 import LanguageUtil from '../utils/LanguageUtil';
 import { MDPatientMeasurements } from '../model/MDPatientMeasurements';
 import { MDPatient } from '../model/MDPatient';
-import { KEIN_TEST_DEFAULT_STAGES } from '../constants/trainingsplanKeinTestDefaults';
+import { KEIN_TEST_DEFAULT_STAGES, EMPTY_STAGES } from '../constants/trainingsplanKeinTestDefaults';
 import TrainingsplanKeinTestComponent from './TrainingsplanKeinTestComponent';
 import TrainingsplanErgometrieComponent from './TrainingsplanErgometrieComponent';
 import TrainingsplanLaktatErgometrieComponent from './TrainingsplanLaktatErgometrieComponent';
 import TrainingsplanSpiroErgometrieComponent from './TrainingsplanSpiroErgometrieComponent';
+import PrintFullReportComponent from './PrintFullReportComponent';
 
 const TABS = [
     { key: 'keinTest', labelKey: 'kein_test_text' },
@@ -85,6 +86,24 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
     const [activeTab, setActiveTab] = useState('keinTest');
     const [savedFlash, setSavedFlash] = useState(false);
 
+    // 🔹 2026-08-26 (Claude) — DK: "нека направим принт страница с
+    // текущите и налични данни от трейнинг и лактатните криви" — първо
+    // сочеше към тесния PrintReportComponent.tsx (само тренировка+лактат).
+    // 2026-08-28 (Claude) — DK: "този печат го сложи на няколко различни
+    // места ... на тренировките" — сменено да отваря СЪЩИЯ пълен доклад
+    // (PrintFullReportComponent.tsx) като бутона от Page8.tsx/Page11.tsx,
+    // вместо отделен по-тесен изглед.
+    const [showPrintReport, setShowPrintReport] = useState(false);
+
+    // 🔹 PrintFullReportComponent очаква и `activeTest` (MDTestRecord —
+    // name/id/дати, за хедъра на доклада) — тук нямаме такъв проп отгоре
+    // (Page10.tsx подава само measurement/patient), но `patient` вече носи
+    // measurements[]/activeTestId, така че го извеждаме по абсолютно
+    // същия начин като Page10.tsx/Page8.tsx.
+    const activeTest = (patient?.measurements ?? []).find(
+        (t: any) => t.id === patient?.activeTestId
+    ) ?? null;
+
     const showTrainingskategorie = activeTab !== 'keinTest';
 
     const storageKey = STORAGE_KEY_BY_TAB[activeTab] ?? 'trainingsplanKeinTest';
@@ -112,10 +131,16 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
         updateKt({ editMode: editMode === 'individuell' ? 'grundeinstellung' : 'individuell' });
     }
 
+    // 🔹 2026-09-02 (Claude) — DK изрично избра: докторът пише плана РЪЧНО,
+    // не софтуерът да генерира нещо автоматично (виж changelog-а при
+    // EMPTY_STAGES в constants/trainingsplanKeinTestDefaults.js). Затова
+    // "Automatik ИЗКЛ" вече връща към ПРАЗНА таблица, не към
+    // KEIN_TEST_DEFAULT_STAGES — старото поведение мълчаливо показваше
+    // едни и същи "стандартни" числа за всеки пациент, което точно
+    // създаваше объркването. Самата "Automatik" decision-tree логика
+    // остава placeholder (чакаме отделния "Einstellungen" документ) —
+    // бутонът засега само превключва флага и връща към празно при ИЗКЛ.
     function toggleAutomatik() {
-        // 🔹 "Automatik AUS: Alle Trainingsparameter werden in Standard
-        // Zustand zurückgesetzt" — при изключване връщаме към Grundein-
-        // stellung defaults (override-ите и стадиите се изчистват).
         if (automatikEnabled) {
             updateKt({
                 automatikEnabled: false,
@@ -123,23 +148,19 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                 hfruheOverride: null,
                 hfmaxOverride: null,
                 wattMaxOverride: null,
-                stages: KEIN_TEST_DEFAULT_STAGES
+                stages: EMPTY_STAGES
             });
         } else {
             updateKt({ automatikEnabled: true });
         }
     }
 
+    // 🔹 2026-09-02 (Claude) — преди изчистваше само active/trainingsblock,
+    // но оставяше wntz/dauerTe/teWoche/zeitAufteilung с генеричните числа
+    // от KEIN_TEST_DEFAULT_STAGES — "празната" таблица всъщност не беше
+    // празна. Вече наистина връща 8 напълно празни реда (EMPTY_STAGES).
     function clearStages() {
-
-        const emptied = KEIN_TEST_DEFAULT_STAGES.map((s) => ({
-            ...s,
-            active: false,
-            trainingsblock: ''
-        }));
-
-        updateKt({ stages: emptied, editMode: 'individuell' });
-
+        updateKt({ stages: EMPTY_STAGES, editMode: 'individuell' });
     }
 
     // 🔹 2026-08-21 (Claude) — same reason as STORAGE_KEY_BY_TAB above:
@@ -410,15 +431,37 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                         <Text style={styles.controlCheckboxText}>{LanguageUtil.getName('nicht_gewaehlte_bereiche_ausblenden_text')}</Text>
                     </Pressable>
 
-                    <Pressable style={styles.controlButton} onPress={toggleEditMode}>
-                        <Text style={styles.controlButtonText}>
-                            {LanguageUtil.getName('trainings_woche_gestalten_text')}
-                            {editMode === 'individuell' ? ' ✓' : ''}
-                        </Text>
-                    </Pressable>
+                    {/* 🔹 2026-08-25 (Claude) — DK докладва, че бутонът за отключване
+                        на редакция (individuell mode) не се забелязва достатъчно:
+                        потребителите не разбират че трябва да го натиснат и си
+                        мислят че полетата "не работят". Затова докато сме в
+                        заключен режим (grundeinstellung) бутонът е подчертан с
+                        жълт "call-to-action" стил + катинарче + hint текст под него;
+                        щом е individuell (отключено), той просто показва ✓. */}
+                    <View>
+                        <Pressable
+                            style={[styles.controlButton, editMode === 'individuell' ? styles.controlButtonActive : styles.controlButtonAttention]}
+                            onPress={toggleEditMode}
+                        >
+                            <Text style={styles.controlButtonText}>
+                                {editMode === 'individuell' ? '🔓 ' : '🔒 '}
+                                {LanguageUtil.getName('trainings_woche_gestalten_text')}
+                                {editMode === 'individuell' ? ' ✓' : ''}
+                            </Text>
+                        </Pressable>
+                        {editMode !== 'individuell' && (
+                            <Text style={styles.controlButtonHint}>
+                                {LanguageUtil.getName('trainings_woche_gestalten_hint_text')}
+                            </Text>
+                        )}
+                    </View>
 
                     <Pressable style={styles.controlButton} onPress={clearStages}>
                         <Text style={styles.controlButtonText}>{LanguageUtil.getName('leere_tabellen_text')}</Text>
+                    </Pressable>
+
+                    <Pressable style={styles.controlButton} onPress={() => setShowPrintReport(true)}>
+                        <Text style={styles.controlButtonText}>{LanguageUtil.getName('print_report_button_text')}</Text>
                     </Pressable>
 
                     <View style={styles.standardwerteBox}>
@@ -437,7 +480,7 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                 </View>
 
                 {/* ===== MAIN CONTENT ===== */}
-                <View style={styles.content}>
+                <ScrollView style={styles.content} contentContainerStyle={styles.contentScrollContainer}>
                     {
                         activeTab === 'keinTest'
                             ? <TrainingsplanKeinTestComponent measurement={measurement} callback={callback} />
@@ -449,7 +492,7 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                                         ? <TrainingsplanSpiroErgometrieComponent measurement={measurement} callback={callback} />
                                         : <Text style={styles.placeholder}>{LanguageUtil.getName('mufu_placeholder_text')}</Text>
                     }
-                </View>
+                </ScrollView>
 
             </View>
 
@@ -481,6 +524,17 @@ export default function TrainingsplanComponent({ measurement, callback, patient,
                 </Pressable>
 
             </View>
+
+            {
+                showPrintReport && (
+                    <PrintFullReportComponent
+                        measurement={measurement}
+                        patient={patient}
+                        activeTest={activeTest}
+                        onClose={() => setShowPrintReport(false)}
+                    />
+                )
+            }
 
         </View>
     );
@@ -521,7 +575,7 @@ const styles = StyleSheet.create({
     },
 
     tabText: {
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: '600'
     },
 
@@ -552,7 +606,7 @@ const styles = StyleSheet.create({
     },
 
     controlButtonText: {
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: '600',
         textAlign: 'center'
     },
@@ -562,6 +616,24 @@ const styles = StyleSheet.create({
     controlButtonActive: {
         backgroundColor: '#fff176',
         borderColor: '#c9a800'
+    },
+
+    // 🔹 2026-08-25 (Claude) — "call-to-action" стил за "Trainings-Woche
+    // GESTALTEN", докато полетата са заключени (grundeinstellung режим),
+    // за да привлече вниманието на потребителя да го натисне.
+    controlButtonAttention: {
+        backgroundColor: '#fff3cd',
+        borderColor: '#e6a700',
+        borderWidth: 2
+    },
+
+    controlButtonHint: {
+        fontSize: 13,
+        fontStyle: 'italic',
+        color: '#8a6d00',
+        textAlign: 'center',
+        marginTop: 4,
+        marginBottom: 4
     },
 
     controlCheckboxRow: {
@@ -575,12 +647,12 @@ const styles = StyleSheet.create({
     },
 
     controlCheckboxText: {
-        fontSize: 14,
+        fontSize: 17,
         flex: 1
     },
 
     checkboxGlyph: {
-        fontSize: 26
+        fontSize: 28
     },
 
     standardwerteBox: {
@@ -592,7 +664,7 @@ const styles = StyleSheet.create({
     },
 
     standardwerteTitle: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 4
@@ -606,17 +678,40 @@ const styles = StyleSheet.create({
     },
 
     standardwerteButtonText: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         textAlign: 'center'
     },
 
+    // 🔹 2026-08-28 (Claude) — DK: скрийншот показва footerRow (Generate
+    // fake data/Запази) и Page10.tsx-ния "ОБРАТНО КЪМ НАЧАЛНАТА СТРАНИЦА"
+    // бутон, покриващи последните редове на активния таб (напр. "WNTZ"/
+    // "Тренировъчен блок седмици" в Kein Test). Причина: `content` е
+    // `flex:1` вътре в `body` (flex:1, flexDirection:'row') вътре в
+    // `container` (flex:1) — активният таб компонент (Trainingsplan
+    // KeinTest/Ergometrie/.../SpiroErgometrieComponent) НЯМА собствен
+    // ScrollView, само plain Views, затова когато реалното му съдържание е
+    // по-високо от наличното flex пространство, то прелива (default
+    // overflow: visible) върху следващите sibling-и (footerRow тук, после
+    // Page10.tsx-ния "назад" бутон), вместо да се scroll-ва. Same "min-
+    // height:auto" механизъм като Page8.tsx/TestComponent4-6 бъговете, но
+    // тук фиксът е различен: там децата вече си имаха собствен ScrollView
+    // (просто родителят не го bound-ваше правилно) — тук няма никакъв
+    // ScrollView, затова обвивам `content` в такъв (виж JSX-а по-долу),
+    // вместо само overflow:hidden (което би отрязало редовете, вместо да
+    // им позволи да се скролват).
     content: {
-        flex: 1
+        flex: 1,
+        minHeight: 0
+    },
+
+    contentScrollContainer: {
+        flexGrow: 1,
+        paddingBottom: 10
     },
 
     placeholder: {
-        fontSize: 15,
+        fontSize: 18,
         fontStyle: 'italic',
         color: '#777',
         padding: 20,
@@ -638,7 +733,7 @@ const styles = StyleSheet.create({
     },
 
     fakeDataButtonText: {
-        fontSize: 16,
+        fontSize: 19,
         fontWeight: 'bold',
         color: '#1b5e20'
     },
@@ -656,7 +751,7 @@ const styles = StyleSheet.create({
     },
 
     saveButtonText: {
-        fontSize: 16,
+        fontSize: 19,
         fontWeight: 'bold',
         color: '#0d47a1'
     }

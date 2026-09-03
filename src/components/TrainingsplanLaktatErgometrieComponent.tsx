@@ -61,7 +61,7 @@ import { MDPatientMeasurements } from '../model/MDPatientMeasurements';
 import TitleWithInfoComponent from './TitleWithInfoComponent';
 import { openPopup } from '../services/PopupService';
 import {
-    KEIN_TEST_DEFAULT_STAGES,
+    EMPTY_STAGES,
     RATSCHLAEGE_VORLAGE_A,
     RATSCHLAEGE_VORLAGE_B,
     RATSCHLAEGE_VORLAGE_C
@@ -91,7 +91,9 @@ const IANS_FALLBACK_PERCENT_OF_HFMAX = 90;
 // placeholder стойности (±10pp), скобени до 100% (тъй като са % от IANS
 // прага — над 100% вече не е смислен диапазон), докато DK предостави
 // реалните диапазони.
-const LAKTAT_INTENSITY_RANGES_BY_KATEGORIE: any = {
+// 🔹 2026-08-26 (Claude) — export-нато, виж коментара при
+// ERGOMETRIE_INTENSITY_RANGES_BY_KATEGORIE в TrainingsplanErgometrieComponent.tsx.
+export const LAKTAT_INTENSITY_RANGES_BY_KATEGORIE: any = {
     rehabilitation: { ga1: { from: 65, to: 75 }, ga2: { from: 75, to: 85 } },
     gesundheitssport: LAKTAT_INTENSITY_RANGES,
     freizeitsport: { ga1: { from: 85, to: 95 }, ga2: { from: 95, to: 100 } }
@@ -136,7 +138,7 @@ const INFO_STAGES_BG = {
         'Тренировъчен блок (седмици) = колко седмици пациентът остава на този етап.',
         'Чекбоксът вляво на всеки ред показва дали етапът е активен/включен в плана.'
     ],
-    source: 'Стойностите по подразбиране следват стандартната прогресия от документацията MAGMED Codex (същите като другите табове).'
+    source: 'Няма стойности "по подразбиране" — таблицата тръгва празна, докторът решава сам колко етапа да ползва и какви числа да сложи, според конкретния пациент.'
 };
 
 // 🔹 намира последния "bike" ergometryReport на пациента (ако има) — от
@@ -172,7 +174,7 @@ export default function TrainingsplanLaktatErgometrieComponent({ measurement, ca
     const hideUnselected = lakt.hideUnselected ?? false;
     const ratschlagTemplate = lakt.ratschlagTemplate === undefined ? 'A' : lakt.ratschlagTemplate;
     const ratschlagLanguage = lakt.ratschlagLanguage ?? 'bg';
-    const stages = lakt.stages ?? KEIN_TEST_DEFAULT_STAGES;
+    const stages = lakt.stages ?? EMPTY_STAGES;
 
     // 🔹 2026-08-24 (Claude) — виж LAKTAT_INTENSITY_RANGES_BY_KATEGORIE по-горе.
     const trainingskategorie = lakt.trainingskategorie ?? 'gesundheitssport';
@@ -388,7 +390,7 @@ export default function TrainingsplanLaktatErgometrieComponent({ measurement, ca
                         <View style={styles.zoneTable}>
 
                             <View style={styles.zoneHeaderRow}>
-                                <Text style={styles.zoneHeaderCell}>{LanguageUtil.getName('trainingsbereich_text')}</Text>
+                                <Text style={styles.zoneHeaderLabelCell}>{LanguageUtil.getName('trainingsbereich_text')}</Text>
                                 {showRadfahren && <Text style={styles.zoneHeaderCell}>S/min</Text>}
                                 {showRadfahren && <Text style={styles.zoneHeaderCell}>Watt</Text>}
                                 {showLaufen && <Text style={styles.zoneHeaderCell}>S/min</Text>}
@@ -640,13 +642,13 @@ const styles = StyleSheet.create({
     },
 
     fieldLabel: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         minWidth: 110
     },
 
     readonlyValue: {
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: 'bold',
         minWidth: 46
     },
@@ -656,7 +658,7 @@ const styles = StyleSheet.create({
         borderColor: '#999',
         width: 64,
         padding: 6,
-        fontSize: 15,
+        fontSize: 18,
         borderRadius: 4
     },
 
@@ -669,7 +671,7 @@ const styles = StyleSheet.create({
     },
 
     unit: {
-        fontSize: 13,
+        fontSize: 16,
         color: '#555'
     },
 
@@ -688,12 +690,12 @@ const styles = StyleSheet.create({
     },
 
     sportToggleLabel: {
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: '600'
     },
 
     checkboxGlyph: {
-        fontSize: 28
+        fontSize: 30
     },
 
     zoneTable: {
@@ -708,7 +710,17 @@ const styles = StyleSheet.create({
 
     zoneHeaderCell: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        borderWidth: 0.5,
+        borderColor: '#9fb3c8',
+        padding: 8
+    },
+
+    zoneHeaderLabelCell: {
+        flex: 1.6,
+        fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
         borderWidth: 0.5,
@@ -722,7 +734,7 @@ const styles = StyleSheet.create({
 
     zoneLabelCell: {
         flex: 1.6,
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: '600',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
@@ -731,7 +743,7 @@ const styles = StyleSheet.create({
 
     zoneValueCell: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         textAlign: 'center',
         borderWidth: 0.5,
@@ -766,7 +778,7 @@ const styles = StyleSheet.create({
 
     stageCell: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
         textAlign: 'center',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
@@ -782,14 +794,14 @@ const styles = StyleSheet.create({
     },
 
     zeitAufteilungInput: {
-        fontSize: 13,
+        fontSize: 16,
         textAlign: 'center',
         minWidth: 44,
         padding: 4
     },
 
     zeitAufteilungSuffix: {
-        fontSize: 13
+        fontSize: 16
     },
 
     vorlageRow: {
@@ -811,7 +823,7 @@ const styles = StyleSheet.create({
     },
 
     vorlageLabel: {
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: '600'
     },
 
@@ -829,13 +841,13 @@ const styles = StyleSheet.create({
 
     legendLabel: {
         width: 160,
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: 'bold'
     },
 
     legendText: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 16,
         lineHeight: 18
     },
 
@@ -848,7 +860,7 @@ const styles = StyleSheet.create({
     },
 
     rightPanelTitle: {
-        fontSize: 16,
+        fontSize: 19,
         fontWeight: 'bold',
         marginBottom: 10,
         textAlign: 'center'
@@ -875,7 +887,7 @@ const styles = StyleSheet.create({
     },
 
     ratschlagLangText: {
-        fontSize: 14,
+        fontSize: 17,
         fontWeight: '600',
         color: '#333'
     },
@@ -886,7 +898,7 @@ const styles = StyleSheet.create({
 
     ratschlagTextArea: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 17,
         lineHeight: 20,
         textAlignVertical: 'top',
         minHeight: 560

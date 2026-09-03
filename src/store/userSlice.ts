@@ -14,6 +14,15 @@
 //   `updateMeasurements` had no other callers in the codebase (Page11.tsx
 //   manages its own local state and never dispatched it), so it was removed
 //   outright rather than kept alongside the new reducers.
+// 2026-08-27 (Europe/Sofia) — DK: "трябва да имаме del бутон до приложи"
+//   (Existing Tests panel needs a Delete button next to Apply). Added
+//   `deleteTest`, following the exact same reassignment pattern as the
+//   reducers below (state.selectedUser = {...} — NOT direct nested
+//   mutation, per the 2026-08-11 correctness-fix note right below this).
+//   If the deleted test happens to be the currently active one, clears
+//   activeTestId so Page8/Page11's existing activeTestId-effect resets the
+//   local draft back to a blank MDPatientMeasurements — the same state
+//   already shown for a brand-new patient with zero tests.
 // 2026-08-11 (Europe/Sofia) — correctness fix: the three reducers above were
 //   originally written as direct nested mutations on `state.selectedUser`
 //   (e.g. `state.selectedUser.measurements.push(...)`,
@@ -147,6 +156,24 @@ const userSlice = createSlice({
                 ...state.selectedUser,
                 measurements
             } as MDPatient;
+        },
+
+        // 🔹 Existing Tests -> DEL: permanently remove a test record
+        deleteTest: (state, action: PayloadAction<string>) => {
+
+            if (!state.selectedUser) return;
+
+            const list = state.selectedUser.measurements ?? [];
+
+            const measurements = list.filter(t => t.id !== action.payload);
+
+            const wasActive = state.selectedUser.activeTestId === action.payload;
+
+            state.selectedUser = {
+                ...state.selectedUser,
+                measurements,
+                activeTestId: wasActive ? '' : state.selectedUser.activeTestId
+            } as MDPatient;
         }
     }
 });
@@ -157,7 +184,8 @@ export const {
     createTest,
     setActiveTest,
     saveActiveTest,
-    renameActiveTest
+    renameActiveTest,
+    deleteTest
 } = userSlice.actions;
 
 export default userSlice.reducer;

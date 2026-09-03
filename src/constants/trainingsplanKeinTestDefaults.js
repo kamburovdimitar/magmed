@@ -17,6 +17,27 @@ export const KEIN_TEST_DEFAULT_STAGES = [
     { stage: 8, active: true, wntz: 300, dauerTe: '45-90', teWoche: '3-7', zeitAufteilung: '60/40', trainingsblock: '-----' }
 ];
 
+// 🔹 2026-09-02 (Claude) — DK: екранът "Тренировка" беше объркващ, защото
+//   таблицата по-горе (KEIN_TEST_DEFAULT_STAGES) се показваше като "по
+//   подразбиране" стойност за ВСЕКИ пациент, във всичките 4 таба — все
+//   едно е реален, персонализиран план, а всъщност е буквално еднакво за
+//   всеки. DK изрично избра: докторът пише плана РЪЧНО (не софтуерът да
+//   генерира нещо автоматично) — затова таблицата вече трябва да ТРЪГВА
+//   празна за нов тест, не с тези генерични числа. KEIN_TEST_DEFAULT_STAGES
+//   остава експортиран само защото "Generate fake data" бутоните
+//   (TrainingsplanComponent.tsx) все още го ползват като РАЗУМНА база за
+//   случайни демо стойности — това е демонстрационна функция, не истинско
+//   поведение по подразбиране, затова е ОК да остане.
+export const EMPTY_STAGES = [1, 2, 3, 4, 5, 6, 7, 8].map((stage) => ({
+    stage,
+    active: false,
+    wntz: '',
+    dauerTe: '',
+    teWoche: '',
+    zeitAufteilung: '',
+    trainingsblock: ''
+}));
+
 // 🔹 GA1/GA2 интензитет диапазони (% на HFR / Karvonen) — фиксирани по
 // Entscheidungsbaum (5.90CCCGESUNDHEITS_Training.pdf, "KEIN TEST –
 // Standardeinstellung": "GA1 50–60; GA2 60–70 (% der HFR)").

@@ -74,6 +74,24 @@ const LACTATE_SUB_NAV_ITEMS = [
 // валиден пациент — виж navLocked/isNavItemDisabled по-долу.
 const ALWAYS_ENABLED_PAGES = ['page1', 'page4']
 
+// 🔹 2026-08-26 (Claude) — DK (по скрийншот на менюто): "махни или
+// дизейбълни страниците, които засега не ги ползваме" — посочи изрично
+// 5-те: "страница 3" (page3/👥), "страница запази" (page5/💾 Save —
+// стар TestComponent1-7 scaffolding, никога довършен/свързан към
+// реалния flow), "страница печат" (page6/🖨️ — стария отделен "Print"
+// nav бутон; реалният печат вече живее в самите Training/Laktatkurve/
+// Messungen страници, виж PrintReportComponent.tsx), "страницата 7"
+// (page7/🔎) и "страница резултати" (page9/📋 — дублира page4-търсачката
+// с бъгав `users[i].lastName` fix, никога реално ползвана). За разлика
+// от navLocked по-долу (временно заключване, докато формата не е
+// попълнена), тези са ПОСТОЯННО дизейбълнати — не зависят от
+// navLocked/formValid. Лесно за връщане, ако някоя от тях влезе в
+// реална употреба по-късно — просто маха се от списъка.
+// 2026-08-31 (Claude) — 'page3' извадена оттук: DK одобри реалното
+// "Табло за прогреса" на Page3.tsx и иска да може да го отвори от
+// навигацията, за да го разгледа (виж TestProgressDashboardComponent.tsx).
+const PERMANENTLY_DISABLED_PAGES = ['page5', 'page6', 'page7', 'page9']
+
 export default function HomeScreen({ goTo }) {
 
   const [page, setPage] = useState('page4')
@@ -96,6 +114,7 @@ export default function HomeScreen({ goTo }) {
   const navLocked = (page === 'page1' || page === 'page4') && !formValid
 
   function isNavItemDisabled(itemPage) {
+    if (PERMANENTLY_DISABLED_PAGES.includes(itemPage)) return true
     if (!navLocked) return false
     return !ALWAYS_ENABLED_PAGES.includes(itemPage)
   }
@@ -124,6 +143,10 @@ export default function HomeScreen({ goTo }) {
         {NAV_ITEMS.map((item) => {
           const label = LanguageUtil.getName(item.labelKey)
           const disabled = isNavItemDisabled(item.page)
+          const permanentlyDisabled = PERMANENTLY_DISABLED_PAGES.includes(item.page)
+          const disabledHint = permanentlyDisabled
+            ? LanguageUtil.getName('nav_not_available_text')
+            : LanguageUtil.getName('nav_locked_hint_text')
           return (
             <TouchableOpacity
               key={item.page}
@@ -131,7 +154,7 @@ export default function HomeScreen({ goTo }) {
               onPress={() => setPage(item.page)}
               disabled={disabled}
               accessibilityLabel={label}
-              title={disabled ? LanguageUtil.getName('nav_locked_hint_text') : label}
+              title={disabled ? disabledHint : label}
             >
               <Text style={[styles.iconGlyph, disabled && styles.iconGlyphDisabled]}>{item.icon}</Text>
               <Text style={[styles.iconLabel, disabled && styles.iconLabelDisabled]} numberOfLines={1}>{label}</Text>

@@ -102,7 +102,7 @@ export default function Page5({ goTo }) {
                     {renderTestView()}
                 </View>
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
             </View>

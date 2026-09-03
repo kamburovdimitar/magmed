@@ -1,56 +1,65 @@
 // ===== CLAUDE CHANGE LOG (newest last) =====
-// 2026-08-21 (Europe/Sofia) — DK: "остана последният — Spiro Ergometrie"
-//   (5.90CCCGESUNDHEITS_Training.pdf, "SPIROERGOMETRIE, Fahrrad –
-//   Standardeinstellung" — самия Entscheidungsbaum документ, не отделен
-//   "_EXPORT" мокъп като другите 3 табове, но съдържа своя собствена
-//   мокъп-таблица + формулен блок за Spiro, достатъчен за имплементация).
-//   Структурата е СЪЩАТА като Laktat Ergometrie (обобщаваща таблица + 8-
-//   степенна Trainings-Woche таблица + Ratschläge панел + REHABILITATION/
-//   GESUNDHEITSSPORT/FREIZEITSPORT ляво меню) — реизползван е абсолютно
-//   същия layout/стилове.
+// 2026-08-20 (Europe/Sofia) — DK: "Training – Gesundheit" модул. Първи
+//   реален таб — "Kein Test" (5.21b_Training_Gesundheit_Kein_Test_
+//   Grundeinstellung_EXPORT_2.pdf, 3 страници: Grundeinstellung/
+//   Individuelle Planung/CODEX + 5.90CCCGESUNDHEITS_Training.pdf's
+//   Entscheidungsbaum + 0.00 MAGMED Codex 04_2.pdf за точните формули).
 //
-//   Разлики спрямо Laktat Ergometrie:
-//     база = VT1/VT2 (Ventilatory Threshold 1/2, от спироергометрия —
-//            CodexUtil #74#/#75# calculateVT1HeartRate/
-//            calculateVT2HeartRate от MDErgometryReportResult.hfFirst/
-//            hfSecond на последния "bike" тест), НЕ IAS/IANS.
-//     зони = GA1: 55-65% / GA2: 65-75% (различно от Laktat-овите 75-85/
-//            85-95 И от Kein Test/Ergometrie-вите 50-60/60-70).
-//     km/h max СЕ показва тук (за разлика от Laktat, който няма отделен
-//            ред за него) — виж мокъпа: VT1/VT2/Watt max/km-h max, 4
-//            реда, точно както Kein Test/Ergometrie.
+//   Формулна верига (виж CODEX страницата в PDF-а, кодовете #23#/#25#/
+//   #31#/#118#/#120#/#121#/#122#/#123#/#XZ#):
+//     HFruhe (#23#) — measurement.heartraterest, ако е въведен, иначе
+//       стандарт 70 S/min (Entscheidungsbaum: "HFruhe: Standardwert = 70").
+//     HFmax (#25#) — measurement.expectedheartrate (220-Alter, вече
+//       съществуващ getter, реизползван 1:1).
+//     Watt max (#31#) — measurement.sollLeistungNorm (вече съществуващ
+//       getter, ErgometrieUtil.getSollLeistungNorm по възраст — засега
+//       опростена таблица, не официалната MAGMED таблица; известен, вече
+//       флагнат дълг, не блокира тук).
+//     km/h max (#120#) — TrainingsplanUtil.calculateSpeedFromWatt(Watt max)
+//       (#KaW#).
+//     GA1/GA2 Trainings-HF Fahrrad (#118#) — CodexUtil.
+//       calculateKarvonenHeartRate(HFruhe, HFmax, intensität%), веднъж за
+//       долната и веднъж за горната граница на всяка зона.
+//     GA1/GA2 Laufen HF (#118+XZ#) — Fahrrad HF + глобалната #XZ# настройка
+//       (Redux settingsSlice.xzCorrection).
+//     GA1/GA2 Watt (#121#) — TrainingsplanUtil.calculateIntensityWatt(Watt
+//       max, intensität%).
+//     GA1/GA2 Laufen km/h (#122#) — TrainingsplanUtil.
+//       calculateSpeedFromWatt(#121# Watt) (СЪЩАТА #KaW# формула, реизполз-
+//       вана — Kein Test няма отделен Laufband тест, затова km/h идва
+//       винаги от Watt чрез Näherungswert, точно както Entscheidungsbaum-ът
+//       го описва: "Trainingsintensität min/km: Näherungswert vom Watt").
+//     GA1/GA2 PACE (#123#) — CodexUtil.calculatePace(#122# km/h) (#MaK#).
 //
-//   Формула за HF зоните (Entscheidungsbaum: "Inter- und Extrapolation
-//   Kaskaden #77 bis 81# und #65#") — след разчитане на CodexUtil.js: #77-
-//   86 са само именувани alias-и (HF@50%/55%/.../95% VO2max) на ЕДИН общ
-//   генеричен helper, `calculateVO2HeartRate(maxHF, percent) = maxHF ×
-//   percent/100` — затова тук викаме директно генеричния helper с точния
-//   %, вместо да търсим alias за всеки отделен процент (55/65/75 не са
-//   всички кратни на 5° по мрежата от alias-и, но самата формула е чисто
-//   линейна, така че генеричния helper дава идентичен резултат).
+//   ЗАБЕЛЕЖКА за DK: примерните числа в 5.21b мокъпа (напр. GA1 Watt
+//   "85-105") не се пресъздават байт-по-байт от формулите тук — следвах
+//   ДОСЛОВНО документираните формули в 0.00 MAGMED Codex 04_2.pdf (които
+//   имат собствени, вътрешно последователни примери, напр. #129#
+//   60%×250=150 ✓), не бегло въведените числа в 5.21b screenshot-а, които
+//   изглеждат несъответстващи дори помежду си. Кажи, ако очакваш друго.
 //
-//   #65# (VO₂ Max Heart Rate — пикова HF при самия VO2max тест) е
-//   формулно посочена като база в PDF-а, но моделът (MDErgometryReport-
-//   Result) няма отделно поле за нея — само hfFirst/hfSecond (VT1/VT2).
-//   Затова, аналогично на Laktat таба (където IANS замести Karvonen-ова
-//   HFmax), тук ползвам VT2 (hfSecond) като % база вместо непредоставената
-//   VO2max-пикова HF — флагнато явно, кажи ако имаш точната #65# стойност
-//   отделно.
+//   editMode ('grundeinstellung'|'individuell') съответства на 2-та вида
+//   от мокъпа (страница 1 vs 2) — "Trainings-Woche GESTALTEN" бутонът
+//   (виж TrainingsplanComponent.tsx) превключва между тях. В
+//   'grundeinstellung' всичко е read-only (авто-изчислено); в
+//   'individuell' HFruhe/HFmax/Watt max стават редактируеми override-и,
+//   8-те стадия и Ratschläge стават свободно редактируеми (виж 5.90 PDF:
+//   "In der freien Planung können alle Parameter in Gold gefärbten
+//   Fenstern individuell verändert werden. Die geänderten Werte
+//   überschreiben nicht die Grundeinstellung.").
 //
-//   Watt max/VT1/VT2 fallback (без реален spiro тест): същия принцип
-//   както Laktat табa — VT1≈70%/VT2≈90% от възрастовия HFmax, Watt max =
-//   възрастовата норма (measurement.sollLeistungNorm), докато DK не
-//   предостави реален CPET тест за демонстрация.
-//
-// 2026-08-24 — DK забеляза, че Cycling/Laufen чекбоксовете тук не се цъкат
-//   в 'grundeinstellung' режим. Премахнах "isIndividuell &&" пазача от
-//   onPress (виж пълния разбор в TrainingsplanKeinTestComponent.tsx —
-//   същата непоследователност спрямо "Hide unselected areas", поправена
-//   идентично във всичките 4 таба).
+// 2026-08-24 (Europe/Sofia) — DK забеляза, че Cycling/Laufen чекбоксовете
+//   не се цъкат в 'grundeinstellung' режим (трябваше DESIGN training week
+//   → individuell). Това беше несъзнателна непоследователност спрямо
+//   "Hide unselected areas" (TrainingsplanComponent.tsx), който винаги е
+//   кликаем независимо от editMode — двата чекбокса тук просто отбелязват
+//   с какво спортува пациентът (не са override на изчислена стойност),
+//   затова премахнах "isIndividuell &&" пазача от onPress — вече са
+//   кликаеми и в двата режима, както hideUnselected.
 // ============================================
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Switch } from 'react-native';
 import { useSelector } from 'react-redux';
 import LanguageUtil from '../utils/LanguageUtil';
 import { CodexUtil } from '../utils/CodexUtil';
@@ -60,6 +69,7 @@ import TitleWithInfoComponent from './TitleWithInfoComponent';
 import { openPopup } from '../services/PopupService';
 import {
     EMPTY_STAGES,
+    KEIN_TEST_INTENSITY_RANGES,
     RATSCHLAEGE_VORLAGE_A,
     RATSCHLAEGE_VORLAGE_B,
     RATSCHLAEGE_VORLAGE_C
@@ -71,131 +81,125 @@ const VORLAGEN: any = {
     C: RATSCHLAEGE_VORLAGE_C
 };
 
-// 🔹 5.90 PDF, "SPIROERGOMETRIE" — GA1: 55-65% / GA2: 65-75% от VT2 HF.
-const SPIRO_INTENSITY_RANGES = {
-    ga1: { from: 55, to: 65 },
-    ga2: { from: 65, to: 75 }
-};
-
-const VT1_FALLBACK_PERCENT_OF_HFMAX = 70;
-const VT2_FALLBACK_PERCENT_OF_HFMAX = 90;
-
-// 🔹 2026-08-24 (Claude) — DK: "да сложи. и да видим после какво правим".
-// PDF-ът (5.90) има точни % САМО за Gesundheitssport (GA1: 55-65 / GA2:
-// 65-75 от VT2 HF). Rehabilitation/Freizeitsport са ПРИБЛИЗИТЕЛНИ placeholder
-// стойности (±10pp), докато DK предостави реалните диапазони.
-// 🔹 2026-08-26 (Claude) — export-нато, виж коментара при
-// ERGOMETRIE_INTENSITY_RANGES_BY_KATEGORIE в TrainingsplanErgometrieComponent.tsx.
-export const SPIRO_INTENSITY_RANGES_BY_KATEGORIE: any = {
-    rehabilitation: { ga1: { from: 45, to: 55 }, ga2: { from: 55, to: 65 } },
-    gesundheitssport: SPIRO_INTENSITY_RANGES,
-    freizeitsport: { ga1: { from: 65, to: 75 }, ga2: { from: 75, to: 85 } }
-};
-
+// 🔹 2026-08-21 (Claude) — DK: "искам това [обяснението, което ти дадох в
+// чата] да ми бъде сложено като инфо бутон отстрани на всяка една
+// таблица ... нека е на български [засега]". Реизползван е СЪЩИЯ вече
+// съществуващ механизъм като другите инфо бутони в приложението
+// (TitleWithInfoComponent + PopupService.openPopup — виж например
+// TestMeasurementsComponent.tsx) — не нов компонент. Съдържанието засега е
+// само на български (DK ще каже кога да добавим EN/DE версии на самите
+// popup текстове — за разлика от Ratschläge текста вдясно, за него изрично
+// поиска превключвател bg/de/en).
+// 🔹 2026-09-03 (Claude) — DK: "пак го има този проблем" — HF max/Watt max/
+// km/h max тук вече НЕ идват от възрастова формула (220-Възраст/таблична
+// норма), а от реалните измерени полета на пациента (`heartratemax`/
+// `istLeistungMax`/`maxspeed`, споделени с "Измервания") — същия фикс като
+// TrainingsplanErgometrieComponent.tsx. Ако още липсват, показва "Няма
+// данни", вместо фалшива формулна стойност.
 const INFO_SUMMARY_BG = {
-    title: 'Основни стойности и тренировъчни зони (Спироергометрия)',
+    title: 'Основни стойности и тренировъчни зони',
     description:
-        'VT1 и VT2 (вентилаторни прагове 1 и 2) са установени от спироергометричния тест на пациента — идват от '
-        + 'последния му тест, ако има такъв; иначе се ползва приблизителна оценка от максималния пулс, докато не бъде '
-        + 'направен реален тест. Watt max е максималната мощност от теста (или възрастова норма като заместител), а '
-        + 'km/h max е приблизителна скорост, изчислена от Watt max. Зоните тук са директен % от VT2 пулса.',
+        'HF max и Watt max (или km/h max, ако тестът е на бягаща пътека) са РЕАЛНО измерените стойности на пациента — '
+        + 'същите полета, които се въвеждат и на "Измервания"; можеш да ги въведеш/промениш директно и тук. Ако още '
+        + 'липсват, полето показва "Няма данни" вместо да гадае по формула. Долната таблица показва в какъв диапазон '
+        + '(пулс, ватове, темпо) трябва да тренира пациентът при по-лека (Здравен спорт/GA1) и по-усилена (Свободно '
+        + 'време спорт/GA2) интензивност.',
     formula:
-        'Тренировъчен пулс = Интензитет% × VT2 HF\n'
-        + 'Watt при зона = Интензитет% × Watt max\n'
-        + 'km/h max ≈ (0.06 × Watt max) + 2',
+        'HF max = реално измерена стойност (`heartratemax`)\n'
+        + 'Watt max = реално измерена стойност (`istLeistungMax`, при колело) или изчислена от km/h (при бягане)\n'
+        + 'km/h max = реално измерена стойност (`maxspeed`, при бягане) или изчислена от Watt (при колело)\n'
+        + 'Тренировъчен пулс (Karvonen) = HF в покой + Интензитет% × (HF max − HF в покой)',
     fields: [
-        'VT1 = първи вентилаторен праг — пулс, при който дишането започва леко да се учестява.',
-        'VT2 = втори вентилаторен праг — пулс, при който дишането рязко се учестява (близо до анаеробния праг).',
-        'Watt max = максималната мощност, постигната при спироергометричния тест (или възрастова норма, ако няма тест).',
-        'km/h max = приблизителна максимална скорост, изчислена от Watt max.',
-        'Колоездене / Бягане (чекбоксовете) = отбележи с какво тренира пациентът.',
-        'Здравен спорт (GA1) = 55–65% от VT2 пулса.',
-        'Свободно време спорт (GA2) = 65–75% от VT2 пулса.'
+        'HF в покой = стойност от Измерванията на пациента, или стандартно 70 уд/мин, ако не е въведена.',
+        'HF max = реално измерен максимален пулс — редактируем директно тук.',
+        'Watt max = реално измерена максимална мощност (при колело) — редактируем директно тук.',
+        'km/h max = реално измерена максимална скорост (при бягане) — редактируем директно тук; при колело е приблизителна стойност, изчислена от Watt max.',
+        'Колоездене / Бягане (чекбоксовете) = отбележи с какво тренира пациентът — определя кои колони се виждат в таблицата.',
+        'Здравен спорт (GA1) = по-лека интензивност, 50–60% от резерва на сърдечната честота.',
+        'Свободно време спорт (GA2) = по-усилена интензивност, 60–70%.'
     ],
     source:
-        'Стойностите идват от реалния спироергометричен тест на пациента, ако има такъв записан; иначе са приблизителна '
-        + 'оценка (70%/90% от максималния пулс), докато не бъде направен реален тест. Стават редактируеми в режим '
-        + '"Индивидуално планиране".'
+        'HF max/Watt max/km-h max са реални измерени данни — редактируеми са ВИНАГИ, не само в "Индивидуално планиране" '
+        + '(защото не са formula override, а самите измерени стойности на пациента).'
 };
 
 const INFO_STAGES_BG = {
-    title: 'Тренировъчен план по седмици (8 етапа) — Спироергометрия',
+    title: 'Тренировъчен план по седмици (8 етапа)',
     description:
-        'Същият тренировъчен план както при другите табове — прогресия през 8 етапа. Натисни "DESIGN training week" '
-        + 'от лявото меню, за да редактираш индивидуално за този пациент.',
+        'Това е самият тренировъчен план, който се дава на пациента — прогресия през до 8 етапа с постепенно '
+        + 'нарастващо натоварване. Таблицата тръгва празна — докторът я попълва ръчно, ред по ред, конкретно за ТОЗИ '
+        + 'пациент (натисни "DESIGN training week" от лявото меню, за да отключиш редакция).',
     fields: [
-        'WNTZ (минути) = обща нетна тренировъчна седмица.',
+        'WNTZ (минути) = обща нетна тренировъчна седмица — колко минути общо тренира пациентът седмично на този етап.',
         'Продължителност на сесия (минути) = колко минути трае всяка отделна тренировка.',
         'Сесии/седмица = колко пъти седмично тренира пациентът на този етап.',
         'Разпределение на времето (GA1/GA2) = какъв процент от времето е в по-лека (GA1) и какъв в по-усилена (GA2) зона.',
-        'Тренировъчен блок (седмици) = колко седмици пациентът остава на този етап.',
+        'Тренировъчен блок (седмици) = колко седмици пациентът остава на този етап, преди да премине към следващия.',
         'Чекбоксът вляво на всеки ред показва дали етапът е активен/включен в плана.'
     ],
-    source: 'Няма стойности "по подразбиране" — таблицата тръгва празна, докторът решава сам колко етапа да ползва и какви числа да сложи, според конкретния пациент.'
+    source: 'Няма стойности "по подразбиране" — докторът решава сам колко етапа да ползва и какви числа да сложи, според конкретния пациент.'
 };
 
-function getLatestBikeErgometryReport(measurement: any) {
-
-    const reports = (measurement?.ergometryReports ?? []).filter(
-        (r: any) => r?.ergometry?.type === 'bike'
-    );
-
-    if (!reports.length) return null;
-
-    return reports.reduce((latest: any, r: any) => {
-        if (!latest) return r;
-        return new Date(r.createdAt) > new Date(latest.createdAt) ? r : latest;
-    }, null);
-
-}
-
-export default function TrainingsplanSpiroErgometrieComponent({ measurement, callback }: any) {
+export default function TrainingsplanKeinTestComponent({ measurement, callback }: any) {
 
     const xzCorrection = useSelector(
         (state: any) => state.settings?.xzCorrection
     ) ?? 10;
 
-    const spiro = measurement?.trainingsplanSpiroErgometrie ?? {};
+    const kt = measurement?.trainingsplanKeinTest ?? {};
 
-    const editMode = spiro.editMode ?? 'grundeinstellung';
+    const editMode = kt.editMode ?? 'grundeinstellung';
     const isIndividuell = editMode === 'individuell';
 
-    const radfahrenEnabled = spiro.radfahrenEnabled ?? true;
-    const laufenEnabled = spiro.laufenEnabled ?? true;
-    const hideUnselected = spiro.hideUnselected ?? false;
-    const ratschlagTemplate = spiro.ratschlagTemplate === undefined ? 'A' : spiro.ratschlagTemplate;
-    const ratschlagLanguage = spiro.ratschlagLanguage ?? 'bg';
-    const stages = spiro.stages ?? EMPTY_STAGES;
+    const radfahrenEnabled = kt.radfahrenEnabled ?? true;
+    const laufenEnabled = kt.laufenEnabled ?? true;
+    const hideUnselected = kt.hideUnselected ?? false;
+    const automatikEnabled = kt.automatikEnabled ?? false;
+    const ratschlagTemplate = kt.ratschlagTemplate === undefined ? 'A' : kt.ratschlagTemplate;
+    // 🔹 DK: "текста в дясно Recommendations, да има опция да е на
+    // български, немски и английски, първоначално да е на български" —
+    // отделен избор ОТ глобалния LanguageUtil.language (който важи за
+    // етикети/бутони из цялото приложение и няма 'bg' версия за всичко) —
+    // пазим го в kt, за да оцелее презареждане на теста.
+    const ratschlagLanguage = kt.ratschlagLanguage ?? 'bg';
+    const stages = kt.stages ?? EMPTY_STAGES;
 
-    // 🔹 2026-08-24 (Claude) — виж SPIRO_INTENSITY_RANGES_BY_KATEGORIE по-горе.
-    const trainingskategorie = spiro.trainingskategorie ?? 'gesundheitssport';
-    const activeIntensityRanges = SPIRO_INTENSITY_RANGES_BY_KATEGORIE[trainingskategorie]
-        ?? SPIRO_INTENSITY_RANGES;
+    // 🔹 базови (Grundeinstellung) стойности — виж formulaта в change log-а
+    const hfruheBase = measurement?.heartraterest > 0 ? measurement.heartraterest : 70;
+    const hfruhe = (isIndividuell && kt.hfruheOverride != null) ? kt.hfruheOverride : hfruheBase;
 
-    const bikeReport = getLatestBikeErgometryReport(measurement);
+    // 🔹 2026-09-03 (Claude) — DK: "пак го има този проблем" (след фикса на
+    // TrainingsplanErgometrieComponent.tsx — виж пълния changelog там).
+    // Същата логика важи и тук: HF max/Watt max/km-h max трябва да са
+    // РЕАЛНИТЕ измерени полета на теста (`heartratemax`/`istLeistungMax`/
+    // `maxspeed`, споделени с "Измервания"), не възрастова формула
+    // (`expectedheartrate`/`sollLeistungNorm`) — `null` ("Няма данни"), не
+    // 0/формула, ако още липсват. Винаги директно редактируеми (не
+    // formula-override зад "Индивидуално планиране" — hfmaxOverride/
+    // wattMaxOverride остават в модела само за обратна съвместимост с
+    // вече запазени тестове, но вече не се четат тук).
+    const isRun = measurement?.ergometry?.type === 'run';
 
-    const hfmaxFallback = measurement?.expectedheartrate > 0 ? measurement.expectedheartrate : 0;
+    const hfmax = measurement?.heartratemax > 0 ? measurement.heartratemax : null;
 
-    const vt1FromTest = CodexUtil.calculateVT1HeartRate(bikeReport?.result?.hfFirst || null);
-    const vt2FromTest = CodexUtil.calculateVT2HeartRate(bikeReport?.result?.hfSecond || null);
+    const wattMaxMeasured = measurement?.istLeistungMax > 0 ? measurement.istLeistungMax : null;
+    const speedMaxMeasured = measurement?.maxspeed > 0 ? measurement.maxspeed : null;
 
-    const vt1Base = vt1FromTest ?? (hfmaxFallback ? Math.round(hfmaxFallback * VT1_FALLBACK_PERCENT_OF_HFMAX / 100) : 0);
-    const vt2Base = vt2FromTest ?? (hfmaxFallback ? Math.round(hfmaxFallback * VT2_FALLBACK_PERCENT_OF_HFMAX / 100) : 0);
-    const wattMaxBase = measurement?.sollLeistungNorm ?? 0;
+    const wattMax = isRun
+        ? (speedMaxMeasured != null ? TrainingsplanUtil.calculateWattFromSpeed(speedMaxMeasured) : null)
+        : wattMaxMeasured;
 
-    const vt1 = (isIndividuell && spiro.vt1Override != null) ? spiro.vt1Override : vt1Base;
-    const vt2 = (isIndividuell && spiro.vt2Override != null) ? spiro.vt2Override : vt2Base;
-    const wattMax = (isIndividuell && spiro.wattMaxOverride != null) ? spiro.wattMaxOverride : wattMaxBase;
+    const kmhMax = isRun
+        ? speedMaxMeasured
+        : (wattMaxMeasured != null ? TrainingsplanUtil.calculateSpeedFromWatt(wattMaxMeasured) : null);
 
-    const kmhMax = TrainingsplanUtil.calculateSpeedFromWatt(wattMax) ?? 0;
-
-    function updateSpiro(patch: any) {
+    function updateKt(patch: any) {
 
         callback(
             new MDPatientMeasurements({
                 ...measurement,
-                trainingsplanSpiroErgometrie: {
-                    ...spiro,
+                trainingsplanKeinTest: {
+                    ...kt,
                     ...patch
                 }
             })
@@ -203,10 +207,25 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
     }
 
+    // 🔹 за разлика от updateKt (пише в trainingsplanKeinTest/само този
+    // таб), тези три полета живеят на самия measurement — редакция тук
+    // веднага се вижда и на "Измервания" за същия тест, и обратно (виж
+    // updateMeasurementField в TrainingsplanErgometrieComponent.tsx).
+    function updateMeasurementField(field: string, value: number) {
+
+        callback(
+            new MDPatientMeasurements({
+                ...measurement,
+                [field]: value
+            })
+        );
+
+    }
+
     function computeZone(fromPercent: number, toPercent: number) {
 
-        const hfFahrradFrom = CodexUtil.calculateVO2HeartRate(vt2, fromPercent) ?? 0;
-        const hfFahrradTo = CodexUtil.calculateVO2HeartRate(vt2, toPercent) ?? 0;
+        const hfFahrradFrom = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, fromPercent) ?? 0;
+        const hfFahrradTo = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, toPercent) ?? 0;
 
         const hfLaufenFrom = hfFahrradFrom + xzCorrection;
         const hfLaufenTo = hfFahrradTo + xzCorrection;
@@ -229,8 +248,8 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
     }
 
-    const ga1 = computeZone(activeIntensityRanges.ga1.from, activeIntensityRanges.ga1.to);
-    const ga2 = computeZone(activeIntensityRanges.ga2.from, activeIntensityRanges.ga2.to);
+    const ga1 = computeZone(KEIN_TEST_INTENSITY_RANGES.ga1.from, KEIN_TEST_INTENSITY_RANGES.ga1.to);
+    const ga2 = computeZone(KEIN_TEST_INTENSITY_RANGES.ga2.from, KEIN_TEST_INTENSITY_RANGES.ga2.to);
 
     const showRadfahren = radfahrenEnabled || !hideUnselected;
     const showLaufen = laufenEnabled || !hideUnselected;
@@ -243,13 +262,15 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
             i === stageIndex ? { ...s, active: !s.active } : s
         );
 
-        updateSpiro({ stages: updated });
+        updateKt({ stages: updated });
 
     }
 
     // 🔹 2026-08-21 (Claude) — DK: "на всичките полета отгоре, трябва да
     // им сложиш тикче селект ал/деселект ал" — master чекбокс в хедъра на
-    // чекбокс-колоната (виж същия коментар в TrainingsplanKeinTestComponent.tsx).
+    // чекбокс-колоната: ако ВСИЧКИ 8 стадия са активни, показва ☑ и
+    // цъкването деактивира всички наведнъж; иначе показва ☐ и цъкването
+    // активира всички наведнъж (стандартно "select all" поведение).
     function toggleAllStages() {
 
         if (!isIndividuell) return;
@@ -258,7 +279,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
         const updated = stages.map((s: any) => ({ ...s, active: !allActive }));
 
-        updateSpiro({ stages: updated });
+        updateKt({ stages: updated });
 
     }
 
@@ -268,12 +289,12 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
             i === stageIndex ? { ...s, [field]: value } : s
         );
 
-        updateSpiro({ stages: updated });
+        updateKt({ stages: updated });
 
     }
 
-    const ratschlagText = spiro.ratschlagText != null
-        ? spiro.ratschlagText
+    const ratschlagText = kt.ratschlagText != null
+        ? kt.ratschlagText
         : (ratschlagTemplate ? (VORLAGEN[ratschlagTemplate]?.[ratschlagLanguage] ?? '') : '');
 
     function infoHandlerSummary() {
@@ -289,7 +310,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
             <View style={styles.mainColumn}>
 
-                {/* ===== SUMMARY: VT1/VT2 + Watt max + km-h max ===== */}
+                {/* ===== SUMMARY: HFruhe/HFmax + Radfahren/Laufen + Watt max/km-h max ===== */}
                 <TitleWithInfoComponent
                     title={LanguageUtil.getName('basiswerte_trainingszonen_text')}
                     infoHandler={infoHandlerSummary}
@@ -300,59 +321,80 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                     <View style={styles.summaryLeft}>
 
                         <View style={styles.fieldRow}>
-                            <Text style={styles.fieldLabel}>{LanguageUtil.getName('vt1_text')}</Text>
+                            <Text style={styles.fieldLabel}>{LanguageUtil.getName('hfruhe_text')}</Text>
                             {
                                 isIndividuell
                                     ? (
                                         <TextInput
                                             style={[styles.smallInput, styles.editableGold]}
                                             keyboardType="numeric"
-                                            value={String(vt1)}
-                                            onChangeText={(v) => updateSpiro({ vt1Override: Number(v) || 0 })}
+                                            value={String(hfruhe)}
+                                            onChangeText={(v) => updateKt({ hfruheOverride: Number(v) || 0 })}
                                         />
                                     )
-                                    : <Text style={styles.readonlyValue}>{vt1}</Text>
+                                    : <Text style={styles.readonlyValue}>{hfruhe}</Text>
                             }
                             <Text style={styles.unit}>S/min</Text>
                         </View>
 
+                        {/* 🔹 HF max/Watt max/km-h max — реални измерени данни от теста,
+                            винаги редактируеми (не formula-override зад "Индивидуално
+                            планиране"). Watt max е editable за колело, km/h max за бягане —
+                            другото се смята приблизително от вече въведеното. Празно поле
+                            = "Няма данни" (test_progress_empty_text), не 0/формула. */}
                         <View style={styles.fieldRow}>
-                            <Text style={styles.fieldLabel}>{LanguageUtil.getName('vt2_text')}</Text>
-                            {
-                                isIndividuell
-                                    ? (
-                                        <TextInput
-                                            style={[styles.smallInput, styles.editableGold]}
-                                            keyboardType="numeric"
-                                            value={String(vt2)}
-                                            onChangeText={(v) => updateSpiro({ vt2Override: Number(v) || 0 })}
-                                        />
-                                    )
-                                    : <Text style={styles.readonlyValue}>{vt2}</Text>
-                            }
+                            <Text style={styles.fieldLabel}>{LanguageUtil.getName('hfmax_text')}</Text>
+                            <TextInput
+                                style={[styles.smallInput, styles.editableGold, styles.emptyableInput]}
+                                keyboardType="numeric"
+                                placeholder={LanguageUtil.getName('test_progress_empty_text')}
+                                value={hfmax != null ? String(hfmax) : ''}
+                                onChangeText={(v) => updateMeasurementField('heartratemax', Number(v) || 0)}
+                            />
                             <Text style={styles.unit}>S/min</Text>
                         </View>
 
                         <View style={styles.fieldRow}>
                             <Text style={styles.fieldLabel}>{LanguageUtil.getName('watt_max_text')}</Text>
                             {
-                                isIndividuell
+                                isRun
                                     ? (
+                                        <Text style={styles.readonlyValue}>
+                                            {wattMax != null ? wattMax : LanguageUtil.getName('test_progress_empty_text')}
+                                        </Text>
+                                    )
+                                    : (
                                         <TextInput
-                                            style={[styles.smallInput, styles.editableGreen]}
+                                            style={[styles.smallInput, styles.editableGreen, styles.emptyableInput]}
                                             keyboardType="numeric"
-                                            value={String(wattMax)}
-                                            onChangeText={(v) => updateSpiro({ wattMaxOverride: Number(v) || 0 })}
+                                            placeholder={LanguageUtil.getName('test_progress_empty_text')}
+                                            value={wattMax != null ? String(wattMax) : ''}
+                                            onChangeText={(v) => updateMeasurementField('istLeistungMax', Number(v) || 0)}
                                         />
                                     )
-                                    : <Text style={styles.readonlyValue}>{wattMax}</Text>
                             }
                             <Text style={styles.unit}>Watt</Text>
                         </View>
 
                         <View style={styles.fieldRow}>
                             <Text style={styles.fieldLabel}>{LanguageUtil.getName('kmh_max_text')}</Text>
-                            <Text style={styles.readonlyValue}>{kmhMax}</Text>
+                            {
+                                isRun
+                                    ? (
+                                        <TextInput
+                                            style={[styles.smallInput, styles.editableGreen, styles.emptyableInput]}
+                                            keyboardType="numeric"
+                                            placeholder={LanguageUtil.getName('test_progress_empty_text')}
+                                            value={kmhMax != null ? String(kmhMax) : ''}
+                                            onChangeText={(v) => updateMeasurementField('maxspeed', Number(v) || 0)}
+                                        />
+                                    )
+                                    : (
+                                        <Text style={styles.readonlyValue}>
+                                            {kmhMax != null ? kmhMax : LanguageUtil.getName('test_progress_empty_text')}
+                                        </Text>
+                                    )
+                            }
                             <Text style={styles.unit}>km/h</Text>
                         </View>
 
@@ -365,7 +407,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                                 showRadfahren && (
                                     <Pressable
                                         style={styles.sportToggle}
-                                        onPress={() => updateSpiro({ radfahrenEnabled: !radfahrenEnabled })}
+                                        onPress={() => updateKt({ radfahrenEnabled: !radfahrenEnabled })}
                                     >
                                         <Text style={styles.checkboxGlyph}>{radfahrenEnabled ? '☑' : '☐'}</Text>
                                         <Text style={styles.sportToggleLabel}>{LanguageUtil.getName('radfahren_text')}</Text>
@@ -376,7 +418,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                                 showLaufen && (
                                     <Pressable
                                         style={styles.sportToggle}
-                                        onPress={() => updateSpiro({ laufenEnabled: !laufenEnabled })}
+                                        onPress={() => updateKt({ laufenEnabled: !laufenEnabled })}
                                     >
                                         <Text style={styles.checkboxGlyph}>{laufenEnabled ? '☑' : '☐'}</Text>
                                         <Text style={styles.sportToggleLabel}>{LanguageUtil.getName('laufen_text')}</Text>
@@ -397,7 +439,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
                             <View style={styles.zoneRow}>
                                 <Text style={styles.zoneLabelCell}>
-                                    {LanguageUtil.getName('gesundheitssport_text')} (GA1: {activeIntensityRanges.ga1.from} - {activeIntensityRanges.ga1.to})
+                                    {LanguageUtil.getName('gesundheitssport_text')} (GA1: {KEIN_TEST_INTENSITY_RANGES.ga1.from} - {KEIN_TEST_INTENSITY_RANGES.ga1.to})
                                 </Text>
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga1.hfFahrrad}</Text>}
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga1.watt}</Text>}
@@ -407,7 +449,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
                             <View style={styles.zoneRow}>
                                 <Text style={styles.zoneLabelCell}>
-                                    {LanguageUtil.getName('freizeitsport_text')} (GA2: {activeIntensityRanges.ga2.from} - {activeIntensityRanges.ga2.to})
+                                    {LanguageUtil.getName('freizeitsport_text')} (GA2: {KEIN_TEST_INTENSITY_RANGES.ga2.from} - {KEIN_TEST_INTENSITY_RANGES.ga2.to})
                                 </Text>
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga2.hfFahrrad}</Text>}
                                 {showRadfahren && <Text style={styles.zoneValueCell}>{ga2.watt}</Text>}
@@ -455,6 +497,10 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                                 <Text style={styles.stageCell}>{s.stage}.</Text>
 
                                 {
+                                    // 🔹 2026-08-21 — DK потвърди (по 5.90CCCGESUNDHEITS_Training.pdf:
+                                    // "alle Parameter in Gold gefärbten Fenstern individuell
+                                    // verändert werden") — не само Trainingsblock, а ВСИЧКИ
+                                    // колони на етапа стават редактируеми в Individuelle Planung.
                                     isIndividuell
                                         ? (
                                             <TextInput
@@ -532,7 +578,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                             <Pressable
                                 key={v}
                                 style={styles.vorlageOption}
-                                onPress={() => updateSpiro({
+                                onPress={() => updateKt({
                                     ratschlagTemplate: ratschlagTemplate === v ? null : v,
                                     ratschlagText: null
                                 })}
@@ -568,6 +614,11 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
             <View style={styles.rightPanel}>
                 <Text style={styles.rightPanelTitle}>{LanguageUtil.getName('ratschlaege')}</Text>
 
+                {/* 🔹 DK: "текста в дясно Recommendations, да има опция да е
+                    на български, немски и английски, първоначално да е на
+                    български." — превключва само коя Vorlage-версия/език се
+                    зарежда, докато няма ръчна редакция (ratschlagText ==
+                    null) — виж коментара при `ratschlagLanguage` по-горе. */}
                 <View style={styles.ratschlagLangRow}>
                     {
                         [
@@ -578,7 +629,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                             <Pressable
                                 key={lang.code}
                                 style={[styles.ratschlagLangOption, ratschlagLanguage === lang.code && styles.ratschlagLangOptionActive]}
-                                onPress={() => updateSpiro({ ratschlagLanguage: lang.code })}
+                                onPress={() => updateKt({ ratschlagLanguage: lang.code })}
                             >
                                 <Text style={[styles.ratschlagLangText, ratschlagLanguage === lang.code && styles.ratschlagLangTextActive]}>
                                     {lang.label}
@@ -592,7 +643,7 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
                     style={styles.ratschlagTextArea}
                     multiline
                     value={ratschlagText}
-                    onChangeText={(v) => updateSpiro({ ratschlagText: v })}
+                    onChangeText={(v) => updateKt({ ratschlagText: v })}
                 />
             </View>
 
@@ -602,6 +653,14 @@ export default function TrainingsplanSpiroErgometrieComponent({ measurement, cal
 
 const styles = StyleSheet.create({
 
+    // 🔹 2026-08-21 — DK: "не ми харесва, много е ситно всичко" — старите
+    // размери (10-13px шрифт, 2-3px padding) правеха всичко нечетимо и
+    // сбутано. Изцяло преработени размери по-долу, следвайки пропорциите
+    // от 5.21b мокъпа (голяма, лесна за четене таблица) — самата ЛОГИКА/
+    // wiring не са пипани, само CSS. Добавен е `flex:1, width:'100%'` тук
+    // — липсваше преди, затова цялото съдържание се свиваше до ~половин
+    // екран с празно място вдясно (RN Web View без flex/width не запълва
+    // родителя).
     row: {
         flex: 1,
         width: '100%',
@@ -660,6 +719,15 @@ const styles = StyleSheet.create({
         borderRadius: 4
     },
 
+    // 🔹 2026-09-03 (Claude) — виж коментара при `emptyableInput` в
+    // TrainingsplanErgometrieComponent.tsx: `smallInput` (width: 64) е
+    // прекалено тесен за placeholder текста "Няма данни" — тези три
+    // полета (HF max/Watt max/km-h max) вече могат да бъдат празни,
+    // затова им трябва по-широка версия.
+    emptyableInput: {
+        width: 118
+    },
+
     editableGold: {
         backgroundColor: '#fff3cd'
     },
@@ -679,6 +747,10 @@ const styles = StyleSheet.create({
         marginBottom: 4
     },
 
+    // 🔹 2026-08-21 — DK: "чек боксовете ги направи по-големи, защото
+    // много трудно се кликат" — по-голям glyph (19→28) + реален padding
+    // около Pressable-а (преди нямаше никакъв — hit area беше буквално
+    // само размера на текста), за да е много по-лесно да се уцели.
     sportToggle: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -716,6 +788,9 @@ const styles = StyleSheet.create({
         padding: 8
     },
 
+    // 🔹 2026-08-25 (Claude) — същата ширина (flex: 1.6) като zoneLabelCell,
+    // за да се подравнят колоните на header реда с редовете под тях
+    // (DK докладва че таблицата "Тренировъчна зона" изглежда разместена).
     zoneHeaderLabelCell: {
         flex: 1.6,
         fontSize: 16,
@@ -783,6 +858,9 @@ const styles = StyleSheet.create({
         padding: 8
     },
 
+    // 🔹 Zeit Aufteilung колоната в individuell режим — редактируемо число
+    // + фиксиран "GA1/GA2" суфикс до него (самото разпределение GA1/GA2
+    // винаги е двойка зони, суфиксът не се редактира).
     zeitAufteilungCell: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -849,6 +927,9 @@ const styles = StyleSheet.create({
         lineHeight: 18
     },
 
+    // 🔹 "най-десния компонент" за Ratschläge (DK) — по-широк, ясно
+    // озаглавен панел, същия цвят/бордер конвенция като другите "кутии"
+    // из приложението (виж actionBox в KoerperHaltungComponent.tsx).
     rightPanel: {
         flex: 1,
         borderWidth: 1,
@@ -864,6 +945,11 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
 
+    // 🔹 2026-08-21 (Claude) — DK: "текста в дясно Recommendations, да има
+    // опция да е на български, немски и английски, първоначално да е на
+    // български." Малък 3-бутонен segmented switcher (БГ/DE/EN), същата
+    // конструкция като genderToggleRow в HeaderComponent.tsx, но в жълтата
+    // тема на дясното Ratschläge поле.
     ratschlagLangRow: {
         flexDirection: 'row',
         marginBottom: 10,

@@ -21,17 +21,23 @@ export default function Page4({ goTo, onValidityChange }) {
     const [searchLastName, setSearchLastName] = useState("");
     const dispatch = useDispatch();
 
+    // 🔹 2026-08-25 — UsersProxy.getAllUsers() вече е реална мрежова заявка
+    // (magmed-server -> MongoDB), не синхронен четене на масив — затова
+    // await вътре в async IIFE (useEffect callback-ът самият той не може
+    // да е async).
     useEffect(() => {
-        let users: MDPatient[] = UsersProxy.getAllUsers();
-        setData(users);// червено е , но е коректно.
+        (async () => {
+            let users: MDPatient[] = await UsersProxy.getAllUsers();
+            setData(users);// червено е , но е коректно.
+        })();
     }, []);
 
 
 
-    function searchHandler(lastName: string, firstName: string) {
+    async function searchHandler(lastName: string, firstName: string) {
         console.log(lastName, firstName);
 
-        let users = UsersProxy.getAllUsers();
+        let users = await UsersProxy.getAllUsers();
         let result: MDPatient[] = [];
 
         for (let i = 0; i < users.length; i++) {
@@ -73,7 +79,7 @@ export default function Page4({ goTo, onValidityChange }) {
         });
 
         let result = await UsersProxy.updateUser(patient);
-        const users = UsersProxy.getAllUsers();
+        const users = await UsersProxy.getAllUsers();
         //setData(users); това не работи и е фундаментално. Когато правим ъпдейта ние пъхаме вътре дейта в users, но не променяме големия обект, и после той не се рефрешва.
         setData([...users]);
     }
@@ -123,7 +129,7 @@ export default function Page4({ goTo, onValidityChange }) {
 
                         />
                         <Button
-                            title="Search"
+                            title={LanguageUtil.getName('search_btn_text')}
                             onPress={() => searchHandler(searchLastName, searchFirstName)}
                         />
                     </View>
@@ -152,7 +158,7 @@ export default function Page4({ goTo, onValidityChange }) {
 
                 </View>
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
             </View>

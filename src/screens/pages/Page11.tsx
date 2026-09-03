@@ -77,6 +77,11 @@ import ErgometrySummaryComponent from '../../components/ErgometrySummaryComponen
 import ErgometryHistoryComponent from '../../components/ErgometryHistoryComponent'
 import TrainingsbereichComponent from '../../components/TrainingsbereichComponent'
 import ConfirmDialogComponent from '../../components/ConfirmDialogComponent'
+// 🔹 2026-08-26 (Claude) — DK: "печат трябва да имаме на всяка страница,
+// която показва даден компонент — тренировка, измервания, лактатна крива."
+// Тук показваме само лактатната секция (showTrainingSection={false}) — виж
+// PrintReportComponent.tsx за пълния коментар/логика.
+import PrintFullReportComponent from '../../components/PrintFullReportComponent'
 // 🔹 2026-08-19 — DK: съобщението "не е добавена/запазена" трябва да е
 // popup, не inline банер (виж archiv_kein_ergebnis_title_text по-долу) —
 // същия глобален popup, който InfoPopUpComponent/App.tsx вече рендерват
@@ -215,6 +220,10 @@ export default function Page11({ goTo, activeChartView: propActiveChartView, onC
     // (виж save() по-долу, явно писано, по същия принцип като
     // loadedReportId), хидратира се от Redux в useEffect-а по-долу.
     const [weightKg, setWeightKg] = useState<number | null>(null);
+
+    // 🔹 2026-08-26 (Claude) — печат на лактатната крива (виж коментара
+    // при PrintReportComponent import-а по-горе).
+    const [showPrintReport, setShowPrintReport] = useState(false);
 
     // 🔹 Trainingsbereich (Phase 3, "3.34 CCC Laktatkurve und
     // Trainingsbereich"): override % thresholds за REG/GA1/GA2/E1 —
@@ -1411,7 +1420,7 @@ export default function Page11({ goTo, activeChartView: propActiveChartView, onC
 
     return (
 
-        <View style={styles.container}>
+        <View style={styles.container} nativeID="magmed-app-root">
 
             <View style={styles.leftPanel}>
 
@@ -1877,10 +1886,26 @@ export default function Page11({ goTo, activeChartView: propActiveChartView, onC
                     )
                 }
 
+                <Button
+                    title={LanguageUtil.getName('print_report_button_text')}
+                    onPress={() => setShowPrintReport(true)}
+                />
+
                 < Button
                     title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
+
+                {
+                    showPrintReport && (
+                        <PrintFullReportComponent
+                            measurement={reduxActiveTest?.data ?? new MDPatientMeasurements()}
+                            patient={selectedUser}
+                            activeTest={reduxActiveTest}
+                            onClose={() => setShowPrintReport(false)}
+                        />
+                    )
+                }
 
             </View>
 

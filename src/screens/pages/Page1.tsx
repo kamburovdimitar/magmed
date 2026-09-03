@@ -29,9 +29,20 @@ export default function Page1({ goTo, onValidityChange }) {
     // Поправено да съответства на реалния ред, в който HeaderComponent го
     // вика, и на реалната (по-нова) сигнатура на UsersProxy.addUser
     // (вече не приема `measurements` — виж UsersProxy.tsx).
-    function addButton(firstName: string, lastName: string, birthday: string, title: string, gender: string, patientId: string) {
+    //
+    // 🔹 2026-08-25 — UsersProxy.addUser вече е реална мрежова заявка
+    // (magmed-server -> MongoDB), не синхронен push в масив — може да се
+    // провали (напр. дублиран patientId -> 409). catch-ваме и логваме, за
+    // да не увисне тихо неуловена Promise грешка в конзолата, докато няма
+    // toast/error UI за този формуляр.
+    async function addButton(firstName: string, lastName: string, birthday: string, title: string, gender: string, patientId: string) {
         const id = uuidv4();
-        UsersProxy.addUser(firstName, lastName, title, gender, birthday, id)
+
+        try {
+            await UsersProxy.addUser(firstName, lastName, title, gender, birthday, id)
+        } catch (error) {
+            console.error('Page1.addButton: неуспешно създаване на пациент:', error)
+        }
     }
 
     return (
@@ -102,7 +113,7 @@ export default function Page1({ goTo, onValidityChange }) {
 
                 </View>
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
             </View>

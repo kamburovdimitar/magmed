@@ -15,6 +15,11 @@
 //   Реизползва СЪЩИТЕ *_SECTIONS декларации (label+key) от
 //   constants/koerperHaltungSections.js, за да не дублира кои редове
 //   какъв label имат — единствен източник на истина с реалните таблици.
+//
+// 2026-08-27 (Europe/Sofia) — DK: untranslated German row labels (see the
+//   same-day changelog in BeuterlungTable.tsx). findingsFor() pushed
+//   r.label (raw German) straight into the summary — switched to
+//   LanguageUtil.getName(r.labelKey).
 // ============================================
 
 import React from 'react';
@@ -55,7 +60,7 @@ export default function KoerperHaltungAuswertungComponent({ measurement }: any) 
             section.rows.forEach((r: any) => {
                 const colIndex = value[r.key];
                 if (colIndex != null) {
-                    findings.push({ label: r.label, colIndex });
+                    findings.push({ label: LanguageUtil.getName(r.labelKey), colIndex });
                 }
             });
         });

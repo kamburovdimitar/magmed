@@ -15,19 +15,26 @@ export default function Page9({ goTo }) {
 
     const [data, setData] = useState([]);
 
+    // 🔹 2026-08-25 — UsersProxy.getAllUsers() вече е реална мрежова заявка
+    // (magmed-server -> MongoDB), не синхронен масив.
     useEffect(() => {
-        const users = UsersProxy.getAllUsers();
-        setData(users);// червено е , но е коректно.
+        (async () => {
+            const users = await UsersProxy.getAllUsers();
+            setData(users);// червено е , но е коректно.
+        })();
     }, []);
 
 
-    function searchHandler(lastName: string, firstName: string) {
+    async function searchHandler(lastName: string, firstName: string) {
         console.log(lastName)
-        let users = UsersProxy.getAllUsers();
-        let result: Patient[] = [];
+        let users = await UsersProxy.getAllUsers();
+        let result = [];
 
+        // 🔹 2026-08-25 — дребен, отделен бъг: `.lastName` не съществува на
+        // MDPatient (полето е `lastname`, малки букви) — филтърът никога не
+        // намираше нищо. Поправено покрай async промяната по-горе.
         for (let i = 0; i < users.length; i++) {
-            if (users[i].lastName.toLowerCase().includes(lastName.toLowerCase())) {
+            if (users[i].lastname.toLowerCase().includes(lastName.toLowerCase())) {
                 result.push(users[i]);
             }
         }
@@ -88,7 +95,7 @@ export default function Page9({ goTo }) {
 
                 </View>
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
             </View>

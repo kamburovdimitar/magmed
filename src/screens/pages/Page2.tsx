@@ -60,7 +60,7 @@ export default function Page2({ goTo }) {
 
                 </View>
                 <Button
-                    title="Back to Home"
+                    title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                     onPress={() => goTo('home')}
                 />
             </View>

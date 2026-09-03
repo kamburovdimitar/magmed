@@ -1,15 +1,16 @@
 import React from 'react'
 import { View, Text, Button } from 'react-native'
+import LanguageUtil from '../../utils/LanguageUtil'
 
 export default function Page12({ goTo }) {
 
     return (
         <View>
 
-            <Text>Page 12</Text>
+            <Text>{LanguageUtil.getName('nav_page12_text')}</Text>
 
             <Button
-                title="Back to Home"
+                title={LanguageUtil.getName('zurueck_zur_startseite_text')}
                 onPress={() => goTo('home')}
             />
 
