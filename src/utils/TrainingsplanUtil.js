@@ -92,9 +92,45 @@ function calculateIntensityWatt(
         return null;
     }
 
-    return Math.round(
-        (intensityPercent / 100) *
-        baseWatt
+    const rawWatt = (intensityPercent / 100) * baseWatt;
+
+    // 🔹 2026-09-04 (Claude) — DK: закръгляне до най-близките 5 W — виж
+    // 5.21b мокъпа (страница 1 "Grundeinstellung"): за Wattmax 171 примерът
+    // показва GA1 85-105W / GA2 105-120W, което съвпада само със
+    // закръгляне до 5 (обикновен Math.round дава 86/103/103/120).
+    return Math.round(rawWatt / 5) * 5;
+
+}
+
+/**
+ * ------------------------------------------------
+ * Intensity Speed (km/h) — аналог на calculateIntensityWatt, за "Laufen"
+ * min/km зоните.
+ * ------------------------------------------------
+ * MAGMED Codex (5.21b мокъп, "CODEX" страница): min/km зоната се смята
+ * direct % от km/h max (#120#), СЪЩИЯ образец като Watt = Intensität ×
+ * Basis-Watt — НЕ през calculateSpeedFromWatt(watt), което е отделна
+ * формула за ергометър watt→скорост и дава драстично различни резултати
+ * (потвърдено срещу примерните числа в мокъпа: 50/60/70% от 12 km/h max
+ * дава 10:00 / 08:20 / 07:09 min/km — точно каквото показва документът).
+ */
+function calculateIntensitySpeed(
+    baseSpeed,
+    intensityPercent
+) {
+
+    if (
+        baseSpeed == null ||
+        intensityPercent == null
+    ) {
+        return null;
+    }
+
+    return Number(
+        (
+            (intensityPercent / 100) *
+            baseSpeed
+        ).toFixed(1)
     );
 
 }
@@ -102,5 +138,6 @@ function calculateIntensityWatt(
 export const TrainingsplanUtil = {
     calculateWattFromSpeed,
     calculateSpeedFromWatt,
-    calculateIntensityWatt
+    calculateIntensityWatt,
+    calculateIntensitySpeed
 };

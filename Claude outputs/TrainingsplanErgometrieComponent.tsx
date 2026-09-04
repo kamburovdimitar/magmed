@@ -222,7 +222,23 @@ export default function TrainingsplanErgometrieComponent({ measurement, callback
 
     }
 
+    // 🔹 2026-09-03 (Claude) — DK: "оправи тези полета в ергометрията,
+    // които са криви" (screenshot: зоните показваха "0 - 0"/"10 - 10"/
+    // "30:00 - 30:00" за нов пациент без реален тест). Причина: hfmax/
+    // wattMax вече могат да бъдат `null` (виж changelog-а по-горе), а
+    // computeZone преди това ги третираше като 0 чрез `?? 0` — 0 Watt/0
+    // HF са "валидни" числа за формулите, затова се получаваха измислени
+    // резултати (0 HF в покой + xzCorrection = 10; calculateSpeedFromWatt(0)
+    // = 2 km/h → пейс 30:00), вместо ясно "няма данни". Сега всяка колона
+    // пита дали реално ѝ трябващата база (`hfmax` за пулса, `wattMax` за
+    // Watt/темпо) въобще съществува, преди да смята — иначе показва
+    // `test_progress_empty_text` вместо фалшив диапазон.
+    const NA_ZONE = LanguageUtil.getName('test_progress_empty_text');
+
     function computeZone(fromPercent: number, toPercent: number) {
+
+        const hasHf = hfmax != null;
+        const hasWatt = wattMax != null;
 
         const hfFahrradFrom = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, fromPercent) ?? 0;
         const hfFahrradTo = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, toPercent) ?? 0;
@@ -240,10 +256,10 @@ export default function TrainingsplanErgometrieComponent({ measurement, callback
         const paceTo = CodexUtil.calculatePace(kmhTo) ?? '';
 
         return {
-            hfFahrrad: `${hfFahrradFrom} - ${hfFahrradTo}`,
-            hfLaufen: `${hfLaufenFrom} - ${hfLaufenTo}`,
-            watt: `${wattFrom} - ${wattTo}`,
-            pace: `${paceFrom} - ${paceTo}`
+            hfFahrrad: hasHf ? `${hfFahrradFrom} - ${hfFahrradTo}` : NA_ZONE,
+            hfLaufen: hasHf ? `${hfLaufenFrom} - ${hfLaufenTo}` : NA_ZONE,
+            watt: hasWatt ? `${wattFrom} - ${wattTo}` : NA_ZONE,
+            pace: hasWatt ? `${paceFrom} - ${paceTo}` : NA_ZONE
         };
 
     }

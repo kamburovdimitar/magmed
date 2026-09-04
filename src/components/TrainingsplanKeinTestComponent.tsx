@@ -184,26 +184,60 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
     function computeZone(fromPercent: number, toPercent: number) {
 
-        const hfFahrradFrom = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, fromPercent) ?? 0;
-        const hfFahrradTo = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, toPercent) ?? 0;
+        // 🔹 2026-09-03 (Claude) — DK: за нов пациент без възраст/данни
+        // hfmaxBase/wattMaxBase остават 0 (виж дефинициите по-горе — тук
+        // 0, не null, е сентинелът за "няма данни"), а преди computeZone
+        // все пак смяташе с тях и показваше измислени "0 - 0" диапазони
+        // вместо ясен "Няма данни" placeholder.
+        const emptyText = LanguageUtil.getName('test_progress_empty_text');
 
-        const hfLaufenFrom = hfFahrradFrom + xzCorrection;
-        const hfLaufenTo = hfFahrradTo + xzCorrection;
+        let hfFahrrad = emptyText;
+        let hfLaufen = emptyText;
 
-        const wattFrom = TrainingsplanUtil.calculateIntensityWatt(wattMax, fromPercent) ?? 0;
-        const wattTo = TrainingsplanUtil.calculateIntensityWatt(wattMax, toPercent) ?? 0;
+        if (hfmax > 0) {
 
-        const kmhFrom = TrainingsplanUtil.calculateSpeedFromWatt(wattFrom) ?? 0;
-        const kmhTo = TrainingsplanUtil.calculateSpeedFromWatt(wattTo) ?? 0;
+            const hfFahrradFrom = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, fromPercent) ?? 0;
+            const hfFahrradTo = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, toPercent) ?? 0;
 
-        const paceFrom = CodexUtil.calculatePace(kmhFrom) ?? '';
-        const paceTo = CodexUtil.calculatePace(kmhTo) ?? '';
+            hfFahrrad = `${hfFahrradFrom} - ${hfFahrradTo}`;
+            hfLaufen = `${hfFahrradFrom + xzCorrection} - ${hfFahrradTo + xzCorrection}`;
+
+        }
+
+        let watt = emptyText;
+        let pace = emptyText;
+
+        if (wattMax > 0) {
+
+            const wattFrom = TrainingsplanUtil.calculateIntensityWatt(wattMax, fromPercent) ?? 0;
+            const wattTo = TrainingsplanUtil.calculateIntensityWatt(wattMax, toPercent) ?? 0;
+
+            watt = `${wattFrom} - ${wattTo}`;
+
+        }
+
+        // 🔹 2026-09-04 (Claude) — DK потвърди (виж 5.21b мокъпа, "CODEX"
+        // страница): min/km зоната е direct % от km/h max (#120#), НЕ
+        // watt→скорост конверсия на вече-скалирания wattFrom/wattTo — това
+        // произвеждаше грешни резултати (напр. ~08:23 вместо 10:00 за
+        // Wattmax 171 при 50% GA1).
+        if (kmhMax > 0) {
+
+            const kmhFrom = TrainingsplanUtil.calculateIntensitySpeed(kmhMax, fromPercent) ?? 0;
+            const kmhTo = TrainingsplanUtil.calculateIntensitySpeed(kmhMax, toPercent) ?? 0;
+
+            const paceFrom = CodexUtil.calculatePace(kmhFrom) ?? '';
+            const paceTo = CodexUtil.calculatePace(kmhTo) ?? '';
+
+            pace = `${paceFrom} - ${paceTo}`;
+
+        }
 
         return {
-            hfFahrrad: `${hfFahrradFrom} - ${hfFahrradTo}`,
-            hfLaufen: `${hfLaufenFrom} - ${hfLaufenTo}`,
-            watt: `${wattFrom} - ${wattTo}`,
-            pace: `${paceFrom} - ${paceTo}`
+            hfFahrrad,
+            hfLaufen,
+            watt,
+            pace
         };
 
     }
@@ -408,18 +442,26 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                     infoHandler={infoHandlerStages}
                 />
 
+                {/* 🔹 2026-09-03 (Claude) — DK: "полетата да не бъдат смачкани" (2-ри
+                    случай) — виж идентичния changelog в
+                    TrainingsplanErgometrieComponent.tsx: всеки ред тук е свой
+                    отделен flex row, `stageCell` (flex:1, без minWidth) караше
+                    header (дълги етикети) и редовете с празни клетки да вадят
+                    различни, невзаимно подравнени ширини на колоните — празните
+                    клетки изглеждаха "смачкани". Добавени общи `stageCol*`
+                    minWidth-ове за header и за всеки ред. */}
                 <View style={styles.stageTable}>
 
                     <View style={styles.stageHeaderRow}>
                         <Pressable style={styles.stageCheckCell} onPress={toggleAllStages}>
                             <Text style={styles.checkboxGlyph}>{stages.every((s: any) => s.active) ? '☑' : '☐'}</Text>
                         </Pressable>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('stufe_text')}</Text>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('wntz_minuten_text')}</Text>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('dauer_te_minuten_text')}</Text>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('te_woche_haeufigkeit_text')}</Text>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('zeit_aufteilung_text')}</Text>
-                        <Text style={styles.stageCell}>{LanguageUtil.getName('trainingsblock_wochen_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColStepen]}>{LanguageUtil.getName('stufe_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColWntz]}>{LanguageUtil.getName('wntz_minuten_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColDauer]}>{LanguageUtil.getName('dauer_te_minuten_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColSessions]}>{LanguageUtil.getName('te_woche_haeufigkeit_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColZeit]}>{LanguageUtil.getName('zeit_aufteilung_text')}</Text>
+                        <Text style={[styles.stageCell, styles.stageColBlock]}>{LanguageUtil.getName('trainingsblock_wochen_text')}</Text>
                     </View>
 
                     {
@@ -433,7 +475,7 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                     <Text style={styles.checkboxGlyph}>{s.active ? '☑' : '☐'}</Text>
                                 </Pressable>
 
-                                <Text style={styles.stageCell}>{s.stage}.</Text>
+                                <Text style={[styles.stageCell, styles.stageColStepen]}>{s.stage}.</Text>
 
                                 {
                                     // 🔹 2026-08-21 — DK потвърди (по 5.90CCCGESUNDHEITS_Training.pdf:
@@ -443,43 +485,43 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                     isIndividuell
                                         ? (
                                             <TextInput
-                                                style={[styles.stageCell, styles.editableGold]}
+                                                style={[styles.stageCell, styles.stageColWntz, styles.editableGold]}
                                                 keyboardType="numeric"
                                                 value={String(s.wntz)}
                                                 onChangeText={(v) => updateStageField(i, 'wntz', v)}
                                             />
                                         )
-                                        : <Text style={styles.stageCell}>{s.wntz}</Text>
+                                        : <Text style={[styles.stageCell, styles.stageColWntz]}>{s.wntz}</Text>
                                 }
 
                                 {
                                     isIndividuell
                                         ? (
                                             <TextInput
-                                                style={[styles.stageCell, styles.editableGold]}
+                                                style={[styles.stageCell, styles.stageColDauer, styles.editableGold]}
                                                 value={String(s.dauerTe)}
                                                 onChangeText={(v) => updateStageField(i, 'dauerTe', v)}
                                             />
                                         )
-                                        : <Text style={styles.stageCell}>{s.dauerTe}</Text>
+                                        : <Text style={[styles.stageCell, styles.stageColDauer]}>{s.dauerTe}</Text>
                                 }
 
                                 {
                                     isIndividuell
                                         ? (
                                             <TextInput
-                                                style={[styles.stageCell, styles.editableGold]}
+                                                style={[styles.stageCell, styles.stageColSessions, styles.editableGold]}
                                                 value={String(s.teWoche)}
                                                 onChangeText={(v) => updateStageField(i, 'teWoche', v)}
                                             />
                                         )
-                                        : <Text style={styles.stageCell}>{s.teWoche}</Text>
+                                        : <Text style={[styles.stageCell, styles.stageColSessions]}>{s.teWoche}</Text>
                                 }
 
                                 {
                                     isIndividuell
                                         ? (
-                                            <View style={[styles.stageCell, styles.editableGold, styles.zeitAufteilungCell]}>
+                                            <View style={[styles.stageCell, styles.stageColZeit, styles.editableGold, styles.zeitAufteilungCell]}>
                                                 <TextInput
                                                     style={styles.zeitAufteilungInput}
                                                     value={String(s.zeitAufteilung)}
@@ -488,19 +530,19 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
                                                 <Text style={styles.zeitAufteilungSuffix}>GA1/GA2</Text>
                                             </View>
                                         )
-                                        : <Text style={styles.stageCell}>{s.zeitAufteilung} GA1/GA2</Text>
+                                        : <Text style={[styles.stageCell, styles.stageColZeit]}>{s.zeitAufteilung} GA1/GA2</Text>
                                 }
 
                                 {
                                     isIndividuell
                                         ? (
                                             <TextInput
-                                                style={[styles.stageCell, styles.editableGold]}
+                                                style={[styles.stageCell, styles.stageColBlock, styles.editableGold]}
                                                 value={String(s.trainingsblock)}
                                                 onChangeText={(v) => updateStageField(i, 'trainingsblock', v)}
                                             />
                                         )
-                                        : <Text style={styles.stageCell}>{s.trainingsblock}</Text>
+                                        : <Text style={[styles.stageCell, styles.stageColBlock]}>{s.trainingsblock}</Text>
                                 }
 
                             </View>
@@ -770,23 +812,45 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
 
+    // 🔹 2026-09-03 (Claude) — DK: "полетата да не бъдат смачкани" — виж
+    // идентичния changelog в TrainingsplanErgometrieComponent.tsx. Същият
+    // checkboxGlyph (fontSize 30) + paddingVertical: 12 правеше реда на
+    // 8-те степени много по-висок от WNTZ/Продължителност/Сесии/
+    // Trainingsblock TextInput-ите, които увисваха насред празно
+    // пространство. Намалена padding-а за изравнена височина на реда.
     stageCheckCell: {
         width: 52,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
-        paddingVertical: 12
+        paddingVertical: 4
     },
 
+    // 🔹 2026-09-03 (Claude) — DK потвърди след ребилд: НЕ ширината (вече
+    // фиксната с stageCol*), а ВИСОЧИНАТА беше истинският проблем — celна с
+    // празен текст (`{s.wntz}` когато е '' / undefined) пада до 0px реална
+    // височина в браузъра (горна+долна рамка се сливат в една тънка линия),
+    // докато съседна клетка с реално съдържание ("1.", "GA1/GA2") си пази
+    // нормална височина — затова празните клетки изглеждаха "смачкани" до
+    // линия, независимо от ширината. `minHeight` гарантира еднаква кутия.
     stageCell: {
         flex: 1,
         fontSize: 16,
         textAlign: 'center',
         borderWidth: 0.5,
         borderColor: '#9fb3c8',
-        padding: 8
+        padding: 8,
+        minHeight: 39
     },
+
+    // 🔹 2026-09-03 (Claude) — виж changelog-а над <View style={styles.stageTable}>.
+    stageColStepen: { minWidth: 50 },
+    stageColWntz: { minWidth: 80 },
+    stageColDauer: { minWidth: 150 },
+    stageColSessions: { minWidth: 90 },
+    stageColZeit: { minWidth: 130 },
+    stageColBlock: { minWidth: 120 },
 
     // 🔹 Zeit Aufteilung колоната в individuell режим — редактируемо число
     // + фиксиран "GA1/GA2" суфикс до него (самото разпределение GA1/GA2

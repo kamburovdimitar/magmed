@@ -222,7 +222,17 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
 
     }
 
+    // 🔹 2026-09-03 (Claude) — виж идентичния фикс/changelog в
+    // TrainingsplanErgometrieComponent.tsx: hfmax/wattMax вече могат да
+    // бъдат `null` (реални измерени полета, не формула), а старият `?? 0`
+    // тук ги третираше като истинска 0 стойност → измислени "0 - 0"/
+    // "10 - 10"/"30:00 - 30:00" диапазони вместо ясно "няма данни".
+    const NA_ZONE = LanguageUtil.getName('test_progress_empty_text');
+
     function computeZone(fromPercent: number, toPercent: number) {
+
+        const hasHf = hfmax != null;
+        const hasWatt = wattMax != null;
 
         const hfFahrradFrom = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, fromPercent) ?? 0;
         const hfFahrradTo = CodexUtil.calculateKarvonenHeartRate(hfruhe, hfmax, toPercent) ?? 0;
@@ -240,10 +250,10 @@ export default function TrainingsplanKeinTestComponent({ measurement, callback }
         const paceTo = CodexUtil.calculatePace(kmhTo) ?? '';
 
         return {
-            hfFahrrad: `${hfFahrradFrom} - ${hfFahrradTo}`,
-            hfLaufen: `${hfLaufenFrom} - ${hfLaufenTo}`,
-            watt: `${wattFrom} - ${wattTo}`,
-            pace: `${paceFrom} - ${paceTo}`
+            hfFahrrad: hasHf ? `${hfFahrradFrom} - ${hfFahrradTo}` : NA_ZONE,
+            hfLaufen: hasHf ? `${hfLaufenFrom} - ${hfLaufenTo}` : NA_ZONE,
+            watt: hasWatt ? `${wattFrom} - ${wattTo}` : NA_ZONE,
+            pace: hasWatt ? `${paceFrom} - ${paceTo}` : NA_ZONE
         };
 
     }
